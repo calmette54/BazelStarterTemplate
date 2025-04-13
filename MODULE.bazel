@@ -31,7 +31,8 @@ use_repo(doxygen_extension, "doxygen")
 # Formatting and Linting
 # https://github.com/aspect-build/rules_lint
 bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
-
+bazel_dep(name = "aspect_bazel_lib", version = "2.7.7")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
