@@ -1,0 +1,3 @@
+lint:
+  aspects:
+    - //bzl/lint:linters.bzl%clang_tidy

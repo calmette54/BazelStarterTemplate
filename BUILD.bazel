@@ -39,6 +39,13 @@ config_setting(
     },
 )
 
+exports_files(
+    [
+        ".clang-tidy",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 alias(
     name = "format",
     actual = "//bzl/format",

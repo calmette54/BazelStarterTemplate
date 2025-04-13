@@ -34,12 +34,14 @@ use_repo(doxygen_extension, "doxygen")
 #################################################################################
 # Utilities
 #################################################################################
+# General utilities
 # https://github.com/bazelbuild/bazel-skylib
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
+
 # Formatting and Linting
 # https://github.com/aspect-build/rules_lint
-bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
-
+bazel_dep(name = "aspect_rules_lint", version = "1.4.2")
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
@@ -170,7 +172,6 @@ use_repo(pip, "testcontainers_deps")
 ###############################################################################
 bazel_dep(name = "rules_oci", version = "2.2.6")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
 bazel_dep(name = "tweag-credential-helper", version = "0.0.5")
 
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
