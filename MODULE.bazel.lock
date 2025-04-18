@@ -202,7 +202,7 @@
     "@@aspect_bazel_lib~//lib:extensions.bzl%toolchains": {
       "general": {
         "bzlTransitiveDigest": "lIywunPSkJhCp6mXUfksrSPKxf9cWiIiLudbktooWUQ=",
-        "usagesDigest": "0KwHJIwcF+QQ3fZSlwUpqyTJ3McKhsUPXuTXpJ/D6vM=",
+        "usagesDigest": "lOkH8a1A8OsC6mGyCVt+R5p/3M3r0O+QiUxv+qfU5t8=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -844,7 +844,7 @@
     "@@rules_doxygen~//:extensions.bzl%doxygen_extension": {
       "general": {
         "bzlTransitiveDigest": "LmEOagNxiU9i+X/SwfrOTTnA/Z/T+AgTohersbxJNtY=",
-        "usagesDigest": "DinjjK6HUCHpf/Du/wSUc6Q4l1LlRMXLiaiDTH8ZTlQ=",
+        "usagesDigest": "fhf33DMoLe80vJhH+z2ckw59z2J0Q7ko+8A1jqcvx+U=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
