@@ -186,5 +186,16 @@ oci.pull(
     digest = "sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21",
 )
 
+oci.pull(
+    name = "distroless_python",
+    image = "python",
+    platforms = [
+        "linux/amd64",
+    ],
+    digest = "sha256:e10c655960af01096965c33a07ffbdf48e76202abc3c88dc13f25e55f7507505",
+)
+
 # Expose the base image
-use_repo(oci, "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_ubuntu_linux_arm64_v8")
+use_repo(oci,
+         "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_ubuntu_linux_arm64_v8",
+         "distroless_python", "distroless_python_linux_amd64")

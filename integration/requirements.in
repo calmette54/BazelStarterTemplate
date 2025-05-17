@@ -1,1 +1,5 @@
 numpy
+requests
+testcontainers
+docker
+pytest

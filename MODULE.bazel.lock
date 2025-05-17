@@ -717,7 +717,7 @@
     "@@rules_oci+//oci:extensions.bzl%oci": {
       "general": {
         "bzlTransitiveDigest": "EhazFFV5egWY4qKyI3pZ7PEPw/i3na5ZR9AHVRu7hTA=",
-        "usagesDigest": "BCTaCdnU5ZEXxReQQia3586tp1a4DbvC3ErDkv+I/eQ=",
+        "usagesDigest": "bECgbRUhcLfOw2Zwwm4ovq1+kuuXtKFiNqMQwNbwwk8=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -762,6 +762,35 @@
                 "@@platforms//cpu:x86_64": "@docker_lib_ubuntu_linux_amd64"
               },
               "bzlmod_repository": "docker_lib_ubuntu",
+              "reproducible": true
+            }
+          },
+          "distroless_python_linux_amd64": {
+            "repoRuleId": "@@rules_oci+//oci/private:pull.bzl%oci_pull",
+            "attributes": {
+              "www_authenticate_challenges": {},
+              "scheme": "https",
+              "registry": "index.docker.io",
+              "repository": "library/python",
+              "identifier": "sha256:e10c655960af01096965c33a07ffbdf48e76202abc3c88dc13f25e55f7507505",
+              "platform": "linux/amd64",
+              "target_name": "distroless_python_linux_amd64",
+              "bazel_tags": []
+            }
+          },
+          "distroless_python": {
+            "repoRuleId": "@@rules_oci+//oci/private:pull.bzl%oci_alias",
+            "attributes": {
+              "target_name": "distroless_python",
+              "www_authenticate_challenges": {},
+              "scheme": "https",
+              "registry": "index.docker.io",
+              "repository": "library/python",
+              "identifier": "sha256:e10c655960af01096965c33a07ffbdf48e76202abc3c88dc13f25e55f7507505",
+              "platforms": {
+                "@@platforms//cpu:x86_64": "@distroless_python_linux_amd64"
+              },
+              "bzlmod_repository": "distroless_python",
               "reproducible": true
             }
           },
@@ -883,7 +912,9 @@
           "explicitRootModuleDirectDeps": [
             "docker_lib_ubuntu",
             "docker_lib_ubuntu_linux_arm64_v8",
-            "docker_lib_ubuntu_linux_amd64"
+            "docker_lib_ubuntu_linux_amd64",
+            "distroless_python",
+            "distroless_python_linux_amd64"
           ],
           "explicitRootModuleDirectDevDeps": [],
           "useAllRepos": "NO",

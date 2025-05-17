@@ -1,5 +1,7 @@
 load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@testcontainers_deps//:requirements.bzl", "requirement")
 
 # This rule generates two targets:
 #
@@ -18,6 +20,55 @@ py_binary(
     srcs = ["integration_test.py"],
     python_version="3.12",
     deps = [
-        "@testcontainers_deps//numpy",
+        requirement("numpy"),
+    ],
+)
+
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "tar",
+    srcs = [":integration_test"],
+    include_runfiles = True,
+)
+
+oci_image(
+    name = "image",
+    base = "@distroless_python",
+    entrypoint = ["/integration_test"],
+    tars = [":tar"],
+)
+
+# $ bazel run integration:tarball
+oci_load(
+    name = "tarball",
+    image = ":image",
+    repo_tags = ["python-service:latest"],
+)
+
+filegroup(
+    name = "tarball.tar",
+    srcs = [":tarball"],
+    output_group = "tarball",
+)
+
+py_test(
+    name = "service_test",
+    srcs = [
+        "service_test.py",
+    ],
+    data = [
+        ":tarball.tar",
+    ],
+    env = {"TARBALL_RUNFILE": "$(rlocationpath :tarball.tar)"},
+    tags = [
+        "requires-docker",
+        "requires-network",
+    ],
+    deps = [
+        requirement("docker"),
+        requirement("pytest"),
+        requirement("testcontainers"),
     ],
 )
