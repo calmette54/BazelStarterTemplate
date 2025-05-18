@@ -1,12 +1,13 @@
-load("@doxygen//:doxygen.bzl", "doxygen")
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
+load("@doxygen//:doxygen.bzl", "doxygen")
 load("//:bzl/variables.bzl", "PROJECT_NAME")
 
 DESCRIPTION = "Example project for doxygen"
 
 doxygen(
-    name = "docs",   # Name of the rule, can be anything
-    srcs = ["README.md"] + [       # List of sources to document.
+    name = "docs",  # Name of the rule, can be anything
+    srcs = ["README.md"] + [
+        # List of sources to document.
         "//lib/greeter:sources",
         "//standalone:sources",
     ] + glob([
@@ -17,14 +18,13 @@ doxygen(
         "constructor{1}=Construct a new \\1 object.^^",
     ],
     doxyfile_template = ":doxyfile",
-    tags = ["manual"]  # Tags to add to the target.
-                       # This way the target won't run unless explicitly called
+    tags = ["manual"],  # Tags to add to the target.
+    # This way the target won't run unless explicitly called
 )
 
 expand_template(
     name = "doxyfile",
     out = "doxyfile",
-    template = "Doxyfile.template",
     stamp_substitutions = {
         "{{PROJECT_NAME}}": PROJECT_NAME,
         "{{PROJECT_NUMBER}}": "{{STABLE_SEMANTIC_VERSION}}",
@@ -32,4 +32,5 @@ expand_template(
         "{{PROJECT_LOGO}}": "documentation/_static/logo.svg",
         "{{PROJECT_ICON}}": "documentation/_static/logo.svg",
     },
+    template = "Doxyfile.template",
 )
