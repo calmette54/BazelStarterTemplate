@@ -163,6 +163,17 @@ pip.parse(
 )
 use_repo(pip, "testcontainers_deps")
 
+#--------------------- GO Toolchain --------------
+# https://github.com/bazel-contrib/rules_go/tree/master/examples/hello
+bazel_dep(name = "rules_go", version = "0.54.0")
+
+# We use rules_go's go_sdk module extension to download and configure
+# the Go toolchain and standard library. To ensure a deterministic build,
+# Bazel typically uses the Go toolchain downloaded here instead of
+# one installed on the host machine.
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.24.3")
+
 ###############################################################################
 # Containarize your application
 #

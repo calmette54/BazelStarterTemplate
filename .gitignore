@@ -5,6 +5,7 @@ compile_commands.json
 # Bazel
 bazel-*
 external
+.bazel-cache
 
 # Devenv
 .devenv*

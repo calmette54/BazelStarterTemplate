@@ -1,3 +1,5 @@
+startup --output_user_root=.bazel-cache/
+
 # Configure credential-helper to download a prebuilt binary
 common --@tweag-credential-helper//bzl/config:helper_build_mode="auto"
 
