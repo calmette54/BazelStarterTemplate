@@ -1,9 +1,9 @@
-load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push", "oci_load")
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_load", "oci_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//:bzl/naming_convention.bzl", "naming_convention")
-load("//:bzl/variables.bzl", "PROJECT_NAME")
 load("//:bzl/transition.bzl", "multi_arch")
+load("//:bzl/variables.bzl", "PROJECT_NAME")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -42,7 +42,6 @@ pkg_tar(
         "//:is_wip": "{product_name}_{target_gnu_system}_{compilation_mode}__sha256-{commit_sha}.tar",
         "//conditions:default": "{product_name}_{target_gnu_system}_{compilation_mode}.tar",
     }),
-
     package_variables = ":naming",
 )
 
@@ -70,9 +69,9 @@ expand_template(
 oci_image(
     name = "image",
     base = "@docker_lib_ubuntu",
-    tars = [":tar"],
-    labels = ":image-annotations",
     entrypoint = ["/hello-world"],
+    labels = ":image-annotations",
+    tars = [":tar"],
 )
 
 multi_arch(
@@ -87,11 +86,12 @@ multi_arch(
 oci_image_index(
     name = "multiarch_image",
     images = [
-        ":images"
+        ":images",
     ],
 )
 
 IMAGE_NAME = "my-multiarch-image"
+
 # NOTE: STABLE_SEMANTIC_VERSION is defined in tools/bazel_stamp_vars.sh
 expand_template(
     name = "release-tags",
@@ -101,8 +101,9 @@ expand_template(
     },
     template = [
         "v0.0.0",
-    ]
+    ],
 )
+
 # NOTE: STABLE_GIT_COMMIT_SHORT is defined in tools/bazel_stamp_vars.sh
 expand_template(
     name = "wip-tags",
@@ -112,8 +113,9 @@ expand_template(
     },
     template = [
         "sha256",
-    ]
+    ],
 )
+
 # NOTE: STABLE_GIT_COMMIT_SHORT is defined in tools/bazel_stamp_vars.sh
 expand_template(
     name = "dirty-tags",
@@ -124,8 +126,9 @@ expand_template(
     template = [
         "sha256",
         "latest",
-    ]
+    ],
 )
+
 # NOTE: STABLE_IMAGE_REGISTRY is defined in tools/bazel_stamp_vars.sh
 expand_template(
     name = "repositories",
@@ -152,8 +155,8 @@ oci_push(
 # The image is designated using `repo_tags` attribute.
 oci_load(
     name = "load_image",
-    image = ":multiarch_image",
     format = "oci",
+    image = ":multiarch_image",
     repo_tags = select({
         "//:is_release": ":release-tags",
         "//:is_wip": ":wip-tags",

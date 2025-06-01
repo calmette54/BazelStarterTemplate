@@ -37,12 +37,19 @@
     chmod +x "$CREDENTIAL_HELPER_PATH"
   '';
 
+  scripts.nixos-bazelrc.exec = ''
+    echo "common --shell_executable=$(which bash)" > .nixos.bazelrc
+  '';
+
   enterShell = ''
     # Initialize the credential-helper
     credential-helper
 
     # Show the bazel version used by the project
     bazelisk version
+
+    # Hydrate the nixos specific bazelrc
+    nixos-bazelrc
   '';
 
   # https://devenv.sh/tasks/

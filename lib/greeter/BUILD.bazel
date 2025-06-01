@@ -1,9 +1,9 @@
 cc_library(
     name = "greeter",
-    hdrs = [ "include/greeter.h" ],
-    srcs = [ "src/greeter.cpp" ],
-    deps = [ "@fmt" ],
-    visibility = [ "//visibility:public" ],
+    srcs = ["src/greeter.cpp"],
+    hdrs = ["include/greeter.h"],
+    visibility = ["//visibility:public"],
+    deps = ["@fmt"],
 )
 
 # Make the files available to doxygen

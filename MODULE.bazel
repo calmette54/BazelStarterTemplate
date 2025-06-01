@@ -1,5 +1,5 @@
 module(
-    name = "cpp-starter-template",
+    name = "cpp_starter_template",
     version = "3.0.0",
 )
 
@@ -36,6 +36,7 @@ use_repo(doxygen_extension, "doxygen")
 #################################################################################
 # https://github.com/bazelbuild/bazel-skylib
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
 # Formatting and Linting
 # https://github.com/aspect-build/rules_lint
 bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
@@ -54,6 +55,7 @@ git_override(
 ###############################################################################
 # https://github.com/bazelbuild/rules_cc
 bazel_dep(name = "rules_cc", version = "0.1.1")
+
 # https://github.com/bazelbuild/platforms/release
 bazel_dep(name = "platforms", version = "0.0.11")
 
@@ -95,9 +97,11 @@ http_archive(
 
 # Configure and register the toolchain.
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
-
 llvm.toolchain(
     name = "llvm_toolchain",
+    cxx_standard = {
+        "19.1.6": "c++23",
+    },
     llvm_versions = {
         "linux-x86_64": "19.1.6",
         "linux-aarch64": "19.1.6",
@@ -105,6 +109,10 @@ llvm.toolchain(
     sha256 = {
         "linux-x86_64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531",
         "linux-aarch64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531",
+    },
+    stdlib = {
+        "linux-x86_64": "stdc++",
+        "linux-aarch64": "stdc++",
     },
     strip_prefix = {
         "linux-x86_64": "LLVM-19.1.6-Linux-X64",
@@ -117,13 +125,6 @@ llvm.toolchain(
         "linux-aarch64": [
             "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.6/clang+llvm-19.1.6-aarch64-linux-gnu.tar.xz",
         ],
-    },
-    stdlib = {
-        "linux-x86_64": "stdc++",
-        "linux-aarch64": "stdc++",
-    },
-    cxx_standard = {
-        "19.1.6": "c++23",
     },
 )
 llvm.sysroot(
@@ -143,6 +144,33 @@ register_toolchains(
     dev_dependency = True,
 )
 
+#--------------------- GO Toolchain --------------
+# https://github.com/bazel-contrib/rules_go/tree/master/examples/hello
+bazel_dep(name = "rules_go", version = "0.54.1")
+bazel_dep(name = "gazelle", version = "0.43.0")
+
+# We use rules_go's go_sdk module extension to download and configure
+# the Go toolchain and standard library. To ensure a deterministic build,
+# Bazel typically uses the Go toolchain downloaded here instead of
+# one installed on the host machine.
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.23.4")
+
+# Configure Gazelle to load the list of Go modules from go.mod using the
+# go_deps module extension.
+#
+# go_deps fetches Go modules using 'go mod download'. It then generates
+# build files for them using Gazelle.
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//integration:go.mod")
+use_repo(
+    go_deps,
+    "com_github_docker_docker",
+    "com_github_stretchr_testify",
+    "com_github_testcontainers_testcontainers_go",
+    "org_golang_x_net",
+)
+
 #--------------------- Python Toolchain --------------
 # https://rules-python.readthedocs.io/en/latest/toolchains.html
 bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
@@ -150,10 +178,12 @@ bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
 python = use_extension(
     "@rules_python//python/extensions:python.bzl",
     "python",
-    dev_dependency = True
+    dev_dependency = True,
 )
-
-python.toolchain(python_version = "3.12", is_default=True)
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
@@ -162,17 +192,6 @@ pip.parse(
     requirements_lock = "//integration:requirements_lock_3_12.txt",
 )
 use_repo(pip, "testcontainers_deps")
-
-#--------------------- GO Toolchain --------------
-# https://github.com/bazel-contrib/rules_go/tree/master/examples/hello
-bazel_dep(name = "rules_go", version = "0.54.0")
-
-# We use rules_go's go_sdk module extension to download and configure
-# the Go toolchain and standard library. To ensure a deterministic build,
-# Bazel typically uses the Go toolchain downloaded here instead of
-# one installed on the host machine.
-go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
-go_sdk.download(version = "1.24.3")
 
 ###############################################################################
 # Containarize your application
@@ -189,24 +208,28 @@ oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 # Pull needed base image
 oci.pull(
     name = "docker_lib_ubuntu",
+    digest = "sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21",
     image = "ubuntu",
     platforms = [
         "linux/arm64/v8",
         "linux/amd64",
     ],
-    digest = "sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21",
 )
-
 oci.pull(
     name = "distroless_python",
+    digest = "sha256:e10c655960af01096965c33a07ffbdf48e76202abc3c88dc13f25e55f7507505",
     image = "python",
     platforms = [
         "linux/amd64",
     ],
-    digest = "sha256:e10c655960af01096965c33a07ffbdf48e76202abc3c88dc13f25e55f7507505",
 )
 
 # Expose the base image
-use_repo(oci,
-         "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_ubuntu_linux_arm64_v8",
-         "distroless_python", "distroless_python_linux_amd64")
+use_repo(
+    oci,
+    "distroless_python",
+    "distroless_python_linux_amd64",
+    "docker_lib_ubuntu",
+    "docker_lib_ubuntu_linux_amd64",
+    "docker_lib_ubuntu_linux_arm64_v8",
+)

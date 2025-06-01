@@ -4,7 +4,7 @@
 #
 # See https://bazel.build/extending/config and
 # https://github.com/bazelbuild/bazel-skylib) for more info.
-load("@bazel_skylib//rules:common_settings.bzl", "string_flag", "int_flag")
+load("@bazel_skylib//rules:common_settings.bzl", "int_flag", "string_flag")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
 load("//:bzl/defs.bzl", "revision_mode")
 
@@ -28,14 +28,14 @@ string_flag(
 config_setting(
     name = "is_release",
     flag_values = {
-        ":revision_mode": "RELEASE"
+        ":revision_mode": "RELEASE",
     },
 )
 
 config_setting(
     name = "is_wip",
     flag_values = {
-        ":revision_mode": "WIP"
+        ":revision_mode": "WIP",
     },
 )
 

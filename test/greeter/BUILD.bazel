@@ -2,13 +2,12 @@ cc_test(
     name = "greeter_test",
     size = "small",
     srcs = [
-	"src/greeter.cpp",
-	"src/main.cpp",
+        "src/greeter.cpp",
+        "src/main.cpp",
     ],
-
     deps = [
-	"//lib/greeter",
-	"@doctest//doctest",
+        "//lib/greeter",
+        "@doctest//doctest",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
