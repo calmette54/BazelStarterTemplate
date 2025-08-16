@@ -13,6 +13,7 @@
     # Packages needed by the project
     pkgs.git
     pkgs.bazelisk
+    pkgs.claude-code
 
     # Utilities
     pkgs.commitizen
@@ -57,8 +58,13 @@
     git --version | grep --color=auto "${pkgs.git.version}"
   '';
 
+  # # https://devenv.sh/integrations/claude-code/
+  # claude.code = {
+  #   enable = true;
+  # };
+
   # https://devenv.sh/pre-commit-hooks/
-  pre-commit.hooks = {
+  git-hooks.hooks = {
     actionlint = {
       enable = true;
       description = "Static checker for GitHub Actions workflow files";
