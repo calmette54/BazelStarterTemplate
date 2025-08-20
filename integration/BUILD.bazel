@@ -62,7 +62,12 @@ py_test(
     data = [
         ":tarball.tar",
     ],
-    env = {"TARBALL_RUNFILE": "$(rlocationpath :tarball.tar)"},
+    env = {
+        "TARBALL_RUNFILE": "$(rlocationpath :tarball.tar)",
+        "DOCKER_HOST": "tcp://127.0.0.1:2375",
+        "TESTCONTAINERS_RYUK_DISABLED": "true",
+        "TESTCONTAINERS_CHECKS_DISABLE": "true",
+    },
     tags = [
         "requires-docker",
         "requires-network",
