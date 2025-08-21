@@ -28,22 +28,8 @@
   # languages.rust.enable = true;
 
   # https://devenv.sh/processes/
-  # Start podman API service to provide Docker-compatible REST API for integration tests.
-  # This allows testcontainers and Docker Python libraries to work with podman.
-  # The service runs on TCP port 2375 (standard Docker API port).
-  # Use 'devenv processes up -d' to start and 'devenv processes down' to stop.
-  processes = {
-    podman-api.exec = "podman system service --time=0 tcp://127.0.0.1:2375";
-  };
-
-  process.manager = {
-    before = ''
-      echo "🐋 Starting Docker-compatible API services..."
-    '';
-    after = ''
-      echo "🛑 Stopping Docker-compatible API services..."
-    '';
-  };
+  # processes = {
+  # };
 
   # https://devenv.sh/services/
   # services.postgres.enable = true;
@@ -60,14 +46,8 @@
     # Initialize the credential-helper
     credential-helper
 
-    # Create docker alias for podman compatibility
-    alias docker=podman
-
     # Show the bazel version used by the project
     bazelisk version
-
-    # Note: Use 'devenv processes up -d' to start background services like podman-api
-    echo "💡 To start integration test services, run: devenv processes up -d"
   '';
 
   # https://devenv.sh/tasks/
