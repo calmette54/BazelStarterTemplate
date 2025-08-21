@@ -25,7 +25,7 @@ func loadLatestTarball(t *testing.T) {
 	require.NoError(t, err)
 	defer file.Close()
 
-	_, err = cli.ImageLoad(context.Background(), file, true)
+	_, err = cli.ImageLoad(context.Background(), file, client.ImageLoadWithQuiet(false))
 	require.NoError(t, err)
 }
 
@@ -39,8 +39,6 @@ func TestPythonServiceContainerRuns(t *testing.T) {
 		Image:        imageName,
 		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor:   wait.ForLog("Hello World!").WithStartupTimeout(2 * time.Minute),
-		// Bind port 8080 in container to 9000 on host
-		PortBindings: map[string][]string{"8080/tcp": {"9000"}},
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
