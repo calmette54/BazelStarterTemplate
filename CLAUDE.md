@@ -111,3 +111,51 @@ bazelisk run //:refresh_all
 ```
 
 This enables proper IDE integration for clang-based tools and LSP servers.
+
+## Claude Code MCP Tool Usage Guidelines
+
+### Documentation Research Priority
+**ALWAYS use MCP tools before guessing or assuming:**
+
+1. **Context7 Documentation Lookup** (for any library/framework questions):
+   ```bash
+   # Pattern: Question about library → Context7 lookup → Implement
+   mcp__context7__resolve-library-id → mcp__context7__get-library-docs
+   ```
+   - Use for Bazel, C++, testing frameworks, build tools
+   - Provides current documentation and real code examples
+   - Available libraries include: bazelbuild/bazel, bazel-contrib/rules_go, etc.
+
+2. **GitHub Code Search** (for implementation patterns):
+   ```bash
+   # Pattern: Need implementation example → Search real code → Adapt
+   mcp__github__search_code → mcp__grep__searchGitHub
+   ```
+   - Find production usage patterns across millions of repositories
+   - Search for literal code patterns, not keywords
+
+### Agent Utilization Strategy
+**Use specialized agents for their expertise domains:**
+
+- **bazel-build-expert**: All Bazel configuration, MODULE.bazel, build optimization
+- **documentation-architect**: Creating/improving documentation, API docs
+- **sprint-planner**: Breaking down complex features into GitHub issues
+- **general-purpose**: Multi-step research and complex searches
+- **cicd-automation-architect**: GitHub Actions, CI/CD pipeline design
+
+### Information Persistence
+**Document findings in two places:**
+
+1. **CLAUDE.md updates**: Add sections for discovered patterns, commands, configurations
+2. **Memory files**: Use `mcp__serena__write_memory` for architectural insights, common patterns
+
+### Workflow Pattern
+```
+Question/Task → MCP Documentation Lookup → Agent Consultation → Implementation → Document Learnings
+```
+
+**Example:** "How do I set up integration tests?"
+1. `mcp__context7__get-library-docs` for testing patterns
+2. `bazel-build-expert` for Bazel-specific setup
+3. Implement based on documentation examples
+4. Update CLAUDE.md with discovered commands/patterns
