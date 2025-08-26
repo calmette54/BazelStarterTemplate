@@ -1,0 +1,21 @@
+"""
+BUILD file for the rules_nixpkgs example.
+
+This demonstrates how to use rules_nixpkgs to provide system tools hermetically.
+"""
+
+package(default_visibility = ["//visibility:public"])
+
+# Simple example showing rules_nixpkgs in action
+cc_binary(
+    name = "hello_world",
+    srcs = ["hello_world.cpp"],
+    
+    # This binary will have access to GNU hello provided by nixpkgs
+    # The hello binary is made available in the runtime environment
+    data = [
+        "@hello//:bin",
+    ],
+    
+    tags = ["nixpkgs_example"],
+)
