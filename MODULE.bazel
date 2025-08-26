@@ -192,14 +192,8 @@ use_repo(oci, "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_
 # Open3D Example with System Dependencies
 ###############################################################################
 
-# Eigen dependency for Open3D - using http_archive due to bzlmod registry issues
-http_archive(
-    name = "eigen",
-    build_file = "//example_open3d:eigen.BUILD",
-    strip_prefix = "eigen-3.4.0",
-    urls = ["https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip"],
-    sha256 = "eba3f3d414d2f8cba2919c78ec6daab08fc71ba2ba4ae502b7e5d4d99fc02cda",
-)
+# Eigen dependency for Open3D - using Bazel Central Registry
+bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.2")
 
 # Open3D prebuilt binary
 http_archive(

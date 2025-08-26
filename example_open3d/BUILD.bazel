@@ -20,22 +20,8 @@ Architecture:
 
 package(default_visibility = ["//visibility:public"])
 
-# Production wrapper library combining Open3D with hermetic system dependencies
-# This pattern demonstrates proper dependency composition for prebuilt binaries
-cc_library(
-    name = "open3d_with_deps",
-    deps = [
-        "@open3d//:open3d",              # Prebuilt Open3D 0.19 library
-        "@tbb//:tbb_hermetic",           # Intel TBB 2022.0 with SONAME generation
-        "@libcxx//:libcxx_hermetic",     # LLVM libc++ runtime for C++11 ABI compatibility
-    ],
-    # Headless configuration: X11 headers may be required for some Open3D internal calls
-    # even in headless mode due to compilation-time dependencies in the prebuilt binary
-    copts = [
-        "-isystem external/libx11/include",  # Required for Open3D's X11 detection code
-    ],
-    visibility = ["//visibility:public"],
-)
+# Note: Open3D target now includes all hermetic system dependencies directly
+# See example_open3d/open3d.BUILD for the consolidated configuration
 
 # Hermetic Open3D demonstration binary
 # This binary proves that prebuilt libraries can be completely hermetic
@@ -44,7 +30,7 @@ cc_binary(
     name = "open3d_example",
     srcs = ["simple_open3d.cpp"],
     deps = [
-        ":open3d_with_deps",
+        "@open3d//:open3d",  # Complete Open3D with all hermetic system dependencies
     ],
     # Standard POSIX runtime libraries required by Open3D prebuilt binary
     # Bazel automatically handles RPATH and shared library deployment to _solib_k8/

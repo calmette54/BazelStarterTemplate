@@ -64,6 +64,8 @@
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
     "https://bcr.bazel.build/modules/doctest/2.4.11/MODULE.bazel": "b0a344e4d38ee0e552def8ced7df7a595350efc42990ff5faf60735e4e007209",
     "https://bcr.bazel.build/modules/doctest/2.4.11/source.json": "aeeeeaf8c31c059fe80c5204c0063a5a616ac7847155747dee0219de3f981423",
+    "https://bcr.bazel.build/modules/eigen/4.0.0-20241125.bcr.2/MODULE.bazel": "c91e304c16bf95884333152b383a32aacdcfbde3b06f9f4908d31e6f60e44404",
+    "https://bcr.bazel.build/modules/eigen/4.0.0-20241125.bcr.2/source.json": "fbc35faefa352e7ab59a0175d809f05f2205712a34f06f3f52c807c8fe00267b",
     "https://bcr.bazel.build/modules/fmt/10.2.1/MODULE.bazel": "e8138198fb6e116d92ea608787369f1cb20fd50b4951d923e09658495bdae7c8",
     "https://bcr.bazel.build/modules/fmt/10.2.1/source.json": "0b129ad62f9afcbc26099462a5b854123e6094b2cae458563422543711b5bfa2",
     "https://bcr.bazel.build/modules/gazelle/0.27.0/MODULE.bazel": "3446abd608295de6d90b4a8a118ed64a9ce11dcb3dda2dc3290a22056bd20996",
@@ -629,7 +631,7 @@
     "@@rules_nixpkgs_core+//extensions:package.bzl%nix_pkg": {
       "general": {
         "bzlTransitiveDigest": "2alEQC7q9PgrArc8ZeI662VmDHLGfuswqnzBJvVDnmg=",
-        "usagesDigest": "UWqn5gxJGC8IrjXVAlg0L7zrRlKzwFGMMsxILrhUozM=",
+        "usagesDigest": "juKLAVqgPNrN+0wilFm7LWHJsDx5oyQmgJj3PWR13oo=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -883,7 +885,7 @@
               "nix_file_content": "",
               "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
               "repositories": {},
-              "build_file_content": "\n# Standard cc_import for libc++\ncc_import(\n    name = \"libcxx_hermetic\", \n    shared_library = \"lib/libc++.so.1\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "build_file_content": "\n# Standard cc_import for libc++\ncc_import(\n    name = \"libcxx_hermetic\",\n    shared_library = \"lib/libc++.so.1\",\n    visibility = [\"//visibility:public\"],\n)\n",
               "nixopts": [],
               "quiet": false,
               "fail_not_supported": true
