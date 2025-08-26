@@ -1,0 +1,44 @@
+"""
+BUILD file for the Open3D example.
+
+This demonstrates how to use Open3D with system dependencies provided
+hermetically via rules_nixpkgs.
+"""
+
+package(default_visibility = ["//visibility:public"])
+
+# Wrapper library for Open3D with system dependencies
+cc_library(
+    name = "open3d_with_deps",
+    deps = [
+        "@open3d//:open3d",
+        "@tbb//:tbb_hermetic",  # Hermetic TBB dependency
+        "@libcxx//:libcxx_hermetic",  # Hermetic libc++ dependency
+    ],
+    # Include paths for system headers that Open3D needs
+    # Remove OpenGL-related includes since we're using headless Open3D
+    copts = [
+        # "-isystem external/glew/include",  # Not needed for headless
+        # "-isystem external/libgl/include", # Not needed for headless
+        # "-isystem external/mesa/include",  # Not needed for headless
+        "-isystem external/libx11/include",  # May still be needed
+    ],
+)
+
+# Simple Open3D example
+cc_binary(
+    name = "open3d_example",
+    srcs = ["simple_open3d.cpp"],
+    deps = [
+        ":open3d_with_deps",
+    ],
+
+    # Standard Bazel RPATH configuration - let Bazel handle shared library deployment
+    linkopts = [
+        "-ldl",
+        "-lpthread",
+        "-lrt",
+    ],
+
+    tags = ["open3d_example"],
+)

@@ -14,3 +14,165 @@ buildbuddy_deps()
 load("@io_buildbuddy_buildbuddy_toolchain//:rules.bzl", "buildbuddy")
 
 buildbuddy(name = "buildbuddy_toolchain")
+
+# Working rules_nixpkgs example using WORKSPACE.bzlmod
+http_archive(
+    name = "io_tweag_rules_nixpkgs",
+    strip_prefix = "rules_nixpkgs-0.13.0",
+    urls = ["https://github.com/tweag/rules_nixpkgs/releases/download/v0.13.0/rules_nixpkgs-0.13.0.tar.gz"],
+    sha256 = "30271f7bd380e4e20e4d7132c324946c4fdbc31ebe0bbb6638a0f61a37e74397",
+)
+
+load("@io_tweag_rules_nixpkgs//nixpkgs:repositories.bzl", "rules_nixpkgs_dependencies")
+rules_nixpkgs_dependencies()
+
+load("@io_tweag_rules_nixpkgs//nixpkgs:nixpkgs.bzl", "nixpkgs_git_repository", "nixpkgs_package")
+
+# Use nixpkgs 25.05 which has tbb_2022_0 compatible with Open3D 0.19
+nixpkgs_git_repository(
+    name = "nixpkgs",
+    revision = "25.05",  # Official release with tbb_2022_0
+    sha256 = "",  # Let Bazel compute the hash
+)
+
+# Import hello package - simple and reliable
+nixpkgs_package(
+    name = "hello",
+    attribute_path = "hello",
+    repository = "@nixpkgs",
+)
+
+# Open3D prebuilt binary
+http_archive(
+    name = "open3d",
+    urls = ["https://github.com/isl-org/Open3D/releases/download/v0.19.0/open3d-devel-linux-x86_64-cxx11-abi-0.19.0.tar.xz"],
+    strip_prefix = "open3d-devel-linux-x86_64-cxx11-abi-0.19.0",
+    build_file = "//example_open3d:open3d.BUILD",
+)
+
+# System dependencies for Open3D via nixpkgs
+nixpkgs_package(
+    name = "libgl",
+    attribute_path = "libGL",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libx11",
+    attribute_path = "xorg.libX11",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libxrandr",
+    attribute_path = "xorg.libXrandr",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libxinerama",
+    attribute_path = "xorg.libXinerama",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libxcursor",
+    attribute_path = "xorg.libXcursor",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libxi",
+    attribute_path = "xorg.libXi",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libxext",
+    attribute_path = "xorg.libXext",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "gcc_libs",
+    attribute_path = "gcc.cc.lib",
+    repository = "@nixpkgs",
+)
+
+# Critical OpenGL dependencies
+nixpkgs_package(
+    name = "glew",
+    attribute_path = "glew",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libegl",
+    attribute_path = "libglvnd",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "mesa",
+    attribute_path = "mesa",
+    repository = "@nixpkgs",
+)
+
+# Additional X11 dependencies
+nixpkgs_package(
+    name = "libxfixes",
+    attribute_path = "xorg.libXfixes",
+    repository = "@nixpkgs",
+)
+
+nixpkgs_package(
+    name = "libxrender",
+    attribute_path = "xorg.libXrender",
+    repository = "@nixpkgs",
+)
+
+# Standard C library
+nixpkgs_package(
+    name = "glibc",
+    attribute_path = "glibc",
+    repository = "@nixpkgs",
+)
+
+# Intel Threading Building Blocks 2022.0 - compatible with Open3D 0.19
+nixpkgs_package(
+    name = "tbb",
+    attribute_path = "tbb_2022_0",
+    repository = "@nixpkgs",
+    build_file_content = """
+# Create the expected SONAME file hermetically
+genrule(
+    name = "make_tbb_soname",
+    srcs = ["lib/libtbb.so.12.14"],
+    outs = ["libtbb.so.12"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:public"],
+)
+
+# Use cc_import with the correct SONAME
+cc_import(
+    name = "tbb_hermetic",
+    shared_library = ":make_tbb_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# LLVM libc++ runtime (required by Open3D prebuilt binary)
+nixpkgs_package(
+    name = "libcxx",
+    attribute_path = "llvmPackages.libcxx",
+    repository = "@nixpkgs",
+    build_file_content = """
+# Standard cc_import for libc++
+cc_import(
+    name = "libcxx_hermetic",
+    shared_library = "lib/libc++.so.1",
+    visibility = ["//visibility:public"],
+)
+""",
+)

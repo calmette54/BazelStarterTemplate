@@ -159,3 +159,461 @@ Question/Task → MCP Documentation Lookup → Agent Consultation → Implementa
 2. `bazel-build-expert` for Bazel-specific setup
 3. Implement based on documentation examples
 4. Update CLAUDE.md with discovered commands/patterns
+
+## Hermetic System Library Integration Guide
+
+### Overview
+
+**Problem:** Prebuilt binaries often require system libraries at runtime, creating non-hermetic builds that depend on the host system configuration. This leads to:
+- Build reproducibility issues across different environments
+- Runtime failures when expected libraries are missing or incompatible
+- Deployment complexity requiring specific system library versions
+
+**Solution:** Hermetic integration using rules_nixpkgs combined with Bazel cc_import patterns provides:
+- Reproducible builds independent of host system libraries
+- Explicit dependency management with specific library versions
+- Cross-platform compatibility through consistent library resolution
+- Runtime hermeticity ensuring all dependencies are bundled correctly
+
+**Benefits:**
+- **Reproducible builds**: Same build artifacts regardless of host system
+- **No host dependencies**: Self-contained binaries with embedded libraries
+- **Cross-platform compatibility**: Consistent behavior across different Linux distributions
+- **Explicit versioning**: Clear dependency management with specific library versions
+
+### Prerequisites
+
+Before implementing hermetic system library integration, ensure you have:
+
+1. **rules_nixpkgs setup in WORKSPACE.bzlmod:**
+   ```starlark
+   bazel_dep(name = "rules_nixpkgs_core", version = "0.12.0")
+
+   nixpkgs = use_extension("@rules_nixpkgs_core//extensions:nixpkgs.bzl", "nixpkgs")
+   nixpkgs.repository(name = "nixpkgs", repository = "@nixpkgs-unstable")
+   use_repo(nixpkgs, "nixpkgs")
+   ```
+
+2. **Understanding of SONAME vs actual library files:**
+   - SONAME: The name the dynamic linker uses to find libraries at runtime
+   - Actual file: The physical library file (may have version numbers)
+   - Example: `libtbb.so.12` (SONAME) vs `libtbb.so.12.14` (actual file)
+
+3. **Basic Bazel cc_import knowledge:**
+   - How cc_import integrates precompiled libraries
+   - Understanding of shared_library attribute behavior
+   - Dependency propagation in Bazel build graphs
+
+### Step-by-Step Process
+
+#### 1. Identify Dependencies
+
+Use `readelf -d` to discover required shared libraries for your prebuilt binary:
+
+```bash
+readelf -d path/to/your/prebuilt_binary
+
+# Example output:
+Dynamic section at offset 0x2e5d00 contains 34 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libtbb.so.12]
+ 0x0000000000000001 (NEEDED)             Shared library: [libGL.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+```
+
+Look for `NEEDED` entries - these are the libraries your binary requires at runtime.
+
+#### 2. nixpkgs Package Selection
+
+Find compatible packages in nixpkgs:
+
+```bash
+# Search for packages containing the required library
+nix search nixpkgs tbb
+nix search nixpkgs opengl
+
+# Verify library versions in the package
+nix-shell -p tbb_2022_0 --run "ls -la /nix/store/*/lib/libtbb*"
+```
+
+Key considerations:
+- Choose packages with compatible library versions
+- Prefer specific versioned packages over latest/unstable
+- Verify the package contains the exact SONAME your binary expects
+
+#### 3. SONAME Generation
+
+Create genrule targets to generate expected SONAME files hermetically:
+
+```starlark
+# The actual file from nixpkgs might be libtbb.so.12.14
+# But your binary expects libtbb.so.12 (the SONAME)
+genrule(
+    name = "make_tbb_soname",
+    srcs = ["lib/libtbb.so.12.14"],  # Actual file from nixpkgs
+    outs = ["libtbb.so.12"],         # Expected SONAME
+    cmd = "cp $< $@",                # Simple copy to create symlink-like behavior
+    visibility = ["//visibility:public"],
+)
+```
+
+**Why this matters:**
+- The dynamic linker searches for the SONAME, not the actual filename
+- nixpkgs packages may use different naming conventions
+- This creates the expected filename hermetically within the Bazel sandbox
+
+#### 4. cc_import Configuration
+
+Configure cc_import with the correct shared_library attribute:
+
+```starlark
+cc_import(
+    name = "tbb_hermetic",
+    shared_library = ":make_tbb_soname",  # Reference the generated SONAME
+    visibility = ["//visibility:public"],
+)
+```
+
+**Critical points:**
+- Always reference the genrule output, not the original file
+- Use appropriate visibility settings
+- The shared_library attribute tells Bazel this is a runtime dependency
+
+#### 5. Integration Pattern
+
+Include hermetic dependencies in your cc_library or cc_binary targets:
+
+```starlark
+cc_library(
+    name = "my_library_with_prebuilt",
+    srcs = ["my_code.cc"],
+    deps = [
+        "@tbb//:tbb_hermetic",  # Your hermetic dependency
+        # other deps...
+    ],
+)
+
+cc_binary(
+    name = "my_binary",
+    srcs = ["main.cc"],
+    deps = [
+        ":my_library_with_prebuilt",
+    ],
+)
+```
+
+### Complete Working Example
+
+Here's the complete TBB integration that demonstrates the full pattern:
+
+#### WORKSPACE.bzlmod Configuration
+
+```starlark
+# In your WORKSPACE.bzlmod file
+nixpkgs_package(
+    name = "tbb",
+    attribute_path = "tbb_2022_0",  # Specific version for reproducibility
+    repository = "@nixpkgs",
+    build_file_content = """
+# Create the expected SONAME file hermetically
+# TBB 2022.0 ships as libtbb.so.12.14 but dynamic linker expects libtbb.so.12
+genrule(
+    name = "make_tbb_soname",
+    srcs = ["lib/libtbb.so.12.14"],
+    outs = ["libtbb.so.12"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:public"],
+)
+
+# Use cc_import with the correct SONAME
+cc_import(
+    name = "tbb_hermetic",
+    shared_library = ":make_tbb_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+```
+
+#### BUILD File Integration
+
+```starlark
+# In your BUILD file where you need TBB
+cc_library(
+    name = "open3d_wrapper",
+    srcs = ["open3d_wrapper.cc"],
+    hdrs = ["open3d_wrapper.h"],
+    deps = [
+        "@open3d_prebuilt//:open3d",  # Your prebuilt library
+        "@tbb//:tbb_hermetic",        # The hermetic TBB dependency
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "app_using_open3d",
+    srcs = ["main.cc"],
+    deps = [":open3d_wrapper"],
+)
+```
+
+#### Verification
+
+Verify hermeticity after building:
+
+```bash
+# Build your target
+bazelisk build //your/target:app_using_open3d
+
+# Check that all dependencies are resolved correctly
+ldd bazel-bin/your/target/app_using_open3d
+
+# Should show resolved paths within Bazel's sandbox:
+# libtbb.so.12 => /home/user/.cache/bazel/.../tbb_hermetic/libtbb.so.12
+```
+
+### Troubleshooting Guide
+
+#### Common SONAME Mismatches
+
+**Problem:** Binary fails with "library not found" errors.
+
+**Solution:**
+1. Check the exact SONAME expected by your binary:
+   ```bash
+   readelf -d your_binary | grep NEEDED
+   ```
+
+2. Verify the SONAME in your nixpkgs package:
+   ```bash
+   nix-shell -p your_package --run "readelf -d /nix/store/*/lib/your_lib*"
+   ```
+
+3. Ensure your genrule creates the exact SONAME expected.
+
+#### Library Not Found at Runtime
+
+**Problem:** Binary builds but fails at runtime with library loading errors.
+
+**Solution:**
+1. Verify cc_import is included in deps chain:
+   ```bash
+   bazelisk query "deps(//your:target)" | grep your_lib
+   ```
+
+2. Check that shared_library attribute points to the correct file:
+   ```starlark
+   # Make sure this path is correct
+   shared_library = ":make_your_lib_soname",
+   ```
+
+3. Use ldd to verify runtime linking:
+   ```bash
+   ldd bazel-bin/your/target/binary
+   ```
+
+#### Version Compatibility Issues
+
+**Problem:** Library loads but crashes due to version mismatches.
+
+**Solution:**
+1. Use specific nixpkgs package versions:
+   ```starlark
+   attribute_path = "tbb_2022_0",  # Not just "tbb"
+   ```
+
+2. Verify compatibility with your prebuilt binary's requirements:
+   ```bash
+   # Check what version your binary was compiled against
+   objdump -p your_binary | grep NEEDED
+   ```
+
+3. Test with the exact library version used during compilation.
+
+#### Debugging with readelf and ldd
+
+Essential debugging commands:
+
+```bash
+# Show all dynamic dependencies
+readelf -d binary_or_library
+
+# Show runtime library resolution
+ldd binary_or_library
+
+# Show detailed symbol information
+nm -D library.so
+
+# Check library architecture compatibility
+file library.so
+
+# Verify SONAME in library
+readelf -d library.so | grep SONAME
+```
+
+### Best Practices
+
+#### Always Use genrule for SONAME Matching
+
+```starlark
+# GOOD: Creates exact SONAME expected by binary
+genrule(
+    name = "make_lib_soname",
+    srcs = ["lib/libfoo.so.1.2.3"],
+    outs = ["libfoo.so.1"],
+    cmd = "cp $< $@",
+)
+
+# BAD: Assumes nixpkgs filename matches expected SONAME
+cc_import(
+    name = "lib_direct",
+    shared_library = "lib/libfoo.so.1.2.3",  # May not match binary's expectation
+)
+```
+
+#### Verify Hermeticity with ldd
+
+Always check that your built binaries don't depend on system libraries:
+
+```bash
+# After building, verify no system dependencies
+ldd bazel-bin/path/to/binary | grep "not found"  # Should be empty
+ldd bazel-bin/path/to/binary | grep "/lib"       # Should show Bazel paths, not system paths
+```
+
+#### Document Library Versions and Compatibility
+
+```starlark
+# Include documentation in your nixpkgs_package definitions
+nixpkgs_package(
+    name = "tbb",
+    attribute_path = "tbb_2022_0",  # TBB 2022.0 - compatible with Open3D 0.18.0
+    repository = "@nixpkgs",
+    build_file_content = """
+# TBB integration for Open3D prebuilt binaries
+# Open3D 0.18.0 compiled against TBB 2022.0 (SONAME: libtbb.so.12)
+# Package provides: libtbb.so.12.14 -> genrule creates: libtbb.so.12
+""",
+)
+```
+
+#### Use Specific nixpkgs Versions for Reproducibility
+
+```starlark
+# GOOD: Pinned nixpkgs for reproducible builds
+nixpkgs = use_extension("@rules_nixpkgs_core//extensions:nixpkgs.bzl", "nixpkgs")
+nixpkgs.repository(
+    name = "nixpkgs",
+    repository = "@nixpkgs-24.05",  # Specific release
+)
+
+# AVOID: Unstable nixpkgs can break builds
+nixpkgs.repository(
+    name = "nixpkgs",
+    repository = "@nixpkgs-unstable",  # May change unexpectedly
+)
+```
+
+### Advanced Patterns
+
+#### Multiple Related Libraries
+
+For complex library stacks like OpenGL, create a comprehensive integration:
+
+```starlark
+nixpkgs_package(
+    name = "opengl_stack",
+    attribute_path = "mesa",
+    repository = "@nixpkgs",
+    build_file_content = """
+# OpenGL stack with multiple related libraries
+genrule(
+    name = "make_gl_soname",
+    srcs = ["lib/libGL.so.1.7.0"],
+    outs = ["libGL.so.1"],
+    cmd = "cp $< $@",
+)
+
+genrule(
+    name = "make_egl_soname",
+    srcs = ["lib/libEGL.so.1.1.0"],
+    outs = ["libEGL.so.1"],
+    cmd = "cp $< $@",
+)
+
+cc_import(
+    name = "opengl_hermetic",
+    shared_library = ":make_gl_soname",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "egl_hermetic",
+    shared_library = ":make_egl_soname",
+    visibility = ["//visibility:public"],
+)
+
+# Convenience target for the full stack
+cc_library(
+    name = "opengl_stack",
+    deps = [
+        ":opengl_hermetic",
+        ":egl_hermetic",
+    ],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+```
+
+#### Cross-Compilation Considerations
+
+When cross-compiling, ensure library architectures match:
+
+```starlark
+# Use platform-specific nixpkgs packages
+nixpkgs_package(
+    name = "tbb_x86_64",
+    attribute_path = "tbb_2022_0",
+    repository = "@nixpkgs",
+    build_file_content = """
+# Verify architecture compatibility in genrule
+genrule(
+    name = "make_tbb_soname",
+    srcs = ["lib/libtbb.so.12.14"],
+    outs = ["libtbb.so.12"],
+    cmd = '''
+    if file $< | grep -q "x86-64"; then
+        cp $< $@
+    else
+        echo "Architecture mismatch: expected x86-64" >&2
+        exit 1
+    fi
+    ''',
+)
+""",
+)
+```
+
+#### Static vs Dynamic Linking Trade-offs
+
+**Dynamic Linking (Recommended):**
+- Pros: Smaller binaries, shared library benefits, easier updates
+- Cons: Runtime dependency management, potential compatibility issues
+
+**Static Linking Alternative:**
+```starlark
+# For static libraries, use static_library attribute
+cc_import(
+    name = "tbb_static",
+    static_library = "lib/libtbb.a",
+    visibility = ["//visibility:public"],
+)
+```
+
+**When to choose static:**
+- Maximum portability required
+- Single-binary deployment preferred
+- Library compatibility issues with dynamic linking
+
+This guide provides a complete framework for hermetic system library integration. The key is understanding the relationship between SONAME expectations, nixpkgs package contents, and Bazel's dependency management system.
