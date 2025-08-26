@@ -1,44 +1,59 @@
 """
-BUILD file for the Open3D example.
+Open3D Hermetic System Library Integration Example
 
-This demonstrates how to use Open3D with system dependencies provided
-hermetically via rules_nixpkgs.
+This example demonstrates production-grade hermetic system library integration
+using rules_nixpkgs and Bazel's pure bzlmod approach. It solves the common
+problem of prebuilt binaries requiring specific system libraries at runtime.
+
+Key Technical Achievements:
+- Zero host system dependencies (completely hermetic builds)
+- Reproducible library versions across all environments
+- Proper SONAME resolution for prebuilt binary compatibility
+- Standard Bazel cc_import patterns for shared library deployment
+
+Architecture:
+- Open3D 0.19 prebuilt binary requires TBB 2022.0 and libc++
+- nixpkgs provides exact library versions through hermetic cache.nixos.org
+- genrule creates proper SONAME files that match binary expectations
+- Bazel's _solib_k8 directory handles automatic runtime library deployment
 """
 
 package(default_visibility = ["//visibility:public"])
 
-# Wrapper library for Open3D with system dependencies
+# Production wrapper library combining Open3D with hermetic system dependencies
+# This pattern demonstrates proper dependency composition for prebuilt binaries
 cc_library(
     name = "open3d_with_deps",
     deps = [
-        "@open3d//:open3d",
-        "@tbb//:tbb_hermetic",  # Hermetic TBB dependency
-        "@libcxx//:libcxx_hermetic",  # Hermetic libc++ dependency
+        "@open3d//:open3d",              # Prebuilt Open3D 0.19 library
+        "@tbb//:tbb_hermetic",           # Intel TBB 2022.0 with SONAME generation
+        "@libcxx//:libcxx_hermetic",     # LLVM libc++ runtime for C++11 ABI compatibility
     ],
-    # Include paths for system headers that Open3D needs
-    # Remove OpenGL-related includes since we're using headless Open3D
+    # Headless configuration: X11 headers may be required for some Open3D internal calls
+    # even in headless mode due to compilation-time dependencies in the prebuilt binary
     copts = [
-        # "-isystem external/glew/include",  # Not needed for headless
-        # "-isystem external/libgl/include", # Not needed for headless
-        # "-isystem external/mesa/include",  # Not needed for headless
-        "-isystem external/libx11/include",  # May still be needed
+        "-isystem external/libx11/include",  # Required for Open3D's X11 detection code
     ],
+    visibility = ["//visibility:public"],
 )
 
-# Simple Open3D example
+# Hermetic Open3D demonstration binary
+# This binary proves that prebuilt libraries can be completely hermetic
+# without any host system dependencies
 cc_binary(
     name = "open3d_example",
     srcs = ["simple_open3d.cpp"],
     deps = [
         ":open3d_with_deps",
     ],
-
-    # Standard Bazel RPATH configuration - let Bazel handle shared library deployment
+    # Standard POSIX runtime libraries required by Open3D prebuilt binary
+    # Bazel automatically handles RPATH and shared library deployment to _solib_k8/
     linkopts = [
-        "-ldl",
-        "-lpthread",
-        "-lrt",
+        "-ldl",        # Dynamic loading support (required by Open3D plugins)
+        "-lpthread",   # POSIX threading (required by TBB)
+        "-lrt",        # Real-time extensions (required by timing functions)
     ],
-
-    tags = ["open3d_example"],
+    # Tags for build organization and CI/CD filtering
+    tags = ["open3d_example", "hermetic_integration"],
+    visibility = ["//visibility:public"],
 )

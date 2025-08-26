@@ -184,6 +184,8 @@
     "https://bcr.bazel.build/modules/rules_multirun/0.9.0/source.json": "e882ba77962fa6c5fe68619e5c7d0374ec9a219fb8d03c42eadaf6d0243771bd",
     "https://bcr.bazel.build/modules/rules_multitool/0.4.0/MODULE.bazel": "15517987d5c00c9e7faab41fbe22ee67a350b6eabcc1e08baded5c6d9025897f",
     "https://bcr.bazel.build/modules/rules_multitool/0.4.0/source.json": "d73b450b7c6d9683e400d6cebc463fbc2b870cc5d8e2e75080d6278805aaab08",
+    "https://bcr.bazel.build/modules/rules_nixpkgs_core/0.13.0/MODULE.bazel": "b826d994220017d44c8a4e55435c2c2e6b4733eaaff69fff65232e0010afcb7b",
+    "https://bcr.bazel.build/modules/rules_nixpkgs_core/0.13.0/source.json": "c542b96a9d6ab189bd1a65da43e6c7b8be5f1099876ffba35cd9d2275f82740e",
     "https://bcr.bazel.build/modules/rules_nodejs/5.8.2/MODULE.bazel": "6bc03c8f37f69401b888023bf511cb6ee4781433b0cb56236b2e55a21e3a026a",
     "https://bcr.bazel.build/modules/rules_nodejs/5.8.2/source.json": "6e82cf5753d835ea18308200bc79b9c2e782efe2e2a4edc004a9162ca93382ca",
     "https://bcr.bazel.build/modules/rules_oci/2.2.6/MODULE.bazel": "2ba6ddd679269e00aeffe9ca04faa2d0ca4129650982c9246d0d459fe2da47d9",
@@ -622,6 +624,339 @@
           }
         },
         "recordedRepoMappingEntries": []
+      }
+    },
+    "@@rules_nixpkgs_core+//extensions:package.bzl%nix_pkg": {
+      "general": {
+        "bzlTransitiveDigest": "2alEQC7q9PgrArc8ZeI662VmDHLGfuswqnzBJvVDnmg=",
+        "usagesDigest": "UWqn5gxJGC8IrjXVAlg0L7zrRlKzwFGMMsxILrhUozM=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "hello": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "hello",
+              "attribute_path": "hello",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libgl": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libgl",
+              "attribute_path": "libGL",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libx11": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libx11",
+              "attribute_path": "xorg.libX11",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxrandr": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxrandr",
+              "attribute_path": "xorg.libXrandr",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxinerama": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxinerama",
+              "attribute_path": "xorg.libXinerama",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxcursor": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxcursor",
+              "attribute_path": "xorg.libXcursor",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxi": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxi",
+              "attribute_path": "xorg.libXi",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxext": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxext",
+              "attribute_path": "xorg.libXext",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "gcc_libs": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "gcc_libs",
+              "attribute_path": "gcc.cc.lib",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "glew": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "glew",
+              "attribute_path": "glew",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libegl": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libegl",
+              "attribute_path": "libglvnd",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "mesa": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "mesa",
+              "attribute_path": "mesa",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxfixes": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxfixes",
+              "attribute_path": "xorg.libXfixes",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libxrender": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libxrender",
+              "attribute_path": "xorg.libXrender",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "glibc": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "glibc",
+              "attribute_path": "glibc",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "tbb": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "tbb",
+              "attribute_path": "tbb_2022_0",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Create the expected SONAME file hermetically\ngenrule(\n    name = \"make_tbb_soname\",\n    srcs = [\"lib/libtbb.so.12.14\"],\n    outs = [\"libtbb.so.12\"],\n    cmd = \"cp $< $@\",\n    visibility = [\"//visibility:public\"],\n)\n\n# Use cc_import with the correct SONAME\ncc_import(\n    name = \"tbb_hermetic\",\n    shared_library = \":make_tbb_soname\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libcxx": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libcxx",
+              "attribute_path": "llvmPackages.libcxx",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Standard cc_import for libc++\ncc_import(\n    name = \"libcxx_hermetic\", \n    shared_library = \"lib/libc++.so.1\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
+          "explicitRootModuleDirectDeps": [
+            "hello",
+            "libgl",
+            "libx11",
+            "libxrandr",
+            "libxinerama",
+            "libxcursor",
+            "libxi",
+            "libxext",
+            "gcc_libs",
+            "glew",
+            "libegl",
+            "mesa",
+            "libxfixes",
+            "libxrender",
+            "glibc",
+            "tbb",
+            "libcxx"
+          ],
+          "explicitRootModuleDirectDevDeps": [],
+          "useAllRepos": "NO",
+          "reproducible": false
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "rules_nixpkgs_core+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ]
+        ]
+      }
+    },
+    "@@rules_nixpkgs_core+//extensions:repository.bzl%nix_repo": {
+      "general": {
+        "bzlTransitiveDigest": "dTTtWNdwe7E4j77oKh1mHI1qtdxfaVSGSZa1oPf2QjU=",
+        "usagesDigest": "XQ/zvdX9TprrLZDe2iRNQM03Hyj/Yn0/75TG8LIodY4=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "nixpkgs": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_http_repository",
+            "attributes": {
+              "unmangled_name": "nixpkgs",
+              "url": "https://github.com/NixOS/nixpkgs/archive/25.05.tar.gz",
+              "strip_prefix": "nixpkgs-25.05",
+              "integrity": "",
+              "sha256": ""
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
+          "explicitRootModuleDirectDeps": [
+            "nixpkgs"
+          ],
+          "explicitRootModuleDirectDevDeps": [],
+          "useAllRepos": "NO",
+          "reproducible": false
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "rules_nixpkgs_core+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ]
+        ]
       }
     },
     "@@rules_nodejs+//nodejs:extensions.bzl%node": {

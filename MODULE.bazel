@@ -209,5 +209,148 @@ http_archive(
     build_file = "//example_open3d:open3d.BUILD",
 )
 
-# Note: rules_nixpkgs will be configured via WORKSPACE.bzlmod
-# due to incomplete bzlmod extensions implementation
+###############################################################################
+# Nixpkgs Dependencies - Pure bzlmod approach
+###############################################################################
+
+# Add rules_nixpkgs_core dependency
+bazel_dep(name = "rules_nixpkgs_core", version = "0.13.0")
+
+# Configure nixpkgs repository using nix_repo extension
+nix_repo = use_extension("@rules_nixpkgs_core//extensions:repository.bzl", "nix_repo")
+nix_repo.github(
+    name = "nixpkgs",
+    org = "NixOS",
+    repo = "nixpkgs",
+    commit = "25.05",  # Use commit/branch instead of tag
+    sha256 = "",  # Let Bazel compute the hash
+)
+use_repo(nix_repo, "nixpkgs")
+
+# Configure nixpkgs packages using nix_pkg extension
+nix_pkg = use_extension("@rules_nixpkgs_core//extensions:package.bzl", "nix_pkg")
+
+# Simple hello package
+nix_pkg.attr(
+    name = "hello",
+    attr = "hello",
+)
+
+# System dependencies for Open3D
+nix_pkg.attr(
+    name = "libgl",
+    attr = "libGL",
+)
+
+nix_pkg.attr(
+    name = "libx11",
+    attr = "xorg.libX11",
+)
+
+nix_pkg.attr(
+    name = "libxrandr",
+    attr = "xorg.libXrandr",
+)
+
+nix_pkg.attr(
+    name = "libxinerama",
+    attr = "xorg.libXinerama",
+)
+
+nix_pkg.attr(
+    name = "libxcursor",
+    attr = "xorg.libXcursor",
+)
+
+nix_pkg.attr(
+    name = "libxi",
+    attr = "xorg.libXi",
+)
+
+nix_pkg.attr(
+    name = "libxext",
+    attr = "xorg.libXext",
+)
+
+nix_pkg.attr(
+    name = "gcc_libs",
+    attr = "gcc.cc.lib",
+)
+
+# Critical OpenGL dependencies
+nix_pkg.attr(
+    name = "glew",
+    attr = "glew",
+)
+
+nix_pkg.attr(
+    name = "libegl",
+    attr = "libglvnd",
+)
+
+nix_pkg.attr(
+    name = "mesa",
+    attr = "mesa",
+)
+
+# Additional X11 dependencies
+nix_pkg.attr(
+    name = "libxfixes",
+    attr = "xorg.libXfixes",
+)
+
+nix_pkg.attr(
+    name = "libxrender",
+    attr = "xorg.libXrender",
+)
+
+# Standard C library
+nix_pkg.attr(
+    name = "glibc",
+    attr = "glibc",
+)
+
+# TBB with custom build file for hermetic SONAME generation
+nix_pkg.attr(
+    name = "tbb",
+    attr = "tbb_2022_0",
+    build_file_content = """
+# Create the expected SONAME file hermetically
+genrule(
+    name = "make_tbb_soname",
+    srcs = ["lib/libtbb.so.12.14"],
+    outs = ["libtbb.so.12"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:public"],
+)
+
+# Use cc_import with the correct SONAME
+cc_import(
+    name = "tbb_hermetic",
+    shared_library = ":make_tbb_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# LLVM libc++ runtime with custom build file
+nix_pkg.attr(
+    name = "libcxx",
+    attr = "llvmPackages.libcxx",
+    build_file_content = """
+# Standard cc_import for libc++
+cc_import(
+    name = "libcxx_hermetic",
+    shared_library = "lib/libc++.so.1",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# Make packages available in this workspace
+use_repo(nix_pkg,
+    "hello",
+    "libgl", "libx11", "libxrandr", "libxinerama", "libxcursor",
+    "libxi", "libxext", "gcc_libs", "glew", "libegl", "mesa",
+    "libxfixes", "libxrender", "glibc", "tbb", "libcxx"
+)
