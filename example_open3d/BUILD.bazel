@@ -23,23 +23,45 @@ package(default_visibility = ["//visibility:public"])
 # Note: Open3D target now includes all hermetic system dependencies directly
 # See example_open3d/open3d.BUILD for the consolidated configuration
 
-# Hermetic Open3D demonstration binary
-# This binary proves that prebuilt libraries can be completely hermetic
-# without any host system dependencies
+# Hermetic Open3D demonstration binary with full GUI support
+# This binary demonstrates complete hermetic integration including visualization
 cc_binary(
     name = "open3d_example",
     srcs = ["simple_open3d.cpp"],
     deps = [
-        "@open3d//:open3d",  # Complete Open3D with all hermetic system dependencies
+        "@open3d//:open3d",  # Complete Open3D with all hermetic system dependencies including GUI
     ],
-    # Standard POSIX runtime libraries required by Open3D prebuilt binary
+    # All system dependencies are now handled by @open3d//:open3d target
     # Bazel automatically handles RPATH and shared library deployment to _solib_k8/
     linkopts = [
-        "-ldl",        # Dynamic loading support (required by Open3D plugins)
-        "-lpthread",   # POSIX threading (required by TBB)
-        "-lrt",        # Real-time extensions (required by timing functions)
+        "-ldl",        # Dynamic loading support 
+        "-lpthread",   # POSIX threading
+        "-lrt",        # Real-time extensions
+        "-lm",         # Math library
     ],
-    # Tags for build organization and CI/CD filtering
-    tags = ["open3d_example", "hermetic_integration"],
+    env = {
+        "OPEN3D_HEADLESS": "0",  # Enable GUI mode by default
+    },
+    tags = ["open3d_example", "hermetic_integration", "gui_support"],
+    visibility = ["//visibility:public"],
+)
+
+# Headless-only version for CI/CD environments without display
+cc_binary(
+    name = "open3d_example_headless", 
+    srcs = ["simple_open3d.cpp"],
+    deps = [
+        "@open3d//:open3d",  # Complete Open3D with hermetic system dependencies
+    ],
+    linkopts = [
+        "-ldl",        # Dynamic loading support
+        "-lpthread",   # POSIX threading
+        "-lrt",        # Real-time extensions
+        "-lm",         # Math library
+    ],
+    env = {
+        "OPEN3D_HEADLESS": "1",  # Force headless mode
+    },
+    tags = ["open3d_example", "hermetic_integration", "headless_only"],
     visibility = ["//visibility:public"],
 )

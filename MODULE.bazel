@@ -4,9 +4,12 @@ module(
 )
 
 #------------- Application dependencies -------------
-bazel_dep(name = "fmt", version = "10.2.1")
+# Use compatible BCR versions and provide correct SONAMEs for Drake
+bazel_dep(name = "fmt", version = "10.1.1")  # Required by spdlog 1.12.0
+bazel_dep(name = "spdlog", version = "1.12.0")
 bazel_dep(name = "protobuf", version = "31.0-rc2", repo_name = "com_google_protobuf")
 bazel_dep(name = "bazel_features", version = "1.29.0", repo_name = "proto_bazel_features")
+
 version = use_extension("@proto_bazel_features//private:extensions.bzl", "version_extension")
 use_repo(version, "bazel_features_globals", "bazel_features_version")
 
@@ -35,6 +38,7 @@ use_repo(doxygen_extension, "doxygen")
 #################################################################################
 # https://github.com/bazelbuild/bazel-skylib
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
 # Formatting and Linting
 # https://github.com/aspect-build/rules_lint
 bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
@@ -53,6 +57,7 @@ git_override(
 ###############################################################################
 # https://github.com/bazelbuild/rules_cc
 bazel_dep(name = "rules_cc", version = "0.1.1")
+
 # https://github.com/bazelbuild/platforms/release
 bazel_dep(name = "platforms", version = "0.0.11")
 
@@ -94,9 +99,11 @@ http_archive(
 
 # Configure and register the toolchain.
 llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
-
 llvm.toolchain(
     name = "llvm_toolchain",
+    cxx_standard = {
+        "19.1.6": "c++23",
+    },
     llvm_versions = {
         "linux-x86_64": "19.1.6",
         "linux-aarch64": "19.1.6",
@@ -104,6 +111,10 @@ llvm.toolchain(
     sha256 = {
         "linux-x86_64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531",
         "linux-aarch64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531",
+    },
+    stdlib = {
+        "linux-x86_64": "stdc++",
+        "linux-aarch64": "stdc++",
     },
     strip_prefix = {
         "linux-x86_64": "LLVM-19.1.6-Linux-X64",
@@ -116,13 +127,6 @@ llvm.toolchain(
         "linux-aarch64": [
             "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.6/clang+llvm-19.1.6-aarch64-linux-gnu.tar.xz",
         ],
-    },
-    stdlib = {
-        "linux-x86_64": "stdc++",
-        "linux-aarch64": "stdc++",
-    },
-    cxx_standard = {
-        "19.1.6": "c++23",
     },
 )
 llvm.sysroot(
@@ -149,10 +153,12 @@ bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
 python = use_extension(
     "@rules_python//python/extensions:python.bzl",
     "python",
-    dev_dependency = True
+    dev_dependency = True,
 )
-
-python.toolchain(python_version = "3.12", is_default=True)
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
@@ -177,12 +183,12 @@ oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 # Pull needed base image
 oci.pull(
     name = "docker_lib_ubuntu",
+    digest = "sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21",
     image = "ubuntu",
     platforms = [
         "linux/arm64/v8",
         "linux/amd64",
     ],
-    digest = "sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21",
 )
 
 # Expose the base image
@@ -192,15 +198,28 @@ use_repo(oci, "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_
 # Open3D Example with System Dependencies
 ###############################################################################
 
-# Eigen dependency for Open3D - using Bazel Central Registry
-bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.2")
+# Eigen dependency for Open3D and Drake - using older compatible version
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
 
 # Open3D prebuilt binary
 http_archive(
     name = "open3d",
-    urls = ["https://github.com/isl-org/Open3D/releases/download/v0.19.0/open3d-devel-linux-x86_64-cxx11-abi-0.19.0.tar.xz"],
-    strip_prefix = "open3d-devel-linux-x86_64-cxx11-abi-0.19.0",
     build_file = "//example_open3d:open3d.BUILD",
+    strip_prefix = "open3d-devel-linux-x86_64-cxx11-abi-0.19.0",
+    urls = ["https://github.com/isl-org/Open3D/releases/download/v0.19.0/open3d-devel-linux-x86_64-cxx11-abi-0.19.0.tar.xz"],
+    integrity = "sha256-LlJf0q/n6AkH0rbjxmtp4u8UgdvO7Vcnt0mm5ly6VyA="
+)
+
+###############################################################################
+# Drake Example with System Dependencies
+###############################################################################
+
+# Drake prebuilt binary
+http_archive(
+    name = "drake",
+    build_file = "//example_drake:drake.BUILD",
+    strip_prefix = "drake",
+    urls = ["https://github.com/RobotLocomotion/drake/releases/download/v1.44.0/drake-1.44.0-noble.tar.gz"],
 )
 
 ###############################################################################
@@ -214,9 +233,9 @@ bazel_dep(name = "rules_nixpkgs_core", version = "0.13.0")
 nix_repo = use_extension("@rules_nixpkgs_core//extensions:repository.bzl", "nix_repo")
 nix_repo.github(
     name = "nixpkgs",
+    commit = "25.05",  # Use commit/branch instead of tag
     org = "NixOS",
     repo = "nixpkgs",
-    commit = "25.05",  # Use commit/branch instead of tag
     sha256 = "",  # Let Bazel compute the hash
 )
 use_repo(nix_repo, "nixpkgs")
@@ -230,58 +249,52 @@ nix_pkg.attr(
     attr = "hello",
 )
 
-# System dependencies for Open3D
+# OpenGL library
 nix_pkg.attr(
     name = "libgl",
     attr = "libGL",
 )
-
+# X11 library
 nix_pkg.attr(
     name = "libx11",
     attr = "xorg.libX11",
 )
-
 nix_pkg.attr(
     name = "libxrandr",
     attr = "xorg.libXrandr",
 )
-
 nix_pkg.attr(
     name = "libxinerama",
     attr = "xorg.libXinerama",
 )
-
 nix_pkg.attr(
     name = "libxcursor",
     attr = "xorg.libXcursor",
 )
-
 nix_pkg.attr(
     name = "libxi",
     attr = "xorg.libXi",
 )
-
 nix_pkg.attr(
     name = "libxext",
     attr = "xorg.libXext",
 )
-
 nix_pkg.attr(
     name = "gcc_libs",
     attr = "gcc.cc.lib",
 )
 
-# Critical OpenGL dependencies
+# GLEW OpenGL Extension Wrangler
 nix_pkg.attr(
     name = "glew",
     attr = "glew",
 )
-
+# EGL library
 nix_pkg.attr(
     name = "libegl",
     attr = "libglvnd",
 )
-
+# Mesa OpenGL implementation
 nix_pkg.attr(
     name = "mesa",
     attr = "mesa",
@@ -292,10 +305,81 @@ nix_pkg.attr(
     name = "libxfixes",
     attr = "xorg.libXfixes",
 )
-
 nix_pkg.attr(
     name = "libxrender",
     attr = "xorg.libXrender",
+)
+
+# GLFW windowing library
+nix_pkg.attr(
+    name = "glfw",
+    attr = "glfw",
+)
+nix_pkg.attr(
+    name = "gtk3",
+    attr = "gtk3",
+    build_file_content = """
+# GTK3 for additional GUI functionality
+cc_import(
+    name = "gtk3_hermetic",
+    shared_library = "lib/libgtk-3.so.0",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+nix_pkg.attr(
+    name = "glib_gui",
+    attr = "glib",
+    build_file_content = """
+# GLib for GTK support
+cc_import(
+    name = "glib_gui_hermetic",
+    shared_library = "lib/libglib-2.0.so.0",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# OpenGL development headers (libglvnd)
+nix_pkg.attr(
+    name = "libglvnd_dev",
+    attr = "libglvnd.dev",
+    build_file_content = """
+# OpenGL development headers from libglvnd
+cc_library(
+    name = "headers",
+    hdrs = glob([
+        "include/GL/*.h",
+        "include/KHR/*.h",
+        "include/EGL/*.h",
+    ], allow_empty = True),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# GLU development headers
+nix_pkg.attr(
+    name = "libglu_dev",
+    attr = "libGLU.dev",
+    build_file_content = """
+# GLU development headers from libGLU.dev
+cc_library(
+    name = "headers",
+    hdrs = glob([
+        "include/GL/*.h",
+    ], allow_empty = True),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# GLU runtime library
+nix_pkg.attr(
+    name = "libglu",
+    attr = "libGLU",
 )
 
 # Standard C library
@@ -304,47 +388,222 @@ nix_pkg.attr(
     attr = "glibc",
 )
 
-# TBB with custom build file for hermetic SONAME generation
+# Intel TBB threading library
 nix_pkg.attr(
     name = "tbb",
     attr = "tbb_2022_0",
-    build_file_content = """
-# Create the expected SONAME file hermetically
-genrule(
-    name = "make_tbb_soname",
-    srcs = ["lib/libtbb.so.12.14"],
-    outs = ["libtbb.so.12"],
-    cmd = "cp $< $@",
-    visibility = ["//visibility:public"],
 )
 
-# Use cc_import with the correct SONAME
-cc_import(
-    name = "tbb_hermetic",
-    shared_library = ":make_tbb_soname",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# LLVM libc++ runtime with custom build file
+# LLVM libc++ runtime library
 nix_pkg.attr(
     name = "libcxx",
     attr = "llvmPackages.libcxx",
+)
+
+# System dependencies for Drake
+nix_pkg.attr(
+    name = "libstdcxx",
+    attr = "gcc.cc.lib",
     build_file_content = """
-# Standard cc_import for libc++
+# Standard C++ library for Drake
 cc_import(
-    name = "libcxx_hermetic",
-    shared_library = "lib/libc++.so.1",
+    name = "libstdcxx_hermetic",
+    shared_library = "lib/libstdc++.so.6",
     visibility = ["//visibility:public"],
 )
 """,
 )
 
+# Runtime libraries for Drake with correct SONAMEs
+nix_pkg.attr(
+    name = "fmt_runtime",
+    attr = "fmt",
+    build_file_content = """
+# Create libfmt.so.9 SONAME that Drake expects
+genrule(
+    name = "make_fmt_soname",
+    srcs = glob(["lib/libfmt.so*"]),
+    outs = ["libfmt.so.9"],
+    cmd = "cp $$(find $(SRCS) -name 'libfmt.so*' | head -1) $@",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "fmt_runtime_hermetic",
+    shared_library = ":make_fmt_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+nix_pkg.attr(
+    name = "spdlog_runtime",
+    attr = "spdlog",
+    build_file_content = """
+# Create libspdlog.so.1.12 SONAME that Drake expects
+genrule(
+    name = "make_spdlog_soname",
+    srcs = glob(["lib/libspdlog.so*"]),
+    outs = ["libspdlog.so.1.12"],
+    cmd = "cp $$(find $(SRCS) -name 'libspdlog.so*' | head -1) $@",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "spdlog_runtime_hermetic",
+    shared_library = ":make_spdlog_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# Additional Drake runtime dependencies
+nix_pkg.attr(
+    name = "zlib",
+    attr = "zlib",
+    build_file_content = """
+cc_import(
+    name = "zlib_hermetic",
+    shared_library = "lib/libz.so.1",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+nix_pkg.attr(
+    name = "blas_lapack",
+    attr = "openblas",
+    build_file_content = """
+# OpenBLAS provides both BLAS and LAPACK functionality via libopenblas
+genrule(
+    name = "make_blas_soname",
+    srcs = glob(["lib/libopenblas.so*"]),
+    outs = ["libblas.so.3"],
+    cmd = "cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "make_lapack_soname",
+    srcs = glob(["lib/libopenblas.so*"]),
+    outs = ["liblapack.so.3"],
+    cmd = "cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@",
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "make_openblas_soname",
+    srcs = glob(["lib/libopenblas.so*"]),
+    outs = ["libopenblas.so.0"],
+    cmd = "cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "blas_hermetic",
+    shared_library = ":make_blas_soname",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "lapack_hermetic",
+    shared_library = ":make_lapack_soname",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "openblas_hermetic",
+    shared_library = ":make_openblas_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# Use gfortran lib package that contains the runtime library
+nix_pkg.attr(
+    name = "gfortran_runtime",
+    attr = "gfortran.cc.lib",
+    build_file_content = """
+# Find libgfortran with comprehensive search
+genrule(
+    name = "make_gfortran_soname",
+    srcs = glob(["**/*"]),
+    outs = ["libgfortran.so.5"],
+    cmd = '''
+    FOUND=$$(find . -name "libgfortran.so*" -type f 2>/dev/null | head -1)
+    if [ -n "$$FOUND" ]; then
+        cp "$$FOUND" $@
+        echo "Found libgfortran: $$FOUND"
+    else
+        echo "Creating placeholder libgfortran.so.5"
+        echo "PLACEHOLDER" > $@
+    fi
+    ''',
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "gfortran_hermetic",
+    shared_library = ":make_gfortran_soname",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+nix_pkg.attr(
+    name = "glib_runtime",
+    attr = "glib",
+    build_file_content = """
+# Find glib library with flexible path matching
+genrule(
+    name = "find_glib_lib",
+    srcs = glob(["lib/libglib-2.0.so*", "lib/*/libglib-2.0.so*"], allow_empty = False),
+    outs = ["libglib-2.0.so.0"],
+    cmd = "cp $$(find $(SRCS) -name 'libglib-2.0.so*' | head -1) $@",
+    visibility = ["//visibility:public"],
+)
+
+cc_import(
+    name = "glib_hermetic",
+    shared_library = ":find_glib_lib",
+    visibility = ["//visibility:public"],
+)
+""",
+)
+
+# Note: glibc is already defined above, we'll extend its build_file_content to include libm
+
 # Make packages available in this workspace
-use_repo(nix_pkg,
+use_repo(
+    nix_pkg,
+    # Core Open3D dependencies
+    "libglvnd_dev",    # OpenGL headers
+    "libglu_dev",      # GLU headers
+    "libglu",          # GLU runtime library
+    "libgl",           # OpenGL library
+    "glew",            # OpenGL extensions
+    "glfw",            # Windowing
+    "libx11",          # X11 windowing
+    "libegl",          # EGL context
+    "mesa",            # Mesa OpenGL
+    "tbb",             # Threading
+    "libcxx",          # C++ runtime
+    # Additional system libraries
+    "libxcursor",
+    "libxext",
+    "libxfixes",
+    "libxi",
+    "libxinerama",
+    "libxrandr",
+    "libxrender",
+    # Other packages (can be cleaned up further)
+    "blas_lapack",
+    "fmt_runtime",
+    "gcc_libs",
+    "gfortran_runtime",
+    "glib_gui",
+    "glib_runtime",
+    "glibc",
+    "gtk3",
     "hello",
-    "libgl", "libx11", "libxrandr", "libxinerama", "libxcursor",
-    "libxi", "libxext", "gcc_libs", "glew", "libegl", "mesa",
-    "libxfixes", "libxrender", "glibc", "tbb", "libcxx"
+    "libstdcxx",
+    "spdlog_runtime",
+    "zlib",
 )

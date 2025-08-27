@@ -64,10 +64,10 @@
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
     "https://bcr.bazel.build/modules/doctest/2.4.11/MODULE.bazel": "b0a344e4d38ee0e552def8ced7df7a595350efc42990ff5faf60735e4e007209",
     "https://bcr.bazel.build/modules/doctest/2.4.11/source.json": "aeeeeaf8c31c059fe80c5204c0063a5a616ac7847155747dee0219de3f981423",
-    "https://bcr.bazel.build/modules/eigen/4.0.0-20241125.bcr.2/MODULE.bazel": "c91e304c16bf95884333152b383a32aacdcfbde3b06f9f4908d31e6f60e44404",
-    "https://bcr.bazel.build/modules/eigen/4.0.0-20241125.bcr.2/source.json": "fbc35faefa352e7ab59a0175d809f05f2205712a34f06f3f52c807c8fe00267b",
-    "https://bcr.bazel.build/modules/fmt/10.2.1/MODULE.bazel": "e8138198fb6e116d92ea608787369f1cb20fd50b4951d923e09658495bdae7c8",
-    "https://bcr.bazel.build/modules/fmt/10.2.1/source.json": "0b129ad62f9afcbc26099462a5b854123e6094b2cae458563422543711b5bfa2",
+    "https://bcr.bazel.build/modules/eigen/3.4.0.bcr.3/MODULE.bazel": "f6561baff0fc0035c9c1a9e2b0820de106cdb01b37bf5c81276860ccc863e5b2",
+    "https://bcr.bazel.build/modules/eigen/3.4.0.bcr.3/source.json": "a8611a2b5577929ad7e1f44ded19dab21a188125a74ac6192d21d283609f280f",
+    "https://bcr.bazel.build/modules/fmt/10.1.1/MODULE.bazel": "577a09aa892764bbe13cd0fb2bcdbace97416d9aa8ca625c5ca6f6f3f22a2b1d",
+    "https://bcr.bazel.build/modules/fmt/10.1.1/source.json": "4365c2fcacdb3ac035040c184d8b9b760181ab7dbe2d19ff72d888cfa0813de5",
     "https://bcr.bazel.build/modules/gazelle/0.27.0/MODULE.bazel": "3446abd608295de6d90b4a8a118ed64a9ce11dcb3dda2dc3290a22056bd20996",
     "https://bcr.bazel.build/modules/gazelle/0.30.0/MODULE.bazel": "f888a1effe338491f35f0e0e85003b47bb9d8295ccba73c37e07702d8d31c65b",
     "https://bcr.bazel.build/modules/gazelle/0.32.0/MODULE.bazel": "b499f58a5d0d3537f3cf5b76d8ada18242f64ec474d8391247438bf04f58c7b8",
@@ -221,6 +221,8 @@
     "https://bcr.bazel.build/modules/rules_swift/1.16.0/MODULE.bazel": "4a09f199545a60d09895e8281362b1ff3bb08bbde69c6fc87aff5b92fcc916ca",
     "https://bcr.bazel.build/modules/rules_swift/2.1.1/MODULE.bazel": "494900a80f944fc7aa61500c2073d9729dff0b764f0e89b824eb746959bc1046",
     "https://bcr.bazel.build/modules/rules_swift/2.1.1/source.json": "40fc69dfaac64deddbb75bd99cdac55f4427d9ca0afbe408576a65428427a186",
+    "https://bcr.bazel.build/modules/spdlog/1.12.0/MODULE.bazel": "b3cad7caea1d4199029d33bcfaea1e9da17f3bf84f888392e6ba9fa1da805499",
+    "https://bcr.bazel.build/modules/spdlog/1.12.0/source.json": "f63f6e082ea7ef82ca256a8ca54e98808fbb486f1fa6140bcaa618fb63d45a7e",
     "https://bcr.bazel.build/modules/stardoc/0.5.0/MODULE.bazel": "f9f1f46ba8d9c3362648eea571c6f9100680efc44913618811b58cc9c02cd678",
     "https://bcr.bazel.build/modules/stardoc/0.5.1/MODULE.bazel": "1a05d92974d0c122f5ccf09291442580317cdd859f07a8655f1db9a60374f9f8",
     "https://bcr.bazel.build/modules/stardoc/0.5.3/MODULE.bazel": "c7f6948dae6999bf0db32c1858ae345f112cacf98f174c7a8bb707e41b974f1c",
@@ -631,7 +633,7 @@
     "@@rules_nixpkgs_core+//extensions:package.bzl%nix_pkg": {
       "general": {
         "bzlTransitiveDigest": "2alEQC7q9PgrArc8ZeI662VmDHLGfuswqnzBJvVDnmg=",
-        "usagesDigest": "juKLAVqgPNrN+0wilFm7LWHJsDx5oyQmgJj3PWR13oo=",
+        "usagesDigest": "1T4a5RDoJkrJJg6ffxZKO+uOnO3grXwVC70gfPTPpWw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -846,6 +848,96 @@
               "fail_not_supported": true
             }
           },
+          "glfw": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "glfw",
+              "attribute_path": "glfw",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "gtk3": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "gtk3",
+              "attribute_path": "gtk3",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# GTK3 for additional GUI functionality\ncc_import(\n    name = \"gtk3_hermetic\",\n    shared_library = \"lib/libgtk-3.so.0\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "glib_gui": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "glib_gui",
+              "attribute_path": "glib",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# GLib for GTK support\ncc_import(\n    name = \"glib_gui_hermetic\",\n    shared_library = \"lib/libglib-2.0.so.0\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libglvnd_dev": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libglvnd_dev",
+              "attribute_path": "libglvnd.dev",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# OpenGL development headers from libglvnd\ncc_library(\n    name = \"headers\",\n    hdrs = glob([\n        \"include/GL/*.h\",\n        \"include/KHR/*.h\",\n        \"include/EGL/*.h\",\n    ], allow_empty = True),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libglu_dev": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libglu_dev",
+              "attribute_path": "libGLU.dev",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# GLU development headers from libGLU.dev\ncc_library(\n    name = \"headers\",\n    hdrs = glob([\n        \"include/GL/*.h\",\n    ], allow_empty = True),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libglu": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libglu",
+              "attribute_path": "libGLU",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
           "glibc": {
             "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
             "attributes": {
@@ -870,7 +962,7 @@
               "nix_file_content": "",
               "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
               "repositories": {},
-              "build_file_content": "\n# Create the expected SONAME file hermetically\ngenrule(\n    name = \"make_tbb_soname\",\n    srcs = [\"lib/libtbb.so.12.14\"],\n    outs = [\"libtbb.so.12\"],\n    cmd = \"cp $< $@\",\n    visibility = [\"//visibility:public\"],\n)\n\n# Use cc_import with the correct SONAME\ncc_import(\n    name = \"tbb_hermetic\",\n    shared_library = \":make_tbb_soname\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "build_file_content": "",
               "nixopts": [],
               "quiet": false,
               "fail_not_supported": true
@@ -885,7 +977,112 @@
               "nix_file_content": "",
               "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
               "repositories": {},
-              "build_file_content": "\n# Standard cc_import for libc++\ncc_import(\n    name = \"libcxx_hermetic\",\n    shared_library = \"lib/libc++.so.1\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "build_file_content": "",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "libstdcxx": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "libstdcxx",
+              "attribute_path": "gcc.cc.lib",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Standard C++ library for Drake\ncc_import(\n    name = \"libstdcxx_hermetic\",\n    shared_library = \"lib/libstdc++.so.6\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "fmt_runtime": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "fmt_runtime",
+              "attribute_path": "fmt",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Create libfmt.so.9 SONAME that Drake expects\ngenrule(\n    name = \"make_fmt_soname\",\n    srcs = glob([\"lib/libfmt.so*\"]),\n    outs = [\"libfmt.so.9\"],\n    cmd = \"cp $$(find $(SRCS) -name 'libfmt.so*' | head -1) $@\",\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"fmt_runtime_hermetic\",\n    shared_library = \":make_fmt_soname\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "spdlog_runtime": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "spdlog_runtime",
+              "attribute_path": "spdlog",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Create libspdlog.so.1.12 SONAME that Drake expects\ngenrule(\n    name = \"make_spdlog_soname\",\n    srcs = glob([\"lib/libspdlog.so*\"]),\n    outs = [\"libspdlog.so.1.12\"],\n    cmd = \"cp $$(find $(SRCS) -name 'libspdlog.so*' | head -1) $@\",\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"spdlog_runtime_hermetic\",\n    shared_library = \":make_spdlog_soname\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "zlib": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "zlib",
+              "attribute_path": "zlib",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\ncc_import(\n    name = \"zlib_hermetic\",\n    shared_library = \"lib/libz.so.1\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "blas_lapack": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "blas_lapack",
+              "attribute_path": "openblas",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# OpenBLAS provides both BLAS and LAPACK functionality via libopenblas\ngenrule(\n    name = \"make_blas_soname\",\n    srcs = glob([\"lib/libopenblas.so*\"]),\n    outs = [\"libblas.so.3\"],\n    cmd = \"cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@\",\n    visibility = [\"//visibility:public\"],\n)\n\ngenrule(\n    name = \"make_lapack_soname\",\n    srcs = glob([\"lib/libopenblas.so*\"]),\n    outs = [\"liblapack.so.3\"],\n    cmd = \"cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@\",\n    visibility = [\"//visibility:public\"],\n)\n\ngenrule(\n    name = \"make_openblas_soname\",\n    srcs = glob([\"lib/libopenblas.so*\"]),\n    outs = [\"libopenblas.so.0\"],\n    cmd = \"cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@\",\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"blas_hermetic\",\n    shared_library = \":make_blas_soname\",\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"lapack_hermetic\",\n    shared_library = \":make_lapack_soname\",\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"openblas_hermetic\",\n    shared_library = \":make_openblas_soname\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "gfortran_runtime": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "gfortran_runtime",
+              "attribute_path": "gfortran.cc.lib",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Find libgfortran with comprehensive search\ngenrule(\n    name = \"make_gfortran_soname\",\n    srcs = glob([\"**/*\"]),\n    outs = [\"libgfortran.so.5\"],\n    cmd = '''\n    FOUND=$$(find . -name \"libgfortran.so*\" -type f 2>/dev/null | head -1)\n    if [ -n \"$$FOUND\" ]; then\n        cp \"$$FOUND\" $@\n        echo \"Found libgfortran: $$FOUND\"\n    else\n        echo \"Creating placeholder libgfortran.so.5\"\n        echo \"PLACEHOLDER\" > $@\n    fi\n    ''',\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"gfortran_hermetic\",\n    shared_library = \":make_gfortran_soname\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "nixopts": [],
+              "quiet": false,
+              "fail_not_supported": true
+            }
+          },
+          "glib_runtime": {
+            "repoRuleId": "@@rules_nixpkgs_core+//:nixpkgs.bzl%_nixpkgs_package",
+            "attributes": {
+              "unmangled_name": "glib_runtime",
+              "attribute_path": "glib",
+              "nix_file_deps": {},
+              "nix_file_content": "",
+              "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
+              "repositories": {},
+              "build_file_content": "\n# Find glib library with flexible path matching\ngenrule(\n    name = \"find_glib_lib\",\n    srcs = glob([\"lib/libglib-2.0.so*\", \"lib/*/libglib-2.0.so*\"], allow_empty = False),\n    outs = [\"libglib-2.0.so.0\"],\n    cmd = \"cp $$(find $(SRCS) -name 'libglib-2.0.so*' | head -1) $@\",\n    visibility = [\"//visibility:public\"],\n)\n\ncc_import(\n    name = \"glib_hermetic\",\n    shared_library = \":find_glib_lib\",\n    visibility = [\"//visibility:public\"],\n)\n",
               "nixopts": [],
               "quiet": false,
               "fail_not_supported": true
@@ -908,9 +1105,22 @@
             "mesa",
             "libxfixes",
             "libxrender",
+            "glfw",
+            "gtk3",
+            "glib_gui",
+            "libglvnd_dev",
+            "libglu_dev",
+            "libglu",
             "glibc",
             "tbb",
-            "libcxx"
+            "libcxx",
+            "libstdcxx",
+            "fmt_runtime",
+            "spdlog_runtime",
+            "zlib",
+            "blas_lapack",
+            "gfortran_runtime",
+            "glib_runtime"
           ],
           "explicitRootModuleDirectDevDeps": [],
           "useAllRepos": "NO",
@@ -928,7 +1138,7 @@
     "@@rules_nixpkgs_core+//extensions:repository.bzl%nix_repo": {
       "general": {
         "bzlTransitiveDigest": "dTTtWNdwe7E4j77oKh1mHI1qtdxfaVSGSZa1oPf2QjU=",
-        "usagesDigest": "XQ/zvdX9TprrLZDe2iRNQM03Hyj/Yn0/75TG8LIodY4=",
+        "usagesDigest": "tPtq+8fRN7IHyZkbNK0QZ/Rz+wOvkYmXmZUbd64kKFw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1054,7 +1264,7 @@
     "@@rules_oci+//oci:extensions.bzl%oci": {
       "general": {
         "bzlTransitiveDigest": "EhazFFV5egWY4qKyI3pZ7PEPw/i3na5ZR9AHVRu7hTA=",
-        "usagesDigest": "BCTaCdnU5ZEXxReQQia3586tp1a4DbvC3ErDkv+I/eQ=",
+        "usagesDigest": "Ro7qoM2cKZHltG4305wSTylpea4YkZYP3aNbq2gy8Wk=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -1294,7 +1504,7 @@
     "@@toolchains_llvm+//toolchain/extensions:llvm.bzl%llvm": {
       "general": {
         "bzlTransitiveDigest": "miE+G1r8txiL9GGIOFLiY+RyielXfNO9OiFlFw+NE+U=",
-        "usagesDigest": "Ws+Ucc2c/3WQ3o5mqfxHWx+XTGu0f3eEF/F1jIq5BZI=",
+        "usagesDigest": "tzOfOJEs06jgTxKFMPCNuVBbcwkohdh8kVnqWbupmtE=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},

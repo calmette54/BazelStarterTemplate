@@ -1,0 +1,28 @@
+"""
+Drake Prebuilt Binary Integration Example
+
+This BUILD file demonstrates hermetic integration of Drake prebuilt binaries
+using rules_nixpkgs for system dependency management. The example implements
+a simple continuous time system to showcase core Drake functionality.
+"""
+
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+# Simple Drake continuous time system example
+cc_binary(
+    name = "simple_drake",
+    srcs = ["simple_drake.cpp"],
+    deps = [
+        "@drake//:drake",  # Drake prebuilt library with hermetic dependencies
+    ],
+    # Explicit C++23 configuration for Drake 1.44.0 compatibility
+    copts = [
+        "-std=c++23",  # Explicitly specify C++23 to match Drake's build exactly
+        "-Wno-deprecated-declarations",  # Suppress deprecation warnings for clean builds
+    ],
+    # Ensure we can find the runtime libraries 
+    linkopts = [
+        "-Wl,--disable-new-dtags",  # Use RPATH instead of RUNPATH for better portability
+    ],
+)
+
