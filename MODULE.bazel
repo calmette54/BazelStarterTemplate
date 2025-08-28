@@ -249,361 +249,80 @@ nix_pkg.attr(
     attr = "hello",
 )
 
-# OpenGL library
+# Core Open3D Dependencies - Raw Package Imports Only
+# OpenGL libraries
 nix_pkg.attr(
     name = "libgl",
     attr = "libGL",
 )
-# X11 library
-nix_pkg.attr(
-    name = "libx11",
-    attr = "xorg.libX11",
-)
-nix_pkg.attr(
-    name = "libxrandr",
-    attr = "xorg.libXrandr",
-)
-nix_pkg.attr(
-    name = "libxinerama",
-    attr = "xorg.libXinerama",
-)
-nix_pkg.attr(
-    name = "libxcursor",
-    attr = "xorg.libXcursor",
-)
-nix_pkg.attr(
-    name = "libxi",
-    attr = "xorg.libXi",
-)
-nix_pkg.attr(
-    name = "libxext",
-    attr = "xorg.libXext",
-)
-nix_pkg.attr(
-    name = "gcc_libs",
-    attr = "gcc.cc.lib",
-)
-
-# GLEW OpenGL Extension Wrangler
-nix_pkg.attr(
-    name = "glew",
-    attr = "glew",
-)
-# EGL library
-nix_pkg.attr(
-    name = "libegl",
-    attr = "libglvnd",
-)
-# Mesa OpenGL implementation
-nix_pkg.attr(
-    name = "mesa",
-    attr = "mesa",
-)
-
-# Additional X11 dependencies
-nix_pkg.attr(
-    name = "libxfixes",
-    attr = "xorg.libXfixes",
-)
-nix_pkg.attr(
-    name = "libxrender",
-    attr = "xorg.libXrender",
-)
-
-# GLFW windowing library
-nix_pkg.attr(
-    name = "glfw",
-    attr = "glfw",
-)
-nix_pkg.attr(
-    name = "gtk3",
-    attr = "gtk3",
-    build_file_content = """
-# GTK3 for additional GUI functionality
-cc_import(
-    name = "gtk3_hermetic",
-    shared_library = "lib/libgtk-3.so.0",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-nix_pkg.attr(
-    name = "glib_gui",
-    attr = "glib",
-    build_file_content = """
-# GLib for GTK support
-cc_import(
-    name = "glib_gui_hermetic",
-    shared_library = "lib/libglib-2.0.so.0",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# OpenGL development headers (libglvnd)
-nix_pkg.attr(
-    name = "libglvnd_dev",
-    attr = "libglvnd.dev",
-    build_file_content = """
-# OpenGL development headers from libglvnd
-cc_library(
-    name = "headers",
-    hdrs = glob([
-        "include/GL/*.h",
-        "include/KHR/*.h",
-        "include/EGL/*.h",
-    ], allow_empty = True),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# GLU development headers
-nix_pkg.attr(
-    name = "libglu_dev",
-    attr = "libGLU.dev",
-    build_file_content = """
-# GLU development headers from libGLU.dev
-cc_library(
-    name = "headers",
-    hdrs = glob([
-        "include/GL/*.h",
-    ], allow_empty = True),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# GLU runtime library
 nix_pkg.attr(
     name = "libglu",
     attr = "libGLU",
 )
-
-# Standard C library
 nix_pkg.attr(
-    name = "glibc",
-    attr = "glibc",
+    name = "libglu_dev",
+    attr = "libGLU.dev",
+    build_file_content = """
+cc_library(
+    name = "headers",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+nix_pkg.attr(
+    name = "libglvnd_dev",
+    attr = "libglvnd.dev",
+    build_file_content = """
+cc_library(
+    name = "headers",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+""",
+)
+nix_pkg.attr(
+    name = "libegl",
+    attr = "libglvnd",
 )
 
-# Intel TBB threading library
+# Core system libraries
 nix_pkg.attr(
     name = "tbb",
     attr = "tbb_2022_0",
 )
-
-# LLVM libc++ runtime library
 nix_pkg.attr(
     name = "libcxx",
     attr = "llvmPackages.libcxx",
 )
 
-# System dependencies for Drake
+# Windowing libraries  
 nix_pkg.attr(
-    name = "libstdcxx",
-    attr = "gcc.cc.lib",
-    build_file_content = """
-# Standard C++ library for Drake
-cc_import(
-    name = "libstdcxx_hermetic",
-    shared_library = "lib/libstdc++.so.6",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# Runtime libraries for Drake with correct SONAMEs
-nix_pkg.attr(
-    name = "fmt_runtime",
-    attr = "fmt",
-    build_file_content = """
-# Create libfmt.so.9 SONAME that Drake expects
-genrule(
-    name = "make_fmt_soname",
-    srcs = glob(["lib/libfmt.so*"]),
-    outs = ["libfmt.so.9"],
-    cmd = "cp $$(find $(SRCS) -name 'libfmt.so*' | head -1) $@",
-    visibility = ["//visibility:public"],
-)
-
-cc_import(
-    name = "fmt_runtime_hermetic",
-    shared_library = ":make_fmt_soname",
-    visibility = ["//visibility:public"],
-)
-""",
+    name = "glfw",
+    attr = "glfw",
 )
 nix_pkg.attr(
-    name = "spdlog_runtime",
-    attr = "spdlog",
-    build_file_content = """
-# Create libspdlog.so.1.12 SONAME that Drake expects
-genrule(
-    name = "make_spdlog_soname",
-    srcs = glob(["lib/libspdlog.so*"]),
-    outs = ["libspdlog.so.1.12"],
-    cmd = "cp $$(find $(SRCS) -name 'libspdlog.so*' | head -1) $@",
-    visibility = ["//visibility:public"],
+    name = "libx11",
+    attr = "xorg.libX11",
 )
 
-cc_import(
-    name = "spdlog_runtime_hermetic",
-    shared_library = ":make_spdlog_soname",
-    visibility = ["//visibility:public"],
-)
-""",
-)
+# Note: All Drake dependencies removed - Open3D only needs core packages above
 
-# Additional Drake runtime dependencies
-nix_pkg.attr(
-    name = "zlib",
-    attr = "zlib",
-    build_file_content = """
-cc_import(
-    name = "zlib_hermetic",
-    shared_library = "lib/libz.so.1",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-nix_pkg.attr(
-    name = "blas_lapack",
-    attr = "openblas",
-    build_file_content = """
-# OpenBLAS provides both BLAS and LAPACK functionality via libopenblas
-genrule(
-    name = "make_blas_soname",
-    srcs = glob(["lib/libopenblas.so*"]),
-    outs = ["libblas.so.3"],
-    cmd = "cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
-    name = "make_lapack_soname",
-    srcs = glob(["lib/libopenblas.so*"]),
-    outs = ["liblapack.so.3"],
-    cmd = "cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@",
-    visibility = ["//visibility:public"],
-)
-
-genrule(
-    name = "make_openblas_soname",
-    srcs = glob(["lib/libopenblas.so*"]),
-    outs = ["libopenblas.so.0"],
-    cmd = "cp $$(find $(SRCS) -name 'libopenblas.so*' | head -1) $@",
-    visibility = ["//visibility:public"],
-)
-
-cc_import(
-    name = "blas_hermetic",
-    shared_library = ":make_blas_soname",
-    visibility = ["//visibility:public"],
-)
-
-cc_import(
-    name = "lapack_hermetic",
-    shared_library = ":make_lapack_soname",
-    visibility = ["//visibility:public"],
-)
-
-cc_import(
-    name = "openblas_hermetic",
-    shared_library = ":make_openblas_soname",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# Use gfortran lib package that contains the runtime library
-nix_pkg.attr(
-    name = "gfortran_runtime",
-    attr = "gfortran.cc.lib",
-    build_file_content = """
-# Find libgfortran with comprehensive search
-genrule(
-    name = "make_gfortran_soname",
-    srcs = glob(["**/*"]),
-    outs = ["libgfortran.so.5"],
-    cmd = '''
-    FOUND=$$(find . -name "libgfortran.so*" -type f 2>/dev/null | head -1)
-    if [ -n "$$FOUND" ]; then
-        cp "$$FOUND" $@
-        echo "Found libgfortran: $$FOUND"
-    else
-        echo "Creating placeholder libgfortran.so.5"
-        echo "PLACEHOLDER" > $@
-    fi
-    ''',
-    visibility = ["//visibility:public"],
-)
-
-cc_import(
-    name = "gfortran_hermetic",
-    shared_library = ":make_gfortran_soname",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-nix_pkg.attr(
-    name = "glib_runtime",
-    attr = "glib",
-    build_file_content = """
-# Find glib library with flexible path matching
-genrule(
-    name = "find_glib_lib",
-    srcs = glob(["lib/libglib-2.0.so*", "lib/*/libglib-2.0.so*"], allow_empty = False),
-    outs = ["libglib-2.0.so.0"],
-    cmd = "cp $$(find $(SRCS) -name 'libglib-2.0.so*' | head -1) $@",
-    visibility = ["//visibility:public"],
-)
-
-cc_import(
-    name = "glib_hermetic",
-    shared_library = ":find_glib_lib",
-    visibility = ["//visibility:public"],
-)
-""",
-)
-
-# Note: glibc is already defined above, we'll extend its build_file_content to include libm
-
-# Make packages available in this workspace
+# Make Open3D packages available in this workspace
 use_repo(
     nix_pkg,
-    # Core Open3D dependencies
-    "libglvnd_dev",    # OpenGL headers
-    "libglu_dev",      # GLU headers
-    "libglu",          # GLU runtime library
+    # Core Open3D dependencies - raw packages only
     "libgl",           # OpenGL library
-    "glew",            # OpenGL extensions
-    "glfw",            # Windowing
-    "libx11",          # X11 windowing
+    "libglu",          # GLU runtime library
+    "libglu_dev",      # GLU headers
+    "libglvnd_dev",    # OpenGL headers
     "libegl",          # EGL context
-    "mesa",            # Mesa OpenGL
     "tbb",             # Threading
     "libcxx",          # C++ runtime
-    # Additional system libraries
-    "libxcursor",
-    "libxext",
-    "libxfixes",
-    "libxi",
-    "libxinerama",
-    "libxrandr",
-    "libxrender",
-    # Other packages (can be cleaned up further)
-    "blas_lapack",
-    "fmt_runtime",
-    "gcc_libs",
-    "gfortran_runtime",
-    "glib_gui",
-    "glib_runtime",
-    "glibc",
-    "gtk3",
+    "glfw",            # Windowing
+    "libx11",          # X11 windowing
+    # Keep hello for testing
     "hello",
-    "libstdcxx",
-    "spdlog_runtime",
-    "zlib",
 )

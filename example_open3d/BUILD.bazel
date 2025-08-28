@@ -1,67 +1,41 @@
 """
-Open3D Hermetic System Library Integration Example
+Open3D Example - Pure Application Layer
 
-This example demonstrates production-grade hermetic system library integration
-using rules_nixpkgs and Bazel's pure bzlmod approach. It solves the common
-problem of prebuilt binaries requiring specific system libraries at runtime.
+This BUILD file demonstrates the simplest possible application usage after 
+clean separation of concerns:
+- MODULE.bazel: Raw nixpkgs package imports only
+- open3d.BUILD: All integration logic (headers, SONAME, cc_import, linkopts)
+- BUILD.bazel: Minimal application depending on single @open3d//:open3d target
 
-Key Technical Achievements:
-- Zero host system dependencies (completely hermetic builds)
-- Reproducible library versions across all environments
-- Proper SONAME resolution for prebuilt binary compatibility
-- Standard Bazel cc_import patterns for shared library deployment
-
-Architecture:
-- Open3D 0.19 prebuilt binary requires TBB 2022.0 and libc++
-- nixpkgs provides exact library versions through hermetic cache.nixos.org
-- genrule creates proper SONAME files that match binary expectations
-- Bazel's _solib_k8 directory handles automatic runtime library deployment
+The Open3D target now contains ALL system dependencies, headers, and linkopts
+embedded within it, so applications just need a single dependency.
 """
 
 package(default_visibility = ["//visibility:public"])
 
-# Note: Open3D target now includes all hermetic system dependencies directly
-# See example_open3d/open3d.BUILD for the consolidated configuration
-
-# Hermetic Open3D demonstration binary with full GUI support
-# This binary demonstrates complete hermetic integration including visualization
+# Simple Open3D application - single dependency only
 cc_binary(
     name = "open3d_example",
     srcs = ["simple_open3d.cpp"],
     deps = [
-        "@open3d//:open3d",  # Complete Open3D with all hermetic system dependencies including GUI
+        "@open3d//:open3d",  # Single dependency - includes ALL system libs and headers
     ],
-    # All system dependencies are now handled by @open3d//:open3d target
-    # Bazel automatically handles RPATH and shared library deployment to _solib_k8/
-    linkopts = [
-        "-ldl",        # Dynamic loading support 
-        "-lpthread",   # POSIX threading
-        "-lrt",        # Real-time extensions
-        "-lm",         # Math library
-    ],
-    env = {
-        "OPEN3D_HEADLESS": "0",  # Enable GUI mode by default
-    },
-    tags = ["open3d_example", "hermetic_integration", "gui_support"],
+    # No linkopts needed - embedded in Open3D target
+    # No env variables needed for basic functionality
+    tags = ["open3d_example", "hermetic_integration"],
     visibility = ["//visibility:public"],
 )
 
-# Headless-only version for CI/CD environments without display
+# Headless version for CI/CD environments  
 cc_binary(
-    name = "open3d_example_headless", 
+    name = "open3d_example_headless",
     srcs = ["simple_open3d.cpp"],
     deps = [
-        "@open3d//:open3d",  # Complete Open3D with hermetic system dependencies
-    ],
-    linkopts = [
-        "-ldl",        # Dynamic loading support
-        "-lpthread",   # POSIX threading
-        "-lrt",        # Real-time extensions
-        "-lm",         # Math library
+        "@open3d//:open3d",  # Single dependency
     ],
     env = {
         "OPEN3D_HEADLESS": "1",  # Force headless mode
     },
-    tags = ["open3d_example", "hermetic_integration", "headless_only"],
+    tags = ["open3d_example", "hermetic_integration", "headless"],
     visibility = ["//visibility:public"],
 )
