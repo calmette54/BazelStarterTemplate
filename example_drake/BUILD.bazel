@@ -12,17 +12,16 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 cc_binary(
     name = "simple_drake",
     srcs = ["simple_drake.cpp"],
-    deps = [
-        "@drake//:drake",  # Drake prebuilt library with hermetic dependencies
-    ],
     # Explicit C++23 configuration for Drake 1.44.0 compatibility
     copts = [
         "-std=c++23",  # Explicitly specify C++23 to match Drake's build exactly
         "-Wno-deprecated-declarations",  # Suppress deprecation warnings for clean builds
     ],
-    # Ensure we can find the runtime libraries 
+    # Ensure we can find the runtime libraries
     linkopts = [
         "-Wl,--disable-new-dtags",  # Use RPATH instead of RUNPATH for better portability
     ],
+    deps = [
+        "@drake",  # Drake prebuilt library with hermetic dependencies
+    ],
 )
-

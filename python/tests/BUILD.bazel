@@ -1,22 +1,22 @@
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "tests",
+    srcs = ["__init__.py"],
+    imports = [".."],
+    visibility = ["//python:__subpackages__"],
+)
 
 py_test(
     name = "test_ai_example",
-    srcs = [
-        "__init__.py",
-        "test_ai_example.py",
-    ],
-    main = "test_ai_example.py",
+    srcs = ["test_ai_example.py"],
+    imports = [".."],
     deps = [
         "//python/ai_example:ai_example",
-        "//python/ai_example:main",
-        "//python/ai_example/agents:data_analyzer",
-        "//python/ai_example/models:simple_mlp",
-        "@python_ai_deps//pytest",
-        "@python_ai_deps//pytest_asyncio",
-        "@python_ai_deps//pydantic",
-        "@python_ai_deps//torch",
-        "@python_ai_deps//numpy",
+        "//python/ai_example/agents:agents",
+        "//python/ai_example/models:models",
+        "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//pytest:pkg",
+        "@python_ai_deps//torch:pkg",
     ],
-    visibility = ["//visibility:public"],
 )

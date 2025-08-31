@@ -1,22 +1,16 @@
-load("@rules_python//python:defs.bzl", "py_library", "py_binary")
+load("@rules_python//python:defs.bzl", "py_library")
 
 py_library(
     name = "ai_example",
-    srcs = ["__init__.py"],
-    visibility = ["//python:__subpackages__"],
-)
-
-py_binary(
-    name = "main",
-    srcs = ["main.py"],
-    main = "main.py",
-    deps = [
-        ":ai_example",
-        "//python/ai_example/agents:data_analyzer",
-        "//python/ai_example/models:simple_mlp",
-        "@python_ai_deps//pydantic",
-        "@python_ai_deps//torch",
-        "@python_ai_deps//numpy",
+    srcs = [
+        "__init__.py",
+        "main.py",
     ],
-    visibility = ["//visibility:public"],
+    imports = [".."],
+    visibility = ["//python:__subpackages__"],
+    deps = [
+        "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//pydantic:pkg",
+        "@python_ai_deps//torch:pkg",
+    ],
 )

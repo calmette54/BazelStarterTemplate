@@ -1,14 +1,15 @@
 load("@rules_python//python:defs.bzl", "py_library")
 
 py_library(
-    name = "data_analyzer",
+    name = "agents",
     srcs = [
         "__init__.py",
         "data_analyzer.py",
     ],
-    deps = [
-        "@python_ai_deps//pydantic",
-        "@python_ai_deps//numpy",
-    ],
+    imports = ["../.."],
     visibility = ["//python:__subpackages__"],
+    deps = [
+        "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//pydantic:pkg",
+    ],
 )
