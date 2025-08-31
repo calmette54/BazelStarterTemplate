@@ -6,6 +6,7 @@
 # https://github.com/bazelbuild/bazel-skylib) for more info.
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag", "int_flag")
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+load("@bazel_gazelle//:def.bzl", "gazelle")
 load("//:bzl/defs.bzl", "revision_mode")
 
 revision_mode(
@@ -47,4 +48,25 @@ alias(
 refresh_compile_commands(
     name = "refresh_all",
     targets = ["//..."],
+)
+
+# Gazelle target for automatic BUILD file generation
+# This uses the Python Gazelle plugin to automatically generate and update
+# py_library, py_binary, and py_test targets based on Python source code
+# Run with: bazel run //:gazelle
+gazelle(
+    name = "gazelle",
+    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
+)
+
+# Update Gazelle Python manifest when dependencies change
+# This updates the import-to-package mapping that Gazelle uses
+# Run with: bazel run //:gazelle_python_manifest.update
+gazelle(
+    name = "gazelle_python_manifest.update",
+    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
+    extra_args = [
+        "-from_file=python/gazelle_python.yaml",
+        "-to_macro=python/gazelle_python_manifest.update",
+    ],
 )

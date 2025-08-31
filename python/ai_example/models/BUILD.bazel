@@ -1,0 +1,14 @@
+load("@rules_python//python:defs.bzl", "py_library")
+
+py_library(
+    name = "simple_mlp",
+    srcs = [
+        "__init__.py",
+        "simple_mlp.py",
+    ],
+    deps = [
+        "@python_ai_deps//torch",
+        "@python_ai_deps//numpy",
+    ],
+    visibility = ["//python:__subpackages__"],
+)

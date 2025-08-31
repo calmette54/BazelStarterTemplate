@@ -1,0 +1,37 @@
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@python_ai_deps//:requirements.bzl", all_ai_requirements = "all_whl_requirements")
+load("@rules_python_gazelle_plugin//manifest:defs.bzl", "gazelle_python_manifest")
+load("@rules_python_gazelle_plugin//modules_mapping:def.bzl", "modules_mapping")
+
+# Gazelle configuration for Python package
+# gazelle:python_root
+# gazelle:python_generation_mode package
+# gazelle:python_default_visibility //:__subpackages__
+
+# Rule to compile requirements.in into requirements_lock.txt
+# Run with: bazel run //python:requirements.update
+compile_pip_requirements(
+    name = "requirements",
+    src = "requirements.in",
+    requirements_txt = "requirements_lock.txt",
+    extra_args = [
+        "--allow-unsafe",
+        "--resolver=backtracking",
+    ],
+)
+
+# This rule fetches the metadata for Python packages we depend on
+# Required for Gazelle to understand import mappings
+modules_mapping(
+    name = "modules_map",
+    wheels = all_ai_requirements,
+)
+
+# Generate the Python manifest for Gazelle
+# Run with: bazel run //python:gazelle_python_manifest.update
+gazelle_python_manifest(
+    name = "gazelle_python_manifest",
+    modules_mapping = ":modules_map",
+    pip_repository_name = "python_ai_deps",
+    requirements = ":requirements_lock.txt",
+)

@@ -1,0 +1,14 @@
+load("@rules_python//python:defs.bzl", "py_library")
+
+py_library(
+    name = "data_analyzer",
+    srcs = [
+        "__init__.py",
+        "data_analyzer.py",
+    ],
+    deps = [
+        "@python_ai_deps//pydantic",
+        "@python_ai_deps//numpy",
+    ],
+    visibility = ["//python:__subpackages__"],
+)

@@ -150,6 +150,14 @@ register_toolchains(
 # https://rules-python.readthedocs.io/en/latest/toolchains.html
 bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
 
+# Gazelle for automatic BUILD file generation
+# https://github.com/bazelbuild/bazel-gazelle
+bazel_dep(name = "gazelle", version = "0.28.0", repo_name = "bazel_gazelle")
+
+# Python Gazelle plugin for automatic Python BUILD file generation
+# https://github.com/bazel-contrib/rules_python/tree/main/gazelle
+bazel_dep(name = "rules_python_gazelle_plugin", version = "0.22.0")
+
 python = use_extension(
     "@rules_python//python/extensions:python.bzl",
     "python",
@@ -166,7 +174,14 @@ pip.parse(
     python_version = "3.12",
     requirements_lock = "//integration:requirements_lock_3_12.txt",
 )
-use_repo(pip, "testcontainers_deps")
+
+# Main Python AI dependencies (PydanticAI, PyTorch, etc.)
+pip.parse(
+    hub_name = "python_ai_deps",
+    python_version = "3.12",
+    requirements_lock = "//python:requirements_lock.txt",
+)
+use_repo(pip, "testcontainers_deps", "python_ai_deps")
 
 ###############################################################################
 # Containarize your application

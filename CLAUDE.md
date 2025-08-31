@@ -20,19 +20,37 @@ This installs:
 
 This project uses Bazel with the following key commands:
 
-### Building
+### C++ Building
 ```bash
 bazelisk build //...                    # Build everything
 bazelisk build //lib/greeter           # Build greeter library
 bazelisk build //standalone:main       # Build standalone executable
 ```
 
-### Testing
+### C++ Testing
 ```bash
 bazelisk test //...                    # Run all tests
 bazelisk test //test/greeter:greeter_test  # Run specific test
 bazelisk test //benchmark:benchmark_test   # Run benchmark tests
 bazelisk test //integration:integration_test # Run integration tests
+```
+
+### Python Building and Development
+```bash
+# Python dependency management
+bazelisk run //python:requirements.update  # Update requirements lock file
+bazelisk run //python:gazelle_python_manifest.update  # Update Python import mappings
+
+# Automatic BUILD file generation with Gazelle
+bazelisk run //:gazelle                 # Generate/update all BUILD files
+bazelisk run //:gazelle -- -fix         # Fix BUILD files with recommended changes
+
+# Python application execution
+bazelisk run //python/ai_example:main  # Run the main AI workflow application
+
+# Python testing
+bazelisk test //python/tests:test_ai_example  # Run comprehensive Python tests
+bazelisk test //python/...              # Run all Python tests
 ```
 
 ### Code Quality
@@ -65,12 +83,14 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE --release_version="
 
 ### Key Technologies
 - **Build System**: Bazel with bzlmod (MODULE.bazel)
-- **Language**: C++23 with LLVM 19.1.6 toolchain
-- **Testing**: GoogleTest, Doctest, Google Benchmark
+- **Languages**: C++23 with LLVM 19.1.6 toolchain, Python 3.12
+- **Testing**: GoogleTest, Doctest, Google Benchmark (C++), pytest (Python)
 - **Documentation**: Doxygen with custom theme
 - **Formatting**: clang-format via rules_lint
 - **CI/CD**: GitHub Actions with release-please
 - **Containerization**: OCI images via rules_oci
+- **Python AI/ML**: PydanticAI, PyTorch
+- **BUILD Generation**: Gazelle for automatic Python BUILD file generation
 
 ### Build Configuration
 - Cross-compilation support for x86_64 and aarch64
@@ -79,11 +99,21 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE --release_version="
 - Custom build flags for revision modes (DIRTY/WIP/RELEASE)
 
 ### Dependencies
-External dependencies are managed through MODULE.bazel:
+
+#### C++ Dependencies
+External C++ dependencies are managed through MODULE.bazel:
 - `fmt` for string formatting
 - `googletest` and `doctest` for testing
 - `google_benchmark` for performance testing
 - `protobuf` for serialization (if needed)
+
+#### Python Dependencies
+Python dependencies are managed through pip extensions and Gazelle:
+- `pydantic-ai` for AI agent framework
+- `torch` for machine learning and neural networks
+- `numpy` for numerical computing
+- `pytest` for testing
+- All dependencies are hermetically managed and reproducible
 
 ## Git Workflow
 
@@ -102,6 +132,136 @@ Automatically run on commit:
 - Automatic version bumping and CHANGELOG generation
 - Cross-platform binary artifacts and container images
 - Documentation deployment to GitHub Pages
+
+## Python Development Workflow
+
+This project includes comprehensive Python development support with hermetic builds, automatic dependency management, and modern AI/ML frameworks.
+
+### Project Structure
+```
+python/
+├── BUILD.bazel                    # Gazelle configuration and dependency management
+├── requirements.in                # Python dependencies specification
+├── requirements_lock.txt          # Generated lock file (do not edit manually)
+├── gazelle_python.yaml           # Generated import mappings (do not edit manually)
+├── ai_example/                   # Main Python package
+│   ├── __init__.py
+│   ├── main.py                   # Main application demonstrating AI workflow
+│   ├── agents/                   # PydanticAI agents
+│   │   ├── __init__.py
+│   │   └── data_analyzer.py      # Statistical analysis agent
+│   └── models/                   # PyTorch models
+│       ├── __init__.py
+│       └── simple_mlp.py         # Multi-layer perceptron implementation
+└── tests/                        # Comprehensive test suite
+    ├── __init__.py
+    └── test_ai_example.py         # Full test coverage for all components
+```
+
+### Key Features
+- **Hermetic Python Runtime**: Complete Python interpreter and packages bundled
+- **AI/ML Integration**: PydanticAI for agent frameworks, PyTorch for neural networks
+- **Automatic BUILD Generation**: Gazelle automatically maintains BUILD.bazel files
+- **Type Safety**: Full Pydantic integration for structured data and validation
+- **Comprehensive Testing**: pytest-based testing with fixtures and async support
+
+### Development Workflow
+
+#### 1. Adding New Dependencies
+```bash
+# 1. Edit python/requirements.in to add new packages
+vim python/requirements.in
+
+# 2. Update the lock file with resolved versions
+bazelisk run //python:requirements.update
+
+# 3. Update Gazelle mappings for import resolution
+bazelisk run //python:gazelle_python_manifest.update
+
+# 4. Regenerate BUILD files if needed
+bazelisk run //:gazelle
+```
+
+#### 2. Working with Python Code
+```bash
+# Run the main AI example application
+bazelisk run //python/ai_example:main
+
+# Run comprehensive tests
+bazelisk test //python/tests:test_ai_example
+
+# Run all Python tests
+bazelisk test //python/...
+
+# Run specific test classes or methods
+bazelisk test //python/tests:test_ai_example --test_filter="TestDataAnalyzerAgent"
+```
+
+#### 3. Gazelle Workflow
+Gazelle automatically maintains BUILD.bazel files based on your Python code:
+
+```bash
+# Regenerate all BUILD files (run after adding new .py files)
+bazelisk run //:gazelle
+
+# Fix BUILD files with recommended changes
+bazelisk run //:gazelle -- -fix
+
+# Update Python import mappings (run after dependency changes)
+bazelisk run //python:gazelle_python_manifest.update
+```
+
+#### 4. AI/ML Development Patterns
+
+The project demonstrates modern AI/ML development patterns:
+
+**PydanticAI Agents** (`python/ai_example/agents/`):
+- Type-safe AI agents with structured inputs/outputs
+- Tool integration for LLM function calling
+- Async/sync API support for different use cases
+
+**PyTorch Models** (`python/ai_example/models/`):
+- Complete neural network implementations
+- Training and inference infrastructure
+- Data preprocessing and feature engineering
+- Model serialization and deployment patterns
+
+**Integrated Workflows** (`python/ai_example/main.py`):
+- End-to-end AI pipelines combining agents and models
+- Structured data flow with Pydantic validation
+- Error handling and fallback mechanisms
+- Performance monitoring and metrics
+
+### Testing Strategy
+
+The Python testing infrastructure demonstrates best practices:
+
+```bash
+# Run all tests with verbose output
+bazelisk test //python/tests:test_ai_example --test_output=all
+
+# Run specific test categories
+bazelisk test //python/tests:test_ai_example --test_filter="TestAIWorkflow"
+
+# Run tests with coverage (if coverage tools are added to requirements)
+bazelisk test //python/tests:test_ai_example --test_env=PYTEST_ARGS="--cov=ai_example"
+```
+
+**Test Categories**:
+- **Unit Tests**: Individual component testing (agents, models, utilities)
+- **Integration Tests**: End-to-end workflow testing
+- **Fixture-based Testing**: Reusable test setup and teardown
+- **Async Testing**: Full support for async/await patterns
+- **Edge Case Testing**: Input validation, error handling, boundary conditions
+
+### Hermetic Benefits
+
+The Python setup provides complete hermeticity:
+- **No System Dependencies**: All Python packages bundled in build
+- **Reproducible Builds**: Identical results across different environments
+- **Offline Builds**: No internet required once dependencies are cached
+- **Cross-Platform**: Works identically on different operating systems
+- **Version Pinning**: Exact dependency versions locked and verified
 
 ## IDE Integration
 

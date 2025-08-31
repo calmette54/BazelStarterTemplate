@@ -1,0 +1,18 @@
+# Python AI Dependencies for Bazel Hermetic Builds
+# This file defines the core dependencies for our AI example application
+
+# PydanticAI - Python agent framework for GenAI applications (using slim version to avoid circular dependencies)
+pydantic-ai-slim>=0.0.49
+
+# PyTorch - Deep learning framework
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Core dependencies that might be needed
+pydantic>=2.0.0
+numpy>=1.24.0
+typing-extensions>=4.0.0
+
+# For development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0

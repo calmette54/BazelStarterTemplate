@@ -1,0 +1,22 @@
+load("@rules_python//python:defs.bzl", "py_test")
+
+py_test(
+    name = "test_ai_example",
+    srcs = [
+        "__init__.py",
+        "test_ai_example.py",
+    ],
+    main = "test_ai_example.py",
+    deps = [
+        "//python/ai_example:ai_example",
+        "//python/ai_example:main",
+        "//python/ai_example/agents:data_analyzer",
+        "//python/ai_example/models:simple_mlp",
+        "@python_ai_deps//pytest",
+        "@python_ai_deps//pytest_asyncio",
+        "@python_ai_deps//pydantic",
+        "@python_ai_deps//torch",
+        "@python_ai_deps//numpy",
+    ],
+    visibility = ["//visibility:public"],
+)
