@@ -263,24 +263,14 @@ nix_pkg.attr(
     name = "libglu_dev",
     attr = "libGLU.dev",
     build_file_content = """
-cc_library(
-    name = "headers",
-    hdrs = glob(["include/**/*.h"]),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-)
+exports_files(glob(["include/**/*.h"]), visibility = ["//visibility:public"])
 """,
 )
 nix_pkg.attr(
     name = "libglvnd_dev",
-    attr = "libglvnd.dev",
+    attr = "libglvnd.dev", 
     build_file_content = """
-cc_library(
-    name = "headers",
-    hdrs = glob(["include/**/*.h"]),
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-)
+exports_files(glob(["include/**/*.h"]), visibility = ["//visibility:public"])
 """,
 )
 nix_pkg.attr(

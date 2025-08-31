@@ -633,7 +633,7 @@
     "@@rules_nixpkgs_core+//extensions:package.bzl%nix_pkg": {
       "general": {
         "bzlTransitiveDigest": "2alEQC7q9PgrArc8ZeI662VmDHLGfuswqnzBJvVDnmg=",
-        "usagesDigest": "lurautkxQBsGCtCsEGtUR7YnU/nhYKLMuXOoLFfREgk=",
+        "usagesDigest": "WBjjw5xVwS1UAk0vTfnKp9dwY75ckHsWMsV8sxl6GGc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -692,7 +692,7 @@
               "nix_file_content": "",
               "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
               "repositories": {},
-              "build_file_content": "\ncc_library(\n    name = \"headers\",\n    hdrs = glob([\"include/**/*.h\"]),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n",
+              "build_file_content": "\nexports_files(glob([\"include/**/*.h\"]), visibility = [\"//visibility:public\"])\n",
               "nixopts": [],
               "quiet": false,
               "fail_not_supported": true
@@ -707,7 +707,7 @@
               "nix_file_content": "",
               "repository": "@@rules_nixpkgs_core++nix_repo+nixpkgs//:nixpkgs",
               "repositories": {},
-              "build_file_content": "\ncc_library(\n    name = \"headers\",\n    hdrs = glob([\"include/**/*.h\"]),\n    includes = [\"include\"],\n    visibility = [\"//visibility:public\"],\n)\n",
+              "build_file_content": "\nexports_files(glob([\"include/**/*.h\"]), visibility = [\"//visibility:public\"])\n",
               "nixopts": [],
               "quiet": false,
               "fail_not_supported": true

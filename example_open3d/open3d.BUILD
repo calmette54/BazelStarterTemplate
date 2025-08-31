@@ -16,17 +16,19 @@ package(default_visibility = ["//visibility:public"])
 # Headers Integration - Direct from Raw Packages
 #==============================================================================
 
-# OpenGL headers - use the properly configured targets from MODULE.bazel
+# OpenGL headers - create proper header targets with strip_include_prefix (moved from MODULE.bazel)
 cc_library(
     name = "gl_headers",
-    deps = ["@libglvnd_dev//:headers"],
+    hdrs = ["@libglvnd_dev//:include/GL/gl.h", "@libglvnd_dev//:include/GL/glext.h"],
+    strip_include_prefix = "include",
     visibility = ["//visibility:public"],
 )
 
-# GLU headers - use the properly configured targets from MODULE.bazel  
+# GLU headers - create proper header targets with strip_include_prefix (moved from MODULE.bazel)  
 cc_library(
     name = "glu_headers", 
-    deps = ["@libglu_dev//:headers"],
+    hdrs = ["@libglu_dev//:include/GL/glu.h"],
+    strip_include_prefix = "include",
     visibility = ["//visibility:public"],
 )
 
