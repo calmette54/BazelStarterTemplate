@@ -1,0 +1,166 @@
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+
+# =============================================================================
+# C++ Library with Eigen Integration
+# =============================================================================
+
+cc_library(
+    name = "eigen_math",
+    srcs = ["eigen_math.cpp"],
+    hdrs = ["eigen_math.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@eigen",
+    ],
+    copts = [
+        "-std=c++23",
+        "-O3",  # Optimize for performance
+        "-DEIGEN_NO_DEBUG",  # Disable Eigen runtime checks in optimized builds
+    ],
+)
+
+# =============================================================================
+# Python Bindings using pybind11
+# =============================================================================
+
+pybind_extension(
+    name = "eigen_bindings",
+    srcs = ["python_bindings.cpp"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":eigen_math",
+        "@eigen",
+    ],
+    copts = [
+        "-std=c++23",
+        "-O3",
+        "-DEIGEN_NO_DEBUG",
+    ],
+)
+
+# =============================================================================
+# C++ Unit Tests
+# =============================================================================
+
+cc_test(
+    name = "eigen_math_test",
+    srcs = ["test_eigen_math.cpp"],
+    deps = [
+        ":eigen_math",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+    copts = [
+        "-std=c++23",
+    ],
+    size = "small",
+)
+
+# =============================================================================
+# Benchmarks
+# =============================================================================
+
+cc_binary(
+    name = "eigen_benchmark",
+    srcs = ["eigen_math.cpp", "eigen_math.h"],
+    deps = [
+        ":eigen_math",
+        "@google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark_main",
+    ],
+    copts = [
+        "-std=c++23",
+        "-O3",
+        "-DEIGEN_NO_DEBUG",
+    ],
+)
+
+# =============================================================================
+# Documentation Support
+# =============================================================================
+
+# Make the files available to doxygen for documentation generation
+filegroup(
+    name = "sources",
+    srcs = glob([
+        "*.h",
+        "*.cpp",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+# Export headers for other targets that might need them
+filegroup(
+    name = "headers",
+    srcs = ["eigen_math.h"],
+    visibility = ["//visibility:public"],
+)
+
+# =============================================================================
+# Python Package Support
+# =============================================================================
+
+# Create a filegroup for Python files that will be created
+filegroup(
+    name = "python_files",
+    srcs = glob([
+        "python/*.py",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+# Create a py_library that wraps the pybind extension for proper importing
+py_library(
+    name = "eigen_bindings_py",
+    data = [":eigen_bindings"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+# Python example usage script
+py_binary(
+    name = "python_example",
+    srcs = ["python/example_usage.py"],
+    main = "python/example_usage.py",
+    deps = [
+        ":eigen_bindings_py",
+        "@python_ai_deps//numpy",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Python test suite
+py_test(
+    name = "python_test",
+    srcs = ["python/test_eigen_bindings.py"],
+    main = "python/test_eigen_bindings.py",
+    deps = [
+        ":eigen_bindings_py",
+        "@python_ai_deps//numpy",
+        "@python_ai_deps//pytest",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# =============================================================================
+# Aliases for convenience
+# =============================================================================
+
+alias(
+    name = "bindings",
+    actual = ":eigen_bindings",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "lib",
+    actual = ":eigen_math",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "test",
+    actual = ":eigen_math_test",
+    visibility = ["//visibility:public"],
+)

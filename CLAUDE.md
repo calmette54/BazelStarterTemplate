@@ -320,6 +320,223 @@ Question/Task → MCP Documentation Lookup → Agent Consultation → Implementa
 3. Implement based on documentation examples
 4. Update CLAUDE.md with discovered commands/patterns
 
+## Python Bindings Integration with pybind11
+
+This project includes comprehensive Python bindings for C++ code using modern pybind11 integration patterns.
+
+### pybind11_bazel Integration
+
+#### Dependencies (MODULE.bazel)
+```starlark
+# Python C++ binding library for Eigen integration example
+bazel_dep(name = "pybind11_bazel", version = "2.13.6")
+
+# Eigen dependency (should already exist)
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+```
+
+#### Python Requirements (python/requirements.in)
+```txt
+# Python C++ binding library for native extensions
+pybind11>=2.10.0
+
+# For numerical computing integration
+numpy>=1.24.0
+
+# For testing Python bindings
+pytest>=7.0.0
+```
+
+### Build Configuration Patterns
+
+#### Core BUILD.bazel Structure
+```starlark
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:defs.bzl", "py_binary", "py_test", "py_library")
+
+# C++ Library
+cc_library(
+    name = "your_library",
+    srcs = ["your_library.cpp"],
+    hdrs = ["your_library.h"],
+    deps = ["@eigen"],  # or other dependencies
+    copts = ["-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"],
+)
+
+# pybind11 Extension  
+pybind_extension(
+    name = "your_bindings",
+    srcs = ["python_bindings.cpp"],
+    deps = [
+        ":your_library", 
+        "@eigen",  # Include dependencies needed by bindings
+    ],
+    copts = ["-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"],
+)
+
+# Python Library Wrapper (CRITICAL for proper importing)
+py_library(
+    name = "your_bindings_py",
+    data = [":your_bindings"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+# Python Applications
+py_binary(
+    name = "python_example",
+    srcs = ["python/example_usage.py"],
+    deps = [
+        ":your_bindings_py",  # Use wrapper, not direct extension
+        "@python_ai_deps//numpy",
+    ],
+)
+
+py_test(
+    name = "python_test", 
+    srcs = ["python/test_your_bindings.py"],
+    deps = [
+        ":your_bindings_py",  # Use wrapper, not direct extension
+        "@python_ai_deps//numpy",
+        "@python_ai_deps//pytest",
+    ],
+)
+```
+
+#### Key Build Patterns
+
+1. **py_library Wrapper Pattern**: Essential for proper importing in py_binary and py_test
+   ```starlark
+   py_library(
+       name = "your_bindings_py",
+       data = [":your_bindings"],  # Include the .so as data
+       imports = ["."],            # Add current dir to PYTHONPATH
+   )
+   ```
+
+2. **Optimization Flags**: Critical for performance
+   ```starlark
+   copts = [
+       "-std=c++23",        # Modern C++ standard
+       "-O3",               # Maximum optimization
+       "-DEIGEN_NO_DEBUG",  # Remove Eigen runtime checks
+   ],
+   ```
+
+3. **Dependency Propagation**: Include all C++ deps in bindings
+   ```starlark
+   pybind_extension(
+       deps = [
+           ":your_cpp_library",
+           "@eigen",           # Direct dependencies
+           # All deps your C++ code needs
+       ],
+   )
+   ```
+
+### Python Bindings Code Patterns
+
+#### Essential Includes
+```cpp
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>    // ESSENTIAL for NumPy zero-copy
+#include <pybind11/stl.h>      // For std containers
+#include <pybind11/numpy.h>    // For advanced NumPy features
+
+#include "your_library.h"
+
+namespace py = pybind11;
+```
+
+#### Module Definition Structure
+```cpp
+PYBIND11_MODULE(your_bindings, m) {
+    m.doc() = "Python bindings for YourLibrary using pybind11";
+    
+    // Class bindings
+    py::class_<YourClass>(m, "YourClass")
+        .def(py::init<>(), "Default constructor")
+        
+        // Static methods (recommended pattern)
+        .def_static("your_function", &YourClass::yourFunction,
+                    py::arg("param1"), py::arg("param2") = default_value,
+                    R"pbdoc(
+                    Detailed function description.
+                    
+                    Args:
+                        param1 (type): Description
+                        param2 (type, optional): Description
+                        
+                    Returns:
+                        return_type: Description
+                        
+                    Raises:
+                        ValueError: When invalid input
+                    )pbdoc");
+    
+    // Module-level convenience functions
+    m.def("your_function", &YourClass::yourFunction,
+          py::arg("param1"), py::arg("param2") = default_value,
+          "Brief description for convenience function");
+          
+    // Module metadata
+    m.attr("__version__") = "1.0.0";
+    m.attr("__author__") = "Your Name";
+    
+    // Constants
+    m.attr("PI") = M_PI;
+    
+    // Exception handling
+    py::register_exception_translator([](std::exception_ptr p) {
+        try {
+            if (p) std::rethrow_exception(p);
+        } catch (const std::invalid_argument& e) {
+            PyErr_SetString(PyExc_ValueError, e.what());
+        } catch (const std::runtime_error& e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+        }
+    });
+}
+```
+
+### Commands Reference
+
+#### Build and Test Commands for Python Bindings
+```bash
+# Build all targets in bindings example
+bazelisk build //example_eigen_binding/...
+
+# Run C++ tests
+bazelisk test //example_eigen_binding:eigen_math_test
+
+# Run Python tests  
+bazelisk test //example_eigen_binding:python_test --test_output=all
+
+# Run Python example
+bazelisk run //example_eigen_binding:python_example
+
+# Update Python dependencies
+bazelisk run //python:requirements.update
+bazelisk run //python:gazelle_python_manifest.update
+```
+
+### Common Issues and Solutions
+
+#### ModuleNotFoundError
+**Problem**: `ModuleNotFoundError: No module named 'your_bindings'`
+
+**Solution**: Always use py_library wrapper:
+```starlark
+py_library(
+    name = "your_bindings_py",
+    data = [":your_bindings"],
+    imports = ["."],
+)
+```
+Then depend on `your_bindings_py`, not `your_bindings` directly.
+
+This integration pattern provides a robust, high-performance foundation for Python-C++ interoperability using modern Bazel build practices.
+
 ## Hermetic System Library Integration Guide
 
 ### Overview
