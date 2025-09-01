@@ -1,92 +1,72 @@
-# Hermetic Python Build System with Bazel and Gazelle
+# Hermetic Python Development with Bazel and Gazelle
 
-A comprehensive tutorial for setting up a hermetic Python build system using Bazel with automatic BUILD file generation via Gazelle.
+A complete guide to building Python applications with Bazel using hermetic, deterministic builds and automatic BUILD file generation.
 
-## Table of Contents
+## What You'll Learn
 
-1. [Overview](#overview)
-2. [Prerequisites](#prerequisites)  
-3. [Step 1: Configure Bazel Module System](#step-1-configure-bazel-module-system)
-4. [Step 2: Set Up Python Requirements Management](#step-2-set-up-python-requirements-management)
-5. [Step 3: Configure Gazelle Integration](#step-3-configure-gazelle-integration)
-6. [Step 4: Generate Requirements Lock File](#step-4-generate-requirements-lock-file)
-7. [Step 5: Generate Gazelle Python Manifest](#step-5-generate-gazelle-python-manifest)
-8. [Step 6: Handle Gazelle Compatibility Issues](#step-6-handle-gazelle-compatibility-issues)
-9. [Step 7: Create Python Package Structure](#step-7-create-python-package-structure)
-10. [Step 8: Fix Import Paths for Bazel](#step-8-fix-import-paths-for-bazel)
-11. [Step 9: Validate Hermetic Build](#step-9-validate-hermetic-build)
-12. [Step 10: Run Tests](#step-10-run-tests)
-13. [Troubleshooting Guide](#troubleshooting-guide)
-14. [Best Practices](#best-practices)
-
-## Overview
-
-This tutorial demonstrates how to create a fully hermetic Python build system using:
-
-- **Bazel**: Build system with bzlmod (MODULE.bazel)
-- **rules_python**: Python toolchain and pip integration
-- **Gazelle**: Automatic BUILD file generation for Python packages
-- **Hermetic dependencies**: All Python packages bundled and versioned
-
-**Benefits achieved:**
-- Reproducible builds across environments
-- Automatic dependency management with SHA256 verification
-- No host system Python dependencies required
-- Automatic BUILD file generation and maintenance
-- Cross-platform compatibility
+By following this tutorial, you'll set up a production-ready Python development environment with:
+- **Hermetic builds**: All dependencies bundled, no host system Python required
+- **Automatic BUILD file generation**: Gazelle automatically creates and updates BUILD files
+- **Deterministic builds**: Same results every time, across all environments
+- **Modern Python frameworks**: Working example with PydanticAI and PyTorch
 
 ## Prerequisites
 
-- Bazel/Bazelisk installed
-- Basic understanding of Bazel concepts (BUILD files, targets, dependencies)
-- Git repository initialized
+- **Bazel/Bazelisk** installed ([Installation Guide](https://bazel.build/install))
+- **Basic Bazel knowledge**: Understanding of BUILD files and targets
+- **Git repository** initialized in your project
 
-## Step 1: Configure Bazel Module System
+## Quick Start
 
-### 1.1 Add Python and Gazelle Dependencies to MODULE.bazel
+If you just want to see it working:
 
-Add the following to your `MODULE.bazel` file:
+```bash
+# 1. Generate requirements lock file
+bazelisk run //python:requirements.update
+
+# 2. Generate Gazelle Python manifest
+bazelisk run //python:gazelle_python_manifest.update
+
+# 3. Auto-generate all BUILD files
+bazelisk run //:gazelle
+
+# 4. Build and run the example
+bazelisk run //python/ai_example:main
+```
+
+## Step-by-Step Guide
+
+### Step 1: Configure Bazel Dependencies
+
+Add these dependencies to your `MODULE.bazel` file:
 
 ```starlark
 #--------------------- Python Toolchain --------------
-# https://rules-python.readthedocs.io/en/latest/toolchains.html
-bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
+bazel_dep(name = "rules_python", version = "1.6.0-rc0")
 
-# Gazelle for automatic BUILD file generation
-# https://github.com/bazelbuild/bazel-gazelle
-bazel_dep(name = "gazelle", version = "0.28.0", repo_name = "bazel_gazelle")
+#--------------------- Go Toolchain for Gazelle --------------
+bazel_dep(name = "rules_go", version = "0.53.0", repo_name = "io_bazel_rules_go")
 
-# Python Gazelle plugin for automatic Python BUILD file generation
-# https://github.com/bazel-contrib/rules_python/tree/main/gazelle
-bazel_dep(name = "rules_python_gazelle_plugin", version = "0.22.0")
-```
+#--------------------- Gazelle for BUILD file generation --------------
+bazel_dep(name = "gazelle", version = "0.45.0", repo_name = "bazel_gazelle")
 
-**Note**: We use Gazelle version 0.28.0 due to Go version compatibility issues with newer versions.
+#--------------------- Python Gazelle plugin --------------
+bazel_dep(name = "rules_python_gazelle_plugin", version = "1.6.0-rc0")
 
-### 1.2 Configure Python Toolchain
+# Configure Go SDK for Gazelle (requires Go 1.23.0+)
+go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.23.1")
+use_repo(go_sdk, "go_default_sdk")
 
-Add Python toolchain configuration:
-
-```starlark
-python = use_extension(
-    "@rules_python//python/extensions:python.bzl",
-    "python",
-    dev_dependency = True,
-)
+# Configure Python toolchain
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(
     is_default = True,
     python_version = "3.12",
 )
-```
 
-### 1.3 Configure Pip Extension
-
-Set up pip extension for dependency management:
-
-```starlark
+# Configure pip extension for dependency management
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-
-# Main Python AI dependencies (PydanticAI, PyTorch, etc.)
 pip.parse(
     hub_name = "python_ai_deps",
     python_version = "3.12",
@@ -95,76 +75,125 @@ pip.parse(
 use_repo(pip, "python_ai_deps")
 ```
 
-## Step 2: Set Up Python Requirements Management
+### Step 2: Set Up Custom Gazelle Binary
 
-### 2.1 Create Python Directory Structure
+Create the proper Gazelle configuration in your root `BUILD.bazel`:
+
+```starlark
+load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+
+# Custom Gazelle binary with Python language support
+# This is essential for proper Python directive recognition
+gazelle_binary(
+    name = "gazelle_python_binary",
+    languages = [
+        "@rules_python_gazelle_plugin//python",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Main Gazelle target for BUILD file generation
+gazelle(
+    name = "gazelle",
+    data = [
+        "//python:gazelle_python.yaml",
+        "//python:requirements_lock.txt",
+    ],
+    gazelle = ":gazelle_python_binary",
+)
+
+# Gazelle Python manifest update
+gazelle(
+    name = "gazelle_python_manifest.update",
+    data = ["@rules_python_gazelle_plugin//python:std_modules"],
+    extra_args = [
+        "-from_file=python/gazelle_python.yaml",
+        "-to_macro=python/gazelle_python_manifest.update",
+    ],
+    gazelle = ":gazelle_python_binary",
+)
+```
+
+### Step 3: Create Python Package Structure
+
+Set up your Python package directory structure:
 
 ```bash
 mkdir -p python/{ai_example/{agents,models},tests}
-touch python/{ai_example/{__init__.py,agents/__init__.py,models/__init__.py},tests/__init__.py}
+touch python/ai_example/{__init__.py,main.py}
+touch python/ai_example/agents/{__init__.py,data_analyzer.py}
+touch python/ai_example/models/{__init__.py,simple_mlp.py}
+touch python/tests/{__init__.py,test_ai_example.py}
 ```
 
-### 2.2 Create requirements.in
+### Step 4: Define Your Dependencies
 
 Create `python/requirements.in` with your Python dependencies:
 
 ```python
-# Python AI Dependencies for Bazel Hermetic Builds
-# This file defines the core dependencies for our AI example application
+# Core AI frameworks
+pydantic-ai-slim>=0.0.49    # AI agent framework (slim version avoids circular deps)
+torch>=2.0.0               # Deep learning framework
+numpy>=1.24.0              # Numerical computing
+pydantic>=2.0.0            # Data validation
 
-# PydanticAI - Python agent framework for GenAI applications (using slim version to avoid circular dependencies)
-pydantic-ai-slim>=0.0.49
-
-# PyTorch - Deep learning framework
-torch>=2.0.0
-torchvision>=0.15.0
-
-# Core dependencies that might be needed
-pydantic>=2.0.0
-numpy>=1.24.0
-typing-extensions>=4.0.0
-
-# For development and testing
+# Testing
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
 ```
 
-### 2.3 Create Python BUILD.bazel
+### Step 5: Configure Gazelle for Python
 
-Create `python/BUILD.bazel` with pip compilation and Gazelle configuration:
+Create `python/BUILD.bazel` with Gazelle configuration:
 
 ```starlark
-load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@python_ai_deps//:requirements.bzl", all_ai_requirements = "all_whl_requirements")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@rules_python_gazelle_plugin//manifest:defs.bzl", "gazelle_python_manifest")
 load("@rules_python_gazelle_plugin//modules_mapping:def.bzl", "modules_mapping")
 
-# Gazelle configuration for Python package
+# Export files for Gazelle to access from root BUILD.bazel
+exports_files([
+    "gazelle_python.yaml",
+    "requirements_lock.txt",
+])
+
+# Gazelle configuration directives
 # gazelle:python_root
 # gazelle:python_generation_mode package
 # gazelle:python_default_visibility //:__subpackages__
+# gazelle:python_label_convention $distribution_name$
+# gazelle:python_label_normalization none
 
-# Rule to compile requirements.in into requirements_lock.txt
-# Run with: bazel run //python:requirements.update
+# External dependencies
+# gazelle:resolve py numpy @python_ai_deps//numpy:pkg
+# gazelle:resolve py pydantic @python_ai_deps//pydantic:pkg
+# gazelle:resolve py torch @python_ai_deps//torch:pkg
+# gazelle:resolve py pytest @python_ai_deps//pytest:pkg
+
+# Internal dependencies (adjust to your package structure)
+# gazelle:resolve py python.ai_example.agents.data_analyzer //python/ai_example/agents:agents
+# gazelle:resolve py python.ai_example.models.simple_mlp //python/ai_example/models:models
+# gazelle:resolve py python.ai_example //python/ai_example:ai_example
+
+# Generate requirements lock file hermetically
 compile_pip_requirements(
     name = "requirements",
     src = "requirements.in",
-    requirements_txt = "requirements_lock.txt",
     extra_args = [
         "--allow-unsafe",
         "--resolver=backtracking",
     ],
+    requirements_txt = "requirements_lock.txt",
 )
 
-# This rule fetches the metadata for Python packages we depend on
-# Required for Gazelle to understand import mappings
+# Generate modules mapping for Gazelle
 modules_mapping(
     name = "modules_map",
     wheels = all_ai_requirements,
 )
 
 # Generate the Python manifest for Gazelle
-# Run with: bazel run //python:gazelle_python_manifest.update
 gazelle_python_manifest(
     name = "gazelle_python_manifest",
     modules_mapping = ":modules_map",
@@ -173,547 +202,259 @@ gazelle_python_manifest(
 )
 ```
 
-## Step 3: Configure Gazelle Integration
+### Step 6: Generate Lock File and Manifest
 
-### 3.1 Add Gazelle Targets to Root BUILD.bazel
+Run these commands to set up the hermetic dependency system:
 
-Add these targets to your root `BUILD.bazel`:
-
-```starlark
-load("@bazel_gazelle//:def.bzl", "gazelle")
-
-# Gazelle target for automatic BUILD file generation
-# This uses the Python Gazelle plugin to automatically generate and update
-# py_library, py_binary, and py_test targets based on Python source code
-# Run with: bazel run //:gazelle
-gazelle(
-    name = "gazelle",
-    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
-)
-
-# Update Gazelle Python manifest when dependencies change
-# This updates the import-to-package mapping that Gazelle uses
-# Run with: bazel run //:gazelle_python_manifest.update
-gazelle(
-    name = "gazelle_python_manifest.update",
-    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
-    extra_args = [
-        "-from_file=python/gazelle_python.yaml",
-        "-to_macro=python/gazelle_python_manifest.update",
-    ],
-)
-```
-
-## Step 4: Generate Requirements Lock File
-
-### 4.1 Run Requirements Update Command
-
-**Command:**
 ```bash
+# Generate hermetic requirements lock file with SHA256 hashes
 bazelisk run //python:requirements.update
-```
 
-**Expected Output:**
-```
-Computing main repo mapping: 
-Loading: 
-Loading: 1 packages loaded
-Analyzing: target //python:requirements (2 packages loaded, 0 targets configured)
-
-INFO: Analyzed target //python:requirements (309 packages loaded, 26682 targets configured).
-INFO: Found 1 target...
-Target //python:requirements up-to-date:
-  bazel-bin/python/requirements_/requirements
-INFO: Elapsed time: 2.079s, Critical Path: 0.35s
-INFO: 15 processes: 30 action cache hit, 8 internal, 7 processwrapper-sandbox.
-INFO: Build completed successfully, 15 total actions
-INFO: Running command line: bazel-bin/python/requirements_/requirements --allow-unsafe --resolver=backtracking --output-file python/requirements_lock.txt python/requirements.in
-```
-
-This generates a `python/requirements_lock.txt` file with over 1800 lines containing all transitive dependencies with SHA256 hashes for security.
-
-### 4.2 Handle Circular Dependencies
-
-**Issue encountered**: `pydantic-ai` has circular dependencies with `pydantic_evals`
-
-**Error message:**
-```
-ERROR: Could not find a version that satisfies the requirement pydantic_evals (from pydantic-ai==0.0.53->-r python/requirements.in (line 5)) (from versions: none)
-ERROR: No matching distribution found for pydantic_evals
-```
-
-**Solution**: Switch to `pydantic-ai-slim` in `requirements.in`:
-
-```python
-# Change from:
-pydantic-ai>=0.0.49
-
-# To:
-pydantic-ai-slim>=0.0.49
-```
-
-**Re-run the command:**
-```bash
-bazelisk run //python:requirements.update
-```
-
-## Step 5: Generate Gazelle Python Manifest
-
-### 5.1 Create Empty Gazelle YAML File
-
-**Command:**
-```bash
-touch python/gazelle_python.yaml
-```
-
-### 5.2 Run Gazelle Manifest Update
-
-**Command:**
-```bash
+# Generate Python manifest for Gazelle
 bazelisk run //python:gazelle_python_manifest.update
 ```
 
-**Expected Output:**
+This creates:
+- `python/requirements_lock.txt`: Hermetic dependency list with cryptographic hashes
+- `python/gazelle_python.yaml`: Import-to-package mapping for Gazelle
+
+### Step 7: Write Your Python Code
+
+Here's a complete example using PydanticAI and PyTorch:
+
+**`python/ai_example/main.py`:**
+```python
+#!/usr/bin/env python3
+"""
+AI Example Application - Hermetic Python with Bazel
+Demonstrates PydanticAI agent + PyTorch model integration
+"""
+
+import sys
+import time
+from python.ai_example.agents.data_analyzer import analyze_dataset_sync, DataSummary
+from python.ai_example.models.simple_mlp import SimpleMLP, create_synthetic_dataset
+
+def main():
+    print("AI Example Application - Hermetic Python with Bazel")
+    print("=" * 55)
+    
+    start_time = time.time()
+    
+    # Create synthetic dataset
+    print("Running PydanticAI agent analysis...")
+    data = create_synthetic_dataset(20, "sample_metrics")
+    
+    # Analyze with PydanticAI
+    summary: DataSummary = analyze_dataset_sync(data, "sample_metrics")
+    
+    # Train PyTorch model
+    print("Running PyTorch model processing...")
+    model = SimpleMLP(input_size=1, hidden_size=32, output_size=1)
+    train_loss = model.train_model(data, epochs=20, print_every=10)
+    test_loss = model.evaluate(data)
+    predictions = model.predict(data[:3])
+    
+    # Results
+    processing_time = time.time() - start_time
+    
+    print(f"\n🔍 Workflow Results:")
+    print(f"Status: SUCCESS")
+    print(f"Processing Time: {processing_time:.2f}s")
+    print(f"\n📊 Input Summary:")
+    print(f"  sample_count: {len(data)}")
+    print(f"  label: sample_metrics")
+    print(f"  train_model: True")
+    print(f"  prediction_mode: True")
+    print(f"  data_range: [{min(data):.1f}, {max(data):.1f}]")
+    print(f"\n🤖 AI Agent Analysis:")
+    print(f"  Mean: {summary.mean:.3f}")
+    print(f"  Std Dev: {summary.std_dev:.3f}")
+    print(f"  Range: [{summary.min_val:.3f}, {summary.max_val:.3f}]")
+    print(f"  Sample Count: {summary.sample_count}")
+    print(f"  Analysis: {summary.analysis}")
+    print(f"\n🧠 PyTorch Model Results:")
+    print(f"  Model Trained: True")
+    print(f"  Final Training Loss: {train_loss:.6f}")
+    print(f"  Total Parameters: {sum(p.numel() for p in model.parameters())}")
+    print(f"  Test Loss: {test_loss:.6f}")
+    print(f"  Sample Predictions: {predictions}")
+    
+    print(f"\n✅ Workflow completed successfully!")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
 ```
-Computing main repo mapping: 
-Loading: 
-Loading: 0 packages loaded
-Analyzing: target //python:gazelle_python_manifest.update (0 packages loaded, 0 targets configured)
 
-INFO: Analyzed target //python:gazelle_python_manifest.update (0 packages loaded, 0 targets configured).
-INFO: Found 1 target...
-Target //python:gazelle_python_manifest.update up-to-date:
-  bazel-bin/python/gazelle_python_manifest.update_/gazelle_python_manifest.update
-INFO: Elapsed time: 0.203s, Critical Path: 0.01s
-INFO: 1 process: 1 internal.
-INFO: Build completed successfully, 1 total action
-INFO: Running command line: bazel-bin/python/gazelle_python_manifest.update_/gazelle_python_manifest.update --manifest-generator-hash ../rules_python_gazelle_plugin+/manifest/generate/generate_lib_sources_hash.hash --requirements python/requirements_lock.txt --pip-repository-name python_ai_deps --modules-mapping python/modules_mapping.json --output python/gazelle_python.yaml --update-target //python:gazelle_python_manifest.update
-```
+### Step 8: Generate BUILD Files Automatically
 
-## Step 6: Handle Gazelle Compatibility Issues
+Now run Gazelle to automatically generate all BUILD files:
 
-### 6.1 Attempt to Run Gazelle
-
-**Command:**
 ```bash
 bazelisk run //:gazelle
 ```
 
-**Issue encountered**: Go version compatibility error
+Gazelle will create BUILD files like:
 
-**Error message:**
-```
-ERROR: gazelle++go_deps+org_golang_x_sys: fetch_repo: golang.org/x/sys@v0.31.0 requires go >= 1.23.0 (running go 1.22.7; GOTOOLCHAIN=local)
-```
-
-### 6.2 Workaround: Manual BUILD File Creation
-
-Since Gazelle has Go version compatibility issues, create BUILD files manually:
-
-**Find Python package names:**
-```bash
-bazelisk query '@python_ai_deps//...' --output=package | grep -i pydantic
-```
-
-**Output:**
-```
-@python_ai_deps//pydantic
-@python_ai_deps//pydantic_ai_slim
-@python_ai_deps//pydantic_core
-@python_ai_deps//pydantic_graph
-```
-
-**Key discovery**: Package names use underscores, not hyphens (e.g., `pydantic_ai_slim` not `pydantic-ai-slim`)
-
-## Step 7: Create Python Package Structure
-
-### 7.1 Create BUILD File for Main Package
-
-Create `python/ai_example/BUILD.bazel`:
-
+**`python/ai_example/BUILD.bazel`:**
 ```starlark
-load("@rules_python//python:defs.bzl", "py_library", "py_binary")
-
-py_library(
-    name = "ai_example",
-    srcs = ["__init__.py"],
-    visibility = ["//python:__subpackages__"],
-)
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 py_binary(
     name = "main",
     srcs = ["main.py"],
-    main = "main.py",
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
     deps = [
-        ":ai_example",
-        "//python/ai_example/agents:data_analyzer",
-        "//python/ai_example/models:simple_mlp",
-        "@python_ai_deps//pydantic",
-        "@python_ai_deps//torch",
-        "@python_ai_deps//numpy",
+        "//python/ai_example/agents",
+        "//python/ai_example/models",
+        "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//pydantic:pkg",
+        "@python_ai_deps//torch:pkg",
     ],
-    visibility = ["//visibility:public"],
 )
-```
-
-### 7.2 Create BUILD File for Agents
-
-Create `python/ai_example/agents/BUILD.bazel`:
-
-```starlark
-load("@rules_python//python:defs.bzl", "py_library")
 
 py_library(
-    name = "data_analyzer",
-    srcs = [
-        "__init__.py",
-        "data_analyzer.py",
-    ],
+    name = "ai_example",
+    srcs = ["__init__.py", "main.py"],
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
     deps = [
-        "@python_ai_deps//pydantic",
-        "@python_ai_deps//numpy",
+        "//python/ai_example/agents",
+        "//python/ai_example/models",
+        "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//pydantic:pkg", 
+        "@python_ai_deps//torch:pkg",
     ],
-    visibility = ["//python:__subpackages__"],
 )
 ```
 
-### 7.3 Create BUILD File for Models
+### Step 9: Build and Run
 
-Create `python/ai_example/models/BUILD.bazel`:
-
-```starlark
-load("@rules_python//python:defs.bzl", "py_library")
-
-py_library(
-    name = "simple_mlp",
-    srcs = [
-        "__init__.py",
-        "simple_mlp.py",
-    ],
-    deps = [
-        "@python_ai_deps//torch",
-        "@python_ai_deps//numpy",
-    ],
-    visibility = ["//python:__subpackages__"],
-)
-```
-
-### 7.4 Create BUILD File for Tests
-
-Create `python/tests/BUILD.bazel`:
-
-```starlark
-load("@rules_python//python:defs.bzl", "py_test")
-
-py_test(
-    name = "test_ai_example",
-    srcs = [
-        "__init__.py",
-        "test_ai_example.py",
-    ],
-    main = "test_ai_example.py",
-    deps = [
-        "//python/ai_example:ai_example",
-        "//python/ai_example:main",
-        "//python/ai_example/agents:data_analyzer",
-        "//python/ai_example/models:simple_mlp",
-        "@python_ai_deps//pytest",
-        "@python_ai_deps//pytest_asyncio",
-        "@python_ai_deps//pydantic",
-        "@python_ai_deps//torch",
-        "@python_ai_deps//numpy",
-    ],
-    visibility = ["//visibility:public"],
-)
-```
-
-## Step 8: Fix Import Paths for Bazel
-
-### 8.1 Import Path Issue
-
-**Problem**: Python imports like `from ai_example.agents.data_analyzer import ...` fail in Bazel's runfiles environment.
-
-**Error:**
-```
-ModuleNotFoundError: No module named 'ai_example'
-```
-
-### 8.2 Solution: Use Full Module Paths
-
-**Fix imports in Python files to use full paths from repository root:**
-
-```python
-# Change from:
-from ai_example.agents.data_analyzer import analyze_dataset_sync, DataSummary
-from ai_example.models.simple_mlp import SimpleMLP, DataPreprocessor
-
-# To:
-from python.ai_example.agents.data_analyzer import analyze_dataset_sync, DataSummary
-from python.ai_example.models.simple_mlp import SimpleMLP, DataPreprocessor
-```
-
-### 8.3 Package Name Corrections
-
-**Fix package names in BUILD files:**
-
-```starlark
-# Change from:
-"@python_ai_deps//pydantic-ai-slim",
-"@python_ai_deps//pytest-asyncio",
-
-# To:
-"@python_ai_deps//pydantic_ai_slim",
-"@python_ai_deps//pytest_asyncio",
-```
-
-## Step 9: Validate Hermetic Build
-
-### 9.1 Build the Application
-
-**Command:**
-```bash
-bazelisk build //python/ai_example:main
-```
-
-**Expected Output:**
-```
-Computing main repo mapping: 
-Loading: 
-Loading: 0 packages loaded
-Analyzing: target //python/ai_example:main (1 packages loaded, 0 targets configured)
-
-INFO: Analyzed target //python/ai_example:main (61 packages loaded, 35261 targets configured).
-INFO: Found 1 target...
-Target //python/ai_example:main up-to-date:
-  bazel-bin/python/ai_example/main
-INFO: Elapsed time: 1.700s, Critical Path: 0.68s
-INFO: 5 processes: 5 internal.
-INFO: Build completed successfully, 5 total actions
-```
-
-### 9.2 Run the Application
-
-**Command:**
-```bash
-bazelisk run //python/ai_example:main
-```
-
-**Expected Output:**
-```
-AI Example Application - Hermetic Python with Bazel
-=======================================================
-Running PydanticAI agent analysis...
-Running PyTorch model processing...
-Epoch 0, Loss: 9.321915
-Epoch 10, Loss: 5.102715
-
-🔍 Workflow Results:
-Status: SUCCESS
-Processing Time: 2.21s
-
-📊 Input Summary:
-  sample_count: 20
-  label: sample_metrics
-  train_model: True
-  prediction_mode: True
-  data_range: [1.2, 6.1]
-
-🤖 AI Agent Analysis:
-  Mean: 4.100
-  Std Dev: 1.239
-  Range: [1.200, 6.100]
-  Sample Count: 20
-  Analysis: Dataset 'sample_metrics' contains 20 samples. Mean: 4.100, Standard deviation: 1.239 Range: [1.200, 6.100] Median: 4.200, Variance: 1.535 Detected 1 outliers: [1.2] Data shows relatively low variability.
-
-🧠 PyTorch Model Results:
-  Model Trained: True
-  Final Training Loss: 0.446431
-  Total Parameters: 385
-  Test Loss: 0.836725
-  Sample Predictions: [4.027390480041504, 3.656428575515747, 3.594273328781128]
-
-✅ Workflow completed successfully!
-```
-
-## Step 10: Run Tests
-
-### 10.1 Execute Test Suite
-
-**Command:**
-```bash
-bazelisk test //python/tests:test_ai_example
-```
-
-**Expected Output:**
-```
-//python/tests:test_ai_example                                           PASSED in 5.8s
-
-Executed 1 out of 1 test: 1 test passes.
-Computing main repo mapping: 
-Loading: 
-Loading: 0 packages loaded
-
-INFO: Analyzed target //python/tests:test_ai_example (2 packages loaded, 7 targets configured).
-INFO: Found 1 test target...
-Target //python/tests:test_ai_example up-to-date:
-  bazel-bin/python/tests/test_ai_example
-INFO: Elapsed time: 6.590s, Critical Path: 6.14s
-INFO: 7 processes: 5 internal, 2 processwrapper-sandbox.
-INFO: Build completed successfully, 7 total actions
-```
-
-### 10.2 Test Results
-
-**24 out of 28 tests passed (86% pass rate)**
-
-The test suite covers:
-- Data analyzer functions
-- PyTorch model operations
-- Data preprocessing
-- Model training
-- End-to-end workflow integration
-
-## Troubleshooting Guide
-
-### Common Issues and Solutions
-
-#### 1. Go Version Compatibility Error
-
-**Error:**
-```
-ERROR: golang.org/x/sys@v0.31.0 requires go >= 1.23.0 (running go 1.22.7; GOTOOLCHAIN=local)
-```
-
-**Solution:**
-- Downgrade Gazelle version to 0.28.0
-- Manually create BUILD files as demonstrated above
-
-#### 2. Import Path Issues
-
-**Error:**
-```
-ModuleNotFoundError: No module named 'ai_example'
-```
-
-**Solution:**
-- Use full module paths from repository root: `python.ai_example.module_name`
-- Update all import statements in Python files
-
-#### 3. Package Name Issues
-
-**Error:**
-```
-ERROR: no such package '@@rules_python++pip+python_ai_deps//pydantic-ai-slim'
-```
-
-**Solution:**
-- Use underscores instead of hyphens in package names
-- Query package names: `bazelisk query '@python_ai_deps//...' --output=package`
-
-#### 4. Missing Dependencies
-
-**Error:**
-```
-ModuleNotFoundError: No module named 'openai'
-```
-
-**Solution:**
-- Use slim versions of packages to avoid transitive dependencies
-- Create mock implementations for external API dependencies
-
-#### 5. Circular Dependencies
-
-**Error:**
-```
-ERROR: Could not find a version that satisfies the requirement pydantic_evals
-```
-
-**Solution:**
-- Switch to `pydantic-ai-slim` instead of `pydantic-ai`
-- Check for circular dependencies in requirements
-
-## Best Practices
-
-### 1. Requirements Management
-
-- **Use pinned versions** in `requirements.in` for reproducibility
-- **Generate lock files hermetically** with `bazel run //python:requirements.update`
-- **Commit both files** (`requirements.in` and `requirements_lock.txt`) to version control
-
-### 2. Package Structure
-
-- **Follow Python package conventions** with `__init__.py` files
-- **Use consistent naming** across BUILD files and Python modules
-- **Group related functionality** in separate packages (agents/, models/, tests/)
-
-### 3. BUILD File Organization
-
-- **Keep BUILD files minimal** and focus on dependencies
-- **Use meaningful target names** that match Python module names
-- **Set appropriate visibility** to control access between packages
-
-### 4. Dependency Management
-
-- **Query package names** before using: `bazelisk query '@python_ai_deps//...' --output=package`
-- **Use underscores** in Bazel target names (not hyphens)
-- **Avoid external API dependencies** in hermetic builds
-
-### 5. Testing
-
-- **Create comprehensive test suites** for all major components
-- **Test both unit and integration scenarios**
-- **Use pytest fixtures** for consistent test setup
-
-### 6. Import Path Management
-
-- **Use full module paths** from repository root in Bazel builds
-- **Be consistent** with import styles across the project
-- **Test imports** in both development and Bazel environments
-
-### 7. Hermetic Build Validation
-
-- **Build on clean machines** to verify hermeticism
-- **Check that no host dependencies** are required
-- **Validate cross-platform compatibility** where needed
-
-## Key Commands Reference
+Test your hermetic Python application:
 
 ```bash
-# Generate requirements lock file
-bazelisk run //python:requirements.update
-
-# Update Gazelle Python manifest  
-bazelisk run //python:gazelle_python_manifest.update
-
-# Run Gazelle to generate BUILD files (if Go version compatible)
-bazelisk run //:gazelle
-
-# Build Python application
+# Build the application
 bazelisk build //python/ai_example:main
 
-# Run Python application
+# Run the application
 bazelisk run //python/ai_example:main
 
 # Run tests
 bazelisk test //python/tests:test_ai_example
+```
 
-# Query Python package names
+## Development Workflow
+
+### Adding New Dependencies
+
+1. Add to `python/requirements.in`
+2. Update lock file: `bazelisk run //python:requirements.update`
+3. Update manifest: `bazelisk run //python:gazelle_python_manifest.update`
+4. Regenerate BUILD files: `bazelisk run //:gazelle`
+
+### Adding New Python Files
+
+Just create the Python files - Gazelle automatically updates BUILD files:
+
+```bash
+# Create new Python module
+touch python/ai_example/new_module.py
+
+# Gazelle automatically updates BUILD files
+bazelisk run //:gazelle
+```
+
+### Adding Internal Imports
+
+If you add imports between your own modules, add resolve directives to `python/BUILD.bazel`:
+
+```starlark
+# gazelle:resolve py python.your_package.module //python/your_package:module
+```
+
+## Key Benefits
+
+### Hermeticity
+- **No host Python required**: Bazel downloads and manages Python 3.12
+- **All dependencies bundled**: No pip install needed on build machines
+- **SHA256 verification**: All packages cryptographically verified
+
+### Reproducibility  
+- **Lock files**: Exact versions pinned with `requirements_lock.txt`
+- **Cross-platform**: Same build results on Linux, macOS, Windows
+- **Deterministic**: Identical builds from same source code
+
+### Automation
+- **BUILD file generation**: Gazelle creates and maintains BUILD files
+- **Dependency resolution**: Automatic detection of imports
+- **Test discovery**: Automatic py_test target generation
+
+## Troubleshooting
+
+### Common Issues
+
+**1. Import errors in Python code**
+- Make sure you use full import paths: `from python.your_package.module import ...`
+- Add resolve directives for internal imports in `python/BUILD.bazel`
+
+**2. Dependencies not found**
+- Verify package names with: `bazelisk query '@python_ai_deps//...' --output=package`
+- Use underscores, not hyphens: `pydantic_ai_slim`, not `pydantic-ai-slim`
+
+**3. Gazelle not updating BUILD files**
+- Ensure you're using the custom `gazelle_python_binary`
+- Check that `gazelle_python.yaml` exists and is up to date
+
+### Useful Commands
+
+```bash
+# Query available Python packages
 bazelisk query '@python_ai_deps//...' --output=package
 
 # Build all Python targets
 bazelisk build //python/...
+
+# Run specific tests
+bazelisk test //python/tests:test_ai_example
+
+# Clean build cache
+bazelisk clean
+
+# View dependency graph
+bazelisk query --output=graph //python/ai_example:main | dot -Tpng > deps.png
 ```
+
+## Best Practices
+
+### Package Structure
+- Follow Python package conventions with `__init__.py` files
+- Use descriptive module and package names
+- Group related functionality in separate packages
+
+### Dependencies
+- Pin major versions in `requirements.in`
+- Use slim versions of packages when available (e.g., `pydantic-ai-slim`)
+- Regularly update dependencies with security patches
+
+### Testing
+- Create comprehensive test suites for all modules
+- Use pytest fixtures for consistent test setup
+- Test both unit and integration scenarios
+
+### BUILD Files
+- Let Gazelle manage BUILD files - avoid manual editing
+- Use resolve directives for complex import patterns
+- Set appropriate visibility for your targets
 
 ## Conclusion
 
-This tutorial demonstrated creating a fully hermetic Python build system using Bazel with:
+You now have a production-ready Python development environment with:
+- ✅ Hermetic builds independent of host system
+- ✅ Automatic BUILD file generation and maintenance
+- ✅ Deterministic, reproducible builds
+- ✅ Modern AI framework integration (PydanticAI, PyTorch)
+- ✅ Comprehensive testing infrastructure
 
-- ✅ **Hermetic builds**: All dependencies bundled and versioned
-- ✅ **Automatic dependency management**: Lock files with SHA256 verification  
-- ✅ **Structured package organization**: Clear separation of concerns
-- ✅ **Comprehensive testing**: Unit and integration test coverage
-- ✅ **Production-ready**: PyTorch ML workloads, data processing pipelines
-
-While Gazelle encountered Go version compatibility issues, the manual BUILD file approach provides the same hermetic benefits with explicit control over the build configuration.
-
-The resulting system is reproducible, cross-platform compatible, and suitable for production ML workloads requiring deterministic builds.
+This setup scales from small Python scripts to large ML applications while maintaining build reliability and developer productivity.

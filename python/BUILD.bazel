@@ -13,6 +13,17 @@ exports_files([
 # gazelle:python_root
 # gazelle:python_generation_mode package
 # gazelle:python_default_visibility //:__subpackages__
+# gazelle:python_label_convention $distribution_name$
+# gazelle:python_label_normalization none
+# External dependencies
+# gazelle:resolve py numpy @python_ai_deps//numpy:pkg
+# gazelle:resolve py pydantic @python_ai_deps//pydantic:pkg
+# gazelle:resolve py torch @python_ai_deps//torch:pkg
+# gazelle:resolve py pytest @python_ai_deps//pytest:pkg
+# Internal dependencies
+# gazelle:resolve py python.ai_example.agents.data_analyzer //python/ai_example/agents:agents
+# gazelle:resolve py python.ai_example.models.simple_mlp //python/ai_example/models:models
+# gazelle:resolve py python.ai_example //python/ai_example:ai_example
 
 # Rule to compile requirements.in into requirements_lock.txt
 # Run with: bazel run //python:requirements.update

@@ -1,4 +1,16 @@
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_binary(
+    name = "simple_mlp",
+    srcs = ["simple_mlp.py"],
+    imports = ["../.."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//torch",
+        "@python_ai_deps//torch:pkg",
+    ],
+)
 
 py_library(
     name = "models",
@@ -7,9 +19,10 @@ py_library(
         "simple_mlp.py",
     ],
     imports = ["../.."],
-    visibility = ["//python:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@python_ai_deps//numpy:pkg",
+        "@python_ai_deps//torch",
         "@python_ai_deps//torch:pkg",
     ],
 )

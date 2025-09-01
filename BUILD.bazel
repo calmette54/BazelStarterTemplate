@@ -51,17 +51,31 @@ refresh_compile_commands(
     targets = ["//..."],
 )
 
+# Custom Gazelle binary with Python language support
+# This is required for proper Python directive recognition (python_label_convention, etc.)
+# According to rules_python official documentation
+gazelle_binary(
+    name = "gazelle_python_binary",
+    languages = [
+        "@rules_python_gazelle_plugin//python",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 # Gazelle target for automatic BUILD file generation
-# This uses the Python Gazelle plugin to automatically generate and update
-# py_library, py_binary, and py_test targets based on Python source code
+# This uses the custom Gazelle binary with Python language support to automatically
+# generate and update py_library, py_binary, and py_test targets based on Python source code
 # Run with: bazel run //:gazelle
+# gazelle:exclude integration
+# gazelle:python_label_convention $distribution_name$
+# gazelle:python_label_normalization none
 gazelle(
     name = "gazelle",
-    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
     data = [
         "//python:gazelle_python.yaml",
         "//python:requirements_lock.txt",
     ],
+    gazelle = ":gazelle_python_binary",
 )
 
 # Update Gazelle Python manifest when dependencies change
@@ -69,10 +83,10 @@ gazelle(
 # Run with: bazel run //:gazelle_python_manifest.update
 gazelle(
     name = "gazelle_python_manifest.update",
+    data = ["@rules_python_gazelle_plugin//python:std_modules"],
     extra_args = [
         "-from_file=python/gazelle_python.yaml",
         "-to_macro=python/gazelle_python_manifest.update",
     ],
-    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
-    data = ["@rules_python_gazelle_plugin//python:std_modules"],
+    gazelle = ":gazelle_python_binary",
 )

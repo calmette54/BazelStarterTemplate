@@ -7,7 +7,7 @@ py_library(
         "data_analyzer.py",
     ],
     imports = ["../.."],
-    visibility = ["//python:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@python_ai_deps//numpy:pkg",
         "@python_ai_deps//pydantic:pkg",
