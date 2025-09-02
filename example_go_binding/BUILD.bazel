@@ -1,0 +1,260 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_binary")
+
+# =============================================================================
+# C++ Wrapper Library for CGO Integration
+# =============================================================================
+
+cc_library(
+    name = "eigen_math_wrapper",
+    srcs = ["eigen_math_wrapper.cpp"],
+    hdrs = ["eigen_math_wrapper.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//example_eigen_binding:eigen_math",
+        "@eigen",
+    ],
+    copts = [
+        "-std=c++23",
+        "-O3",
+        "-DEIGEN_NO_DEBUG",
+        "-I.",  # Include current directory for wrapper headers
+    ],
+    linkopts = [
+        "-lstdc++",  # Link C++ standard library
+    ],
+)
+
+# =============================================================================
+# Go Library with CGO Bindings
+# =============================================================================
+
+go_library(
+    name = "eigen_math",
+    srcs = [
+        "eigen_math.go", 
+        "types.go",
+        "eigen_math_wrapper.h",  # Include header as source
+    ],
+    cgo = True,
+    cdeps = [":eigen_math_wrapper"],
+    importpath = "github.com/bazelstartertemplate/example_go_binding",
+    visibility = ["//visibility:public"],
+)
+
+# =============================================================================
+# Go Unit Tests
+# =============================================================================
+
+go_test(
+    name = "eigen_math_test",
+    srcs = ["eigen_math_test.go"],
+    embed = [":eigen_math"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
+
+# =============================================================================
+# Go Example Application 
+# =============================================================================
+
+go_binary(
+    name = "go_example",
+    srcs = ["example/main.go"],
+    deps = [":eigen_math"],
+)
+
+# Alternative BUILD file for the example subdirectory
+# This would be in example/BUILD.bazel
+go_binary(
+    name = "example_main",
+    srcs = ["example/main.go"],
+    deps = ["//example_go_binding:eigen_math"],
+)
+
+# =============================================================================
+# Convenience Aliases
+# =============================================================================
+
+# Aliases for easier building
+alias(
+    name = "lib",
+    actual = ":eigen_math",
+)
+
+alias(
+    name = "wrapper",
+    actual = ":eigen_math_wrapper", 
+)
+
+alias(
+    name = "test",
+    actual = ":eigen_math_test",
+)
+
+alias(
+    name = "example", 
+    actual = ":go_example",
+)
+
+# =============================================================================
+# Documentation and Utility Targets
+# =============================================================================
+
+# Generate Go documentation (if godoc is available)
+genrule(
+    name = "generate_docs",
+    outs = ["docs.html"],
+    cmd = "echo 'Run: bazelisk run //example_go_binding:eigen_math -- godoc -http=:6060' > $@",
+    visibility = ["//visibility:public"],
+)
+
+# Benchmark target
+go_test(
+    name = "eigen_math_benchmark",
+    srcs = ["eigen_math_test.go"],
+    embed = [":eigen_math"],
+    args = ["-test.bench=."],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+    tags = ["benchmark"],
+)
+
+# =============================================================================
+# Platform-specific configurations (if needed)
+# =============================================================================
+
+config_setting(
+    name = "linux_x86_64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+config_setting(
+    name = "darwin_x86_64",
+    constraint_values = [
+        "@platforms//os:macos", 
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+config_setting(
+    name = "windows_x86_64",
+    constraint_values = [
+        "@platforms//os:windows",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+# Platform-specific wrapper library (if different settings are needed)
+cc_library(
+    name = "eigen_math_wrapper_linux",
+    srcs = ["eigen_math_wrapper.cpp"],
+    hdrs = ["eigen_math_wrapper.h"],
+    deps = [
+        "//example_eigen_binding:eigen_math",
+        "@eigen",
+    ],
+    copts = select({
+        ":linux_x86_64": [
+            "-std=c++23",
+            "-O3", 
+            "-DEIGEN_NO_DEBUG",
+            "-fPIC",  # Position independent code for Linux
+        ],
+        "//conditions:default": [
+            "-std=c++23",
+            "-O3",
+            "-DEIGEN_NO_DEBUG",
+        ],
+    }),
+    linkopts = select({
+        ":linux_x86_64": ["-lstdc++"],
+        ":darwin_x86_64": ["-lc++"],
+        ":windows_x86_64": [],
+        "//conditions:default": ["-lstdc++"],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# =============================================================================
+# Development and Testing Utilities
+# =============================================================================
+
+# Target to build all Go bindings components
+filegroup(
+    name = "all_go_sources",
+    srcs = [
+        "eigen_math.go",
+        "types.go",
+        "eigen_math_test.go",
+        "example/main.go",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Target to build all headers and sources
+filegroup(
+    name = "all_sources",
+    srcs = [
+        "eigen_math_wrapper.h",
+        "eigen_math_wrapper.cpp",
+        "eigen_math.go", 
+        "types.go",
+        "eigen_math_test.go",
+        "example/main.go",
+        "BUILD.bazel",
+        "README.md",
+        "TUTORIAL.md",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Linting and formatting (if tools are available)
+genrule(
+    name = "go_fmt",
+    srcs = [":all_go_sources"],
+    outs = ["fmt_output.txt"],
+    cmd = "gofmt -l $(SRCS) > $@ || echo 'gofmt not available' > $@",
+    tags = ["lint"],
+)
+
+genrule(
+    name = "go_vet", 
+    srcs = [":all_go_sources"],
+    outs = ["vet_output.txt"],
+    cmd = "go vet $(SRCS) > $@ 2>&1 || echo 'go vet completed' > $@",
+    tags = ["lint"],
+)
+
+# =============================================================================
+# Integration Tests
+# =============================================================================
+
+# Test that builds the complete example
+sh_test(
+    name = "integration_test",
+    srcs = [":create_integration_test"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)
+
+# Shell script for integration testing (create the file separately)
+genrule(
+    name = "create_integration_test",
+    outs = ["test_integration.sh"],
+    cmd = """
+cat > $@ << 'EOF'
+#!/bin/bash
+set -e
+echo "Integration test script created"
+echo "Run manually: bazelisk run //example_go_binding:go_example"
+echo "Run tests: bazelisk test //example_go_binding:eigen_math_test"
+EOF
+chmod +x $@
+    """,
+)

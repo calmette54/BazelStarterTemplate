@@ -537,6 +537,490 @@ Then depend on `your_bindings_py`, not `your_bindings` directly.
 
 This integration pattern provides a robust, high-performance foundation for Python-C++ interoperability using modern Bazel build practices.
 
+## Go CGO Bindings Integration Patterns
+
+This project includes comprehensive Go CGO bindings that demonstrate modern, hermetic integration patterns for calling C++ libraries from Go.
+
+### CGO Architecture Overview
+
+CGO bindings require a bridge architecture since Go can only interface with C code directly:
+
+```
+┌─────────────────┐
+│   Go Code       │ ← Idiomatic Go APIs, automatic memory management
+├─────────────────┤
+│   CGO Layer     │ ← C function calls, type conversion, data marshaling  
+├─────────────────┤ 
+│   C Wrapper     │ ← C functions calling C++ methods (extern "C")
+├─────────────────┤
+│ C++ Library     │ ← Your actual C++ implementation (EigenMath)
+├─────────────────┤
+│ Dependencies    │ ← Eigen, system libraries, other C++ dependencies
+└─────────────────┘
+```
+
+**Key Design Patterns:**
+- **Opaque Handles**: C++ objects hidden behind C-style pointers
+- **Error Propagation**: C++ exceptions converted to Go error types
+- **Memory Management**: Runtime finalizers for automatic cleanup
+- **Type Safety**: Strong typing maintained at the Go API layer
+
+### Build System Commands for Go Bindings
+
+```bash
+# Build all Go bindings components
+bazelisk build //example_go_binding/...
+
+# Run C++ tests for underlying library  
+bazelisk test //example_eigen_binding:eigen_math_test
+
+# Run Go unit tests
+bazelisk test //example_go_binding:eigen_math_test --test_output=all
+
+# Run comprehensive Go example application
+bazelisk run //example_go_binding:go_example
+
+# Run Go benchmarks
+bazelisk test //example_go_binding:eigen_math_benchmark --test_arg=-test.bench=.
+
+# Build specific components
+bazelisk build //example_go_binding:eigen_math_wrapper  # C++ wrapper library
+bazelisk build //example_go_binding:eigen_math          # Go CGO library
+bazelisk build //example_go_binding:example             # Example application
+```
+
+### Development Workflow Patterns
+
+#### 1. C++ Wrapper Layer Development
+
+The C wrapper provides C-compatible functions that CGO can call:
+
+**Core Pattern - Error Handling Template:**
+```cpp
+// Template for exception-safe C wrapper functions
+template<typename Func>
+EigenResult safe_execute(Func&& func) {
+    try {
+        func();
+        return EIGEN_SUCCESS;
+    } catch (const std::invalid_argument&) {
+        return EIGEN_ERROR_INVALID_ARGUMENT;
+    } catch (const std::bad_alloc&) {
+        return EIGEN_ERROR_MEMORY_ALLOCATION;
+    } catch (...) {
+        return EIGEN_ERROR_UNKNOWN;
+    }
+}
+```
+
+**Opaque Handle Management:**
+```cpp
+// Internal handle structure (hidden from C/Go)
+struct EigenMatrixHandleImpl {
+    std::unique_ptr<Eigen::MatrixXd> matrix;
+    EigenMatrixHandleImpl(std::unique_ptr<Eigen::MatrixXd> m) : matrix(std::move(m)) {}
+};
+
+// C interface using opaque handles
+extern "C" {
+    typedef struct EigenMatrixHandleImpl* EigenMatrixHandle;
+    
+    EigenResult eigen_create_matrix(double** data, int rows, int cols, EigenMatrixHandle* handle);
+    void eigen_destroy_matrix(EigenMatrixHandle handle);
+}
+```
+
+#### 2. Go CGO Integration Development
+
+**CGO Import Pattern:**
+```go
+/*
+#include "eigen_math_wrapper.h" 
+#include <stdlib.h>
+*/
+import "C"
+```
+
+**Memory Management with Finalizers:**
+```go
+func NewMatrix(data [][]float64) (*Matrix, error) {
+    // ... create matrix via CGO ...
+    
+    matrix := &Matrix{handle: handle, rows: rows, cols: cols}
+    
+    // Set finalizer for automatic cleanup
+    runtime.SetFinalizer(matrix, (*Matrix).finalize)
+    return matrix, nil
+}
+
+func (m *Matrix) finalize() {
+    if m.handle != nil {
+        C.eigen_destroy_matrix(m.handle)
+        m.handle = nil
+    }
+}
+```
+
+**Error Conversion Pattern:**
+```go
+func cErrorToGoError(result C.EigenResult) error {
+    if result == C.EIGEN_SUCCESS {
+        return nil
+    }
+    
+    var message string
+    switch result {
+    case C.EIGEN_ERROR_INVALID_ARGUMENT:
+        message = "invalid argument"
+    case C.EIGEN_ERROR_DIMENSION_MISMATCH:
+        message = "dimension mismatch"
+    default:
+        message = "unknown error"
+    }
+    
+    return &EigenError{Code: int(result), Message: message}
+}
+```
+
+#### 3. Bazel Build Configuration Patterns
+
+**Core BUILD.bazel Structure:**
+```starlark
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test", "go_binary")
+
+# C++ wrapper library for CGO integration
+cc_library(
+    name = "eigen_math_wrapper",
+    srcs = ["eigen_math_wrapper.cpp"],
+    hdrs = ["eigen_math_wrapper.h"],
+    deps = [
+        "//example_eigen_binding:eigen_math",
+        "@eigen",
+    ],
+    copts = ["-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"],
+    linkopts = ["-lstdc++"],
+    visibility = ["//visibility:public"],
+)
+
+# Go library with CGO bindings
+go_library(
+    name = "eigen_math",
+    srcs = ["eigen_math.go", "types.go"],
+    cgo = True,                                    # Enable CGO compilation
+    cdeps = [":eigen_math_wrapper"],              # Link C++ dependencies
+    importpath = "github.com/bazelstartertemplate/example_go_binding",
+    visibility = ["//visibility:public"],
+)
+```
+
+**Cross-Platform Build Configuration:**
+```starlark
+cc_library(
+    name = "eigen_math_wrapper",
+    copts = select({
+        "@platforms//os:linux": [
+            "-std=c++23", "-O3", "-DEIGEN_NO_DEBUG", "-fPIC"
+        ],
+        "@platforms//os:macos": [
+            "-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"
+        ],
+        "//conditions:default": [
+            "-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"
+        ],
+    }),
+    linkopts = select({
+        "@platforms//os:linux": ["-lstdc++"],
+        "@platforms//os:macos": ["-lc++"],
+        "//conditions:default": ["-lstdc++"],
+    }),
+)
+```
+
+### Testing Strategies for CGO Bindings
+
+#### 1. Multi-Layer Testing Approach
+
+```bash
+# Test the C++ foundation
+bazelisk test //example_eigen_binding:eigen_math_test
+
+# Test the Go bindings
+bazelisk test //example_go_binding:eigen_math_test
+
+# Integration testing
+bazelisk run //example_go_binding:go_example
+```
+
+#### 2. Memory Management Testing
+
+```go
+func TestMemoryManagement(t *testing.T) {
+    t.Run("AutomaticCleanup", func(t *testing.T) {
+        // Create many objects without explicit cleanup
+        for i := 0; i < 100; i++ {
+            matrix, err := NewRandomMatrix(10, 10)
+            require.NoError(t, err)
+            _ = matrix // Don't explicitly close
+        }
+        
+        // Force garbage collection
+        runtime.GC()
+        runtime.GC()
+        
+        // If we get here without crashes, finalizers are working
+        assert.True(t, true, "Memory management test passed")
+    })
+}
+```
+
+#### 3. Error Condition Testing
+
+```go
+func TestErrorHandling(t *testing.T) {
+    t.Run("UseAfterClose", func(t *testing.T) {
+        matrix, err := NewRandomMatrix(2, 2, 42)
+        require.NoError(t, err)
+        
+        matrix.Close()
+        
+        _, err = matrix.Determinant()
+        assert.Error(t, err, "Operations after Close should fail")
+    })
+}
+```
+
+### Performance Optimization Patterns
+
+#### 1. Minimize CGO Call Overhead
+
+**Problem**: Frequent CGO calls are expensive
+```go
+// SLOW - many CGO calls
+for i := 0; i < matrix.Rows(); i++ {
+    for j := 0; j < matrix.Cols(); j++ {
+        val := matrix.At(i, j) // Each call goes through CGO
+    }
+}
+```
+
+**Solution**: Batch operations
+```go
+// FAST - single CGO call
+data, err := matrix.ToSlice()
+for i := 0; i < len(data); i++ {
+    for j := 0; j < len(data[i]); j++ {
+        val := data[i][j] // Pure Go access
+    }
+}
+```
+
+#### 2. Compiler Optimization Flags
+
+```starlark
+cc_library(
+    name = "eigen_math_wrapper",
+    copts = [
+        "-std=c++23",
+        "-O3",                    # Maximum optimization
+        "-DEIGEN_NO_DEBUG",       # Remove Eigen runtime checks
+        "-march=native",          # Target current CPU (use carefully)
+        "-flto",                  # Link-time optimization
+    ],
+)
+```
+
+#### 3. Memory Pool Patterns (Advanced)
+
+For high-performance scenarios, consider pre-allocating result buffers:
+
+```go
+type MatrixPool struct {
+    pool sync.Pool
+}
+
+func (p *MatrixPool) Get(rows, cols int) *Matrix {
+    if m := p.pool.Get(); m != nil {
+        matrix := m.(*Matrix)
+        if matrix.Rows() == rows && matrix.Cols() == cols {
+            return matrix
+        }
+    }
+    // Create new matrix if pool is empty or wrong size
+    matrix, _ := NewMatrix(make([][]float64, rows))
+    return matrix
+}
+
+func (p *MatrixPool) Put(m *Matrix) {
+    p.pool.Put(m)
+}
+```
+
+### Common Issues and Solutions
+
+#### Issue 1: CGO Pointer Rules Violation
+
+**Problem**: Passing Go pointers to C code that stores them long-term
+
+**Solution**: Always copy Go data to C-allocated memory:
+```go
+// CORRECT approach
+func goSliceToC(slice []float64) (*C.double, func()) {
+    cArray := C.malloc(C.size_t(len(slice)) * C.size_t(unsafe.Sizeof(C.double(0))))
+    cSlice := (*[1 << 30]C.double)(cArray)[:len(slice):len(slice)]
+    
+    for i, val := range slice {
+        cSlice[i] = C.double(val)
+    }
+    
+    return (*C.double)(cArray), func() { C.free(cArray) }
+}
+```
+
+#### Issue 2: Handle Validation
+
+**Problem**: Using nil handles causes crashes
+
+**Solution**: Always validate handles:
+```go
+func (m *Matrix) validateHandle() error {
+    if m.handle == nil {
+        return &EigenError{
+            Code:    -1,
+            Message: "matrix handle is nil - matrix may have been closed",
+        }
+    }
+    return nil
+}
+```
+
+#### Issue 3: CGO Import Formatting
+
+**Problem**: Incorrect CGO comment formatting breaks compilation
+
+**Solution**: No blank lines between comment and import:
+```go
+// CORRECT
+/*
+#include "eigen_math_wrapper.h"
+*/
+import "C"
+```
+
+### Debugging CGO Integration
+
+#### 1. Enable CGO Debug Information
+
+```bash
+# Build with debug information
+export CGO_CFLAGS="-g -O0"
+export CGO_LDFLAGS="-g"
+bazelisk build //example_go_binding:eigen_math --compilation_mode=dbg
+```
+
+#### 2. C Wrapper Debugging
+
+Add logging to your C wrapper functions:
+```cpp
+#ifdef DEBUG
+#include <stdio.h>
+#define LOG(fmt, ...) fprintf(stderr, "[WRAPPER] " fmt "\n", ##__VA_ARGS__)
+#else
+#define LOG(fmt, ...)
+#endif
+
+EigenResult eigen_multiply_matrices(EigenMatrixHandle a, EigenMatrixHandle b, EigenMatrixHandle* result) {
+    LOG("Multiplying matrices: %p × %p", a, b);
+    // ... implementation
+}
+```
+
+#### 3. Memory Debugging
+
+```bash
+# Check for memory leaks with Valgrind (Linux)
+valgrind --tool=memcheck --leak-check=full \
+  bazelisk run //example_go_binding:go_example
+
+# Go memory profiling
+go test -bench=. -memprofile=mem.prof
+go tool pprof mem.prof
+```
+
+### Integration Best Practices
+
+#### 1. Always Use Explicit Error Handling
+```go
+// Every CGO operation should return an error
+func (m *Matrix) SomeOperation() (*Matrix, error) {
+    if err := m.validateHandle(); err != nil {
+        return nil, err
+    }
+    
+    var resultHandle C.EigenMatrixHandle
+    result := C.eigen_some_operation(m.handle, &resultHandle)
+    
+    if err := cErrorToGoError(result); err != nil {
+        return nil, err
+    }
+    
+    // ... create result matrix
+}
+```
+
+#### 2. Provide Both Explicit and Automatic Cleanup
+```go
+// Automatic cleanup via finalizer
+func NewMatrix(data [][]float64) (*Matrix, error) {
+    // ... create matrix
+    runtime.SetFinalizer(matrix, (*Matrix).finalize)
+    return matrix, nil
+}
+
+// Explicit cleanup for critical applications  
+func (m *Matrix) Close() {
+    if m.handle != nil {
+        runtime.SetFinalizer(m, nil) // Remove finalizer
+        C.eigen_destroy_matrix(m.handle)
+        m.handle = nil
+    }
+}
+```
+
+#### 3. Document Thread Safety Constraints
+```go
+// Matrix operations are not thread-safe.
+// Use separate Matrix instances for concurrent operations
+// or provide external synchronization.
+type Matrix struct {
+    handle C.EigenMatrixHandle
+    // ... other fields
+}
+```
+
+### Commands Reference for Go CGO Development
+
+```bash
+# Development workflow
+bazelisk build //example_go_binding/...                    # Build all components
+bazelisk test //example_go_binding:eigen_math_test        # Run Go unit tests  
+bazelisk run //example_go_binding:go_example              # Run demonstration
+bazelisk test //example_go_binding:eigen_math_benchmark --test_arg=-test.bench=. # Benchmarks
+
+# Debugging and analysis
+bazelisk build //example_go_binding:eigen_math --compilation_mode=dbg  # Debug build
+bazelisk test //example_go_binding:eigen_math_test --test_output=all   # Verbose test output
+bazelisk test //example_go_binding:eigen_math_test -v --test_filter=TestMemoryManagement # Specific tests
+
+# Cross-platform builds
+bazelisk build //example_go_binding:eigen_math --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64
+bazelisk build //example_go_binding:eigen_math --platforms=@io_bazel_rules_go//go/toolchain:darwin_amd64
+
+# Integration testing
+bazelisk run //example_go_binding:integration_test        # Full integration test
+```
+
+This CGO integration pattern provides a robust, high-performance foundation for Go-C++ interoperability with proper memory management, error handling, and performance optimization.
+
 ## Hermetic System Library Integration Guide
 
 ### Overview
