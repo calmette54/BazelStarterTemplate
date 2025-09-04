@@ -1,0 +1,4 @@
+# This file is kept for compatibility with tools that expect a WORKSPACE file.
+# The actual dependency management is done via MODULE.bazel using bzlmod.
+
+workspace(name = "tutorial_gazebo")

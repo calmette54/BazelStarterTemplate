@@ -1,0 +1,98 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Physics engine comparison demonstration
+# Compares DART, Bullet, and TPE physics engines
+cc_binary(
+    name = "physics_comparison",
+    srcs = ["physics_comparison.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-physics//:gz-physics",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:physics_comparison_world",
+        "//models:physics_models",
+    ],
+)
+
+# Collision detection and response demonstration  
+cc_binary(
+    name = "collision_demo",
+    srcs = ["collision_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common", 
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:collision_demo_world",
+        "//models:physics_models",
+    ],
+)
+
+# Joint constraints and mechanisms demonstration
+cc_binary(
+    name = "joint_demo",
+    srcs = ["joint_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs", 
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:joint_demo_world",
+        "//models:physics_models",
+    ],
+)
+
+# Physics performance benchmarking tool
+cc_binary(
+    name = "physics_benchmark",
+    srcs = ["physics_benchmark.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport", 
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:physics_benchmark_world",
+        "//models:physics_models",
+    ],
+)
+
+# Physics configuration utility
+cc_binary(
+    name = "physics_configurator",
+    srcs = ["physics_configurator.cc"], 
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+)
+
+# Convenience target to build all physics demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":physics_comparison", 
+        ":collision_demo",
+        ":joint_demo",
+        ":physics_benchmark",
+        ":physics_configurator",
+    ],
+)

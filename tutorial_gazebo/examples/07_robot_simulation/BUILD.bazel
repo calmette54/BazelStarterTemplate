@@ -1,0 +1,115 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 7: Complete Robot Simulation
+# Demonstrates comprehensive robotics simulation:
+# - Multi-DOF articulated robot modeling
+# - Joint control and kinematics
+# - Sensor integration and data processing
+# - Motion planning and trajectory execution
+# - Robot-environment interaction
+
+# Multi-DOF Robot Control Demo
+# Complete articulated robot with joint controllers
+cc_binary(
+    name = "multidof_robot_demo",
+    srcs = ["multidof_robot_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:robot_arena",
+        "//models:articulated_robot",
+    ],
+)
+
+# Kinematics and Dynamics Analysis
+# Forward/inverse kinematics and dynamics computation
+cc_binary(
+    name = "kinematics_demo",
+    srcs = ["kinematics_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:robot_arena",
+        "//models:articulated_robot",
+    ],
+)
+
+# Motion Planning and Trajectory Execution
+# Path planning algorithms and trajectory control
+cc_binary(
+    name = "motion_planning_demo",
+    srcs = ["motion_planning_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:robot_arena",
+        "//models:articulated_robot",
+    ],
+)
+
+# Robot-Environment Interaction
+# Manipulation, grasping, and contact handling
+cc_binary(
+    name = "robot_interaction_demo",
+    srcs = ["robot_interaction_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:robot_arena",
+        "//models:articulated_robot",
+        "//models:manipulation_objects",
+    ],
+)
+
+# Sensor-Based Robot Navigation
+# SLAM, localization, and autonomous navigation
+cc_binary(
+    name = "robot_navigation_demo",
+    srcs = ["robot_navigation_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-sensors//:gz-sensors",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:robot_arena",
+        "//models:mobile_robot",
+    ],
+)
+
+# Convenience target to build all robot demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":multidof_robot_demo",
+        ":kinematics_demo",
+        ":motion_planning_demo",
+        ":robot_interaction_demo",
+        ":robot_navigation_demo",
+    ],
+)

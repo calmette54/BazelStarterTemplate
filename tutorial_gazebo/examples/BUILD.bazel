@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:public"])
+
+# Aggregate target for all examples
+filegroup(
+    name = "all_examples",
+    srcs = [
+        "//examples/01_basic_world:all",
+        "//examples/02_physics_demo:all", 
+        "//examples/03_rendering_demo:all",
+        "//examples/04_sensors_demo:all",
+        "//examples/05_transport_demo:all",
+        "//examples/06_plugins_demo:all",
+        "//examples/07_robot_simulation:all",
+        "//examples/08_advanced_features:all",
+    ],
+)

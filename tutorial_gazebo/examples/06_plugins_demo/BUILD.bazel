@@ -1,0 +1,184 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 6: Plugin System Demonstrations
+# Demonstrates Gazebo plugin capabilities:
+# - System plugins for simulation logic
+# - Visual plugins for rendering effects
+# - Sensor plugins for data processing
+# - GUI plugins for user interfaces
+# - Model plugins for entity behavior
+
+# System Plugin Demo - Core simulation system extensions
+# Shows how to create and integrate system plugins
+cc_binary(
+    name = "system_plugins_demo",
+    srcs = ["system_plugins_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:plugin_demo",
+        ":custom_system_plugin",
+    ],
+)
+
+# Custom System Plugin Library
+# Example system plugin that can be loaded by Gazebo
+cc_library(
+    name = "custom_system_plugin",
+    srcs = ["custom_system_plugin.cc"],
+    hdrs = ["custom_system_plugin.h"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs", 
+        "@gz-transport//:gz-transport",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    # Make this a shared library for plugin loading
+    linkshared = True,
+)
+
+# Visual Plugin Demo - Rendering and visual effects
+# Custom visual plugins for enhanced rendering
+cc_binary(
+    name = "visual_plugins_demo", 
+    srcs = ["visual_plugins_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-rendering//:gz-rendering",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:plugin_demo",
+        ":custom_visual_plugin",
+    ],
+)
+
+# Custom Visual Plugin Library
+cc_library(
+    name = "custom_visual_plugin",
+    srcs = ["custom_visual_plugin.cc"],
+    hdrs = ["custom_visual_plugin.h"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-rendering//:gz-rendering",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    linkshared = True,
+)
+
+# Sensor Plugin Demo - Custom sensor data processing
+# Shows sensor plugin development and integration
+cc_binary(
+    name = "sensor_plugins_demo",
+    srcs = ["sensor_plugins_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-sensors//:gz-sensors",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:sensor_testing",
+        ":custom_sensor_plugin",
+    ],
+)
+
+# Custom Sensor Plugin Library
+cc_library(
+    name = "custom_sensor_plugin",
+    srcs = ["custom_sensor_plugin.cc"],
+    hdrs = ["custom_sensor_plugin.h"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-sensors//:gz-sensors",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    linkshared = True,
+)
+
+# Model Plugin Demo - Entity behavior and control
+# Custom model plugins for robot and object behavior
+cc_binary(
+    name = "model_plugins_demo",
+    srcs = ["model_plugins_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:plugin_demo",
+        ":custom_model_plugin",
+    ],
+)
+
+# Custom Model Plugin Library
+cc_library(
+    name = "custom_model_plugin",
+    srcs = ["custom_model_plugin.cc"],
+    hdrs = ["custom_model_plugin.h"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-plugin//:gz-plugin",
+        "@gz-math//:gz-math",
+    ],
+    linkshared = True,
+)
+
+# Plugin Architecture Analysis
+# Comprehensive analysis of plugin system capabilities
+cc_binary(
+    name = "plugin_architecture_analysis",
+    srcs = ["plugin_architecture_analysis.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-plugin//:gz-plugin",
+        "@gz-utils//:gz-utils",
+    ],
+    data = [
+        "//worlds:plugin_demo",
+        ":custom_system_plugin",
+        ":custom_visual_plugin", 
+        ":custom_sensor_plugin",
+        ":custom_model_plugin",
+    ],
+)
+
+# Convenience target to build all plugin demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":system_plugins_demo",
+        ":visual_plugins_demo", 
+        ":sensor_plugins_demo",
+        ":model_plugins_demo",
+        ":plugin_architecture_analysis",
+    ],
+)

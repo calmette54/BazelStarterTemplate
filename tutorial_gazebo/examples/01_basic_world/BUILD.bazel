@@ -1,0 +1,63 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 1: Basic World Creation
+# Demonstrates fundamental concepts:
+# - SDF world format and structure
+# - Basic model creation and positioning
+# - Lighting setup and configuration
+# - Ground plane and basic physics
+
+cc_binary(
+    name = "basic_world_demo",
+    srcs = ["basic_world_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common", 
+        "@gz-math//:gz-math",
+        "@gz-transport//:gz-transport",
+    ],
+    data = [
+        "//worlds:basic_world.sdf",
+        "//models:simple_box",
+        "//models:ground_plane",
+    ],
+)
+
+# Interactive world viewer
+cc_binary(
+    name = "world_viewer",
+    srcs = ["world_viewer.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+    ],
+    data = [
+        "//worlds:basic_world.sdf",
+        "//worlds:lighting_demo.sdf",
+    ],
+)
+
+# SDF validation tool
+cc_binary(
+    name = "sdf_validator",
+    srcs = ["sdf_validator.cc"], 
+    deps = [
+        "@gz-common//:gz-common",
+        # SDF library will be available through gz-common
+    ],
+    data = [
+        "//worlds:basic_world.sdf",
+    ],
+)
+
+# Convenience target to build all basic world demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":basic_world_demo",
+        ":world_viewer", 
+        ":sdf_validator",
+    ],
+)

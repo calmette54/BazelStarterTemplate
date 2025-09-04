@@ -1,0 +1,113 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 8: Advanced Gazebo Features
+# Demonstrates cutting-edge capabilities:
+# - Actor simulation and behavior trees
+# - Nested model hierarchies and composition
+# - Advanced material and lighting systems
+# - Level-of-detail (LOD) optimization
+# - Dynamic model spawning and removal
+# - Custom GUI plugins and interfaces
+
+# Actor Simulation Demo
+# Dynamic human-like entities with scripted behaviors
+cc_binary(
+    name = "actors_demo",
+    srcs = ["actors_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:advanced_features",
+    ],
+)
+
+# Nested Models Demo
+# Complex hierarchical model composition
+cc_binary(
+    name = "nested_models_demo",
+    srcs = ["nested_models_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:advanced_features",
+        "//models:nested_robot_system",
+    ],
+)
+
+# Advanced Materials and Lighting Demo
+# PBR materials, dynamic lighting, and visual effects
+cc_binary(
+    name = "advanced_visuals_demo",
+    srcs = ["advanced_visuals_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        "@gz-rendering//:gz-rendering",
+    ],
+    data = [
+        "//worlds:advanced_features",
+    ],
+)
+
+# Dynamic Model Management Demo  
+# Runtime model spawning, modification, and removal
+cc_binary(
+    name = "dynamic_models_demo",
+    srcs = ["dynamic_models_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:advanced_features",
+        "//models:all_models",
+    ],
+)
+
+# Performance Optimization Demo
+# LOD, culling, and simulation optimization techniques
+cc_binary(
+    name = "performance_optimization_demo",
+    srcs = ["performance_optimization_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        "@gz-utils//:gz-utils",
+    ],
+    data = [
+        "//worlds:advanced_features",
+    ],
+)
+
+# Convenience target to build all advanced feature demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":actors_demo",
+        ":nested_models_demo", 
+        ":advanced_visuals_demo",
+        ":dynamic_models_demo",
+        ":performance_optimization_demo",
+    ],
+)

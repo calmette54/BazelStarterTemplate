@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<!--
+  Ground Plane Model
+  
+  This model demonstrates:
+  1. Static model definition for immovable objects
+  2. Infinite plane geometry for ground surfaces
+  3. High-friction surface properties
+  4. Textured appearance with repeating patterns
+  5. Performance optimization for large surfaces
+  
+  Learning objectives:
+  - Understanding static vs dynamic models
+  - Plane geometry vs box geometry
+  - Surface material and texture application
+  - Performance considerations for large surfaces
+-->
+
+<sdf version="1.10">
+  <model name="ground_plane">
+    
+    <!-- Static models don't move and have better performance -->
+    <static>true</static>
+    
+    <!-- Ground level pose -->
+    <pose>0 0 0 0 0 0</pose>
+    
+    <!-- Single link for the ground surface -->
+    <link name="link">
+      
+      <!-- 
+        No inertial properties needed for static models
+        Static objects are not affected by physics forces
+      -->
+      
+      <!-- 
+        Collision Geometry - Infinite Plane
+        Plane geometry provides infinite surface for collision detection
+        Much more efficient than large box geometry
+      -->
+      <collision name="collision">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal> <!-- Normal vector pointing up (Z direction) -->
+            <size>100 100</size>   <!-- Size hint for collision detection -->
+          </plane>
+        </geometry>
+        
+        <!-- 
+          Surface Properties
+          Ground should have high friction to prevent sliding
+        -->
+        <surface>
+          <friction>
+            <ode>
+              <mu>100</mu>    <!-- Very high friction coefficient -->
+              <mu2>50</mu2>   <!-- Secondary friction coefficient -->
+            </ode>
+            <torsional>
+              <coefficient>1.0</coefficient> <!-- Resistance to spinning -->
+            </torsional>
+          </friction>
+          
+          <!-- Ground should not bounce -->
+          <restitution>0.0</restitution>
+          
+          <contact>
+            <ode>
+              <max_vel>0.01</max_vel>      <!-- Low maximum contact velocity -->
+              <min_depth>0.001</min_depth> <!-- Minimum penetration depth -->
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      
+      <!-- 
+        Visual Geometry - Finite Plane for Rendering
+        Visual plane shows a finite area with texture
+      -->
+      <visual name="visual">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>100 100</size> <!-- Visual size - adjust as needed -->
+          </plane>
+        </geometry>
+        
+        <!-- Ground material with texture -->
+        <material>
+          <!-- Predefined Gazebo material -->
+          <script>
+            <name>Gazebo/Grey</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          
+          <!-- Alternative: Custom color specification -->
+          <ambient>0.5 0.5 0.5 1</ambient>  <!-- Medium grey ambient -->
+          <diffuse>0.8 0.8 0.8 1</diffuse>  <!-- Light grey diffuse -->
+          <specular>0.1 0.1 0.1 1</specular> <!-- Low specularity for matte finish -->
+          <emissive>0 0 0 1</emissive>       <!-- No self-illumination -->
+          
+          <!-- PBR properties for realistic appearance -->
+          <pbr>
+            <metal>
+              <metalness>0.0</metalness>  <!-- Non-metallic surface -->
+              <roughness>0.8</roughness>  <!-- Rough surface (concrete-like) -->
+            </metal>
+          </pbr>
+        </material>
+        
+        <!-- Ground should cast shadows -->
+        <cast_shadows>true</cast_shadows>
+      </visual>
+      
+    </link>
+    
+  </model>
+</sdf>
+
+<!--
+  Key Concepts Explained:
+
+  1. Static Models:
+     - static=true: Object never moves, better performance
+     - No inertial properties needed (mass, inertia)
+     - Cannot be moved by physics forces
+     - Ideal for terrain, buildings, fixtures
+
+  2. Plane Geometry:
+     - Infinite collision surface for physics
+     - Finite visual surface for rendering
+     - Normal vector defines orientation (0 0 1 = horizontal)
+     - More efficient than large box geometry
+
+  3. Surface Properties:
+     - High friction prevents objects from sliding
+     - Low restitution prevents bouncing
+     - Torsional friction prevents spinning
+     - Contact parameters control collision behavior
+
+  4. Material Choices:
+     - Gazebo/Grey: Predefined concrete-like appearance
+     - Low metalness: Non-metallic material
+     - High roughness: Matte, non-reflective surface
+     - Medium color values: Neutral appearance
+
+  5. Performance Considerations:
+     - Static models are computationally cheaper
+     - Plane geometry is more efficient than box
+     - Single material reduces rendering overhead
+     - Appropriate size for visual representation
+
+  Usage Examples:
+  - Default ground for most simulations
+  - Base for building environments
+  - Landing surface for flying robots
+  - Foundation for physics demonstrations
+
+  Common Modifications:
+  1. Different size: Adjust <size> for visual area
+  2. Different texture: Change material script or colors
+  3. Different friction: Modify mu and mu2 values
+  4. Inclined plane: Change normal vector (e.g., 0 0.1 1 for slight slope)
+  5. Different colors: Modify ambient/diffuse values
+
+  Advanced Features:
+  - Add heightmap for terrain variation
+  - Use mesh geometry for complex ground shapes
+  - Apply texture images for realistic appearance
+  - Create multiple ground planes at different levels
+-->

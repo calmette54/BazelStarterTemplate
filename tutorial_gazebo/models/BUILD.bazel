@@ -1,0 +1,36 @@
+package(default_visibility = ["//visibility:public"])
+
+# Robot and object model definitions
+# SDF models for comprehensive robotics simulation
+
+# Articulated robot model - 6-DOF manipulator
+filegroup(
+    name = "articulated_robot",
+    srcs = ["articulated_robot.sdf"],
+)
+
+# Mobile robot model - wheeled robot with sensors
+filegroup(
+    name = "mobile_robot", 
+    srcs = ["mobile_robot.sdf"],
+)
+
+# Manipulation objects - various graspable objects
+filegroup(
+    name = "manipulation_objects",
+    srcs = [
+        "manipulation_box.sdf",
+        "manipulation_sphere.sdf", 
+        "manipulation_cylinder.sdf",
+    ],
+)
+
+# All robot models
+filegroup(
+    name = "all_models",
+    srcs = [
+        ":articulated_robot",
+        ":mobile_robot",
+        ":manipulation_objects",
+    ],
+)

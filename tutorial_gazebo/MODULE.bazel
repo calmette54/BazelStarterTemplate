@@ -1,0 +1,36 @@
+module(
+    name = "tutorial_gazebo",
+    version = "1.0.0",
+)
+
+# Gazebo Harmonic LTS dependencies from Bazel Central Registry (BCR)
+# These provide the complete Gazebo simulation environment
+
+# Core simulation engine - latest available version for Harmonic
+bazel_dep(name = "gz-sim", version = "9.3.0")
+
+# Sensor simulation capabilities
+bazel_dep(name = "gz-sensors", version = "9.2.0.bcr.1")
+
+# Rendering engine with Ogre2 support
+bazel_dep(name = "gz-rendering", version = "9.2.0")
+
+# Physics simulation with multiple engine support (DART, Bullet, TPE)
+bazel_dep(name = "gz-physics", version = "8.3.0")
+
+# Common utilities and base functionality
+bazel_dep(name = "gz-common", version = "6.1.0")
+
+# Additional required dependencies (need to be explicit in Bazel 8+)
+bazel_dep(name = "gz-math", version = "8.1.1.bcr.1")
+bazel_dep(name = "gz-msgs", version = "11.1.0.bcr.2")
+bazel_dep(name = "gz-plugin", version = "3.1.0")
+bazel_dep(name = "gz-transport", version = "14.1.0.bcr.1")
+bazel_dep(name = "gz-utils", version = "3.1.0")
+
+# Build toolchain requirements
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+# For comprehensive documentation generation (disabled for now - not in BCR)
+# bazel_dep(name = "rules_doxygen", version = "0.5.1")

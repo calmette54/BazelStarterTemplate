@@ -1,0 +1,108 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 5: Transport and Communication Systems
+# Demonstrates Gazebo transport capabilities:
+# - Topic publishing and subscribing patterns
+# - Service request/response communication
+# - Message serialization and deserialization
+# - Multi-node communication architectures
+# - Performance analysis and optimization
+
+# Basic publisher-subscriber demonstration
+# Shows fundamental topic-based communication patterns
+cc_binary(
+    name = "publisher_subscriber",
+    srcs = ["publisher_subscriber.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:transport_demo",
+    ],
+)
+
+# Service client-server demonstration
+# Request/response communication patterns and service discovery
+cc_binary(
+    name = "service_demo",
+    srcs = ["service_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:transport_demo",
+    ],
+)
+
+# Advanced message handling and serialization
+# Custom message types and efficient serialization patterns
+cc_binary(
+    name = "message_demo",
+    srcs = ["message_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:transport_demo",
+    ],
+)
+
+# Multi-node communication architecture
+# Complex communication patterns with multiple processes
+cc_binary(
+    name = "multinode_demo",
+    srcs = ["multinode_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:transport_demo",
+    ],
+)
+
+# Communication performance analysis and optimization
+# Latency, throughput, and scalability analysis
+cc_binary(
+    name = "performance_analysis",
+    srcs = ["performance_analysis.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:transport_demo",
+    ],
+)
+
+# Convenience target to build all transport demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":publisher_subscriber",
+        ":service_demo",
+        ":message_demo",
+        ":multinode_demo",
+        ":performance_analysis",
+    ],
+)

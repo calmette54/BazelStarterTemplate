@@ -1,0 +1,113 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 4: Sensor Simulation and Integration
+# Demonstrates comprehensive sensor systems:
+# - Camera sensors (RGB, depth, thermal, stereo)
+# - LiDAR sensors (2D/3D, multi-beam configurations)
+# - IMU sensors (accelerometer, gyroscope, magnetometer)
+# - GPS sensors and positioning systems
+# - Sensor fusion and data processing
+
+# Multi-sensor platform demonstration
+# Shows integrated sensor suite with data collection and analysis
+cc_binary(
+    name = "sensor_platform",
+    srcs = ["sensor_platform.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-sensors//:gz-sensors",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:sensor_testing",
+    ],
+)
+
+# LiDAR demonstration and analysis
+# Different LiDAR configurations and point cloud processing
+cc_binary(
+    name = "lidar_demo",
+    srcs = ["lidar_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-sensors//:gz-sensors",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:sensor_testing",
+    ],
+)
+
+# IMU and inertial sensor demonstration
+# Accelerometer, gyroscope, and magnetometer integration
+cc_binary(
+    name = "imu_demo",
+    srcs = ["imu_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-sensors//:gz-sensors",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:sensor_testing",
+    ],
+)
+
+# GPS and positioning system demonstration
+# Global positioning, coordinate systems, and localization
+cc_binary(
+    name = "gps_demo",
+    srcs = ["gps_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-sensors//:gz-sensors",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:sensor_testing",
+    ],
+)
+
+# Advanced sensor fusion demonstration
+# Multi-sensor data integration and Kalman filtering
+cc_binary(
+    name = "sensor_fusion",
+    srcs = ["sensor_fusion.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-sensors//:gz-sensors",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:sensor_testing",
+    ],
+)
+
+# Convenience target to build all sensor demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":sensor_platform",
+        ":lidar_demo",
+        ":imu_demo",
+        ":gps_demo",
+        ":sensor_fusion",
+    ],
+)

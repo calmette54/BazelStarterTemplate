@@ -1,0 +1,111 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Material showcase demonstration
+# Demonstrates various material properties and PBR rendering
+cc_binary(
+    name = "material_showcase",
+    srcs = ["material_showcase.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:material_showcase_world",
+        "//models:rendering_models",
+    ],
+)
+
+# Lighting comparison demonstration
+# Shows different lighting types and their effects on materials
+cc_binary(
+    name = "lighting_demo",
+    srcs = ["lighting_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:lighting_comparison_world",
+        "//models:rendering_models",
+    ],
+)
+
+# Camera demonstration
+# Multiple camera types and rendering techniques
+cc_binary(
+    name = "camera_demo",
+    srcs = ["camera_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-sensors//:gz-sensors",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:camera_demo_world",
+        "//models:rendering_models",
+    ],
+)
+
+# PBR material explorer
+# Interactive tool for exploring PBR parameters
+cc_binary(
+    name = "pbr_explorer",
+    srcs = ["pbr_explorer.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:pbr_demo_world",
+        "//models:rendering_models",
+    ],
+)
+
+# Visual effects demonstration
+# Advanced rendering features and effects
+cc_binary(
+    name = "visual_effects",
+    srcs = ["visual_effects.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+    ],
+    data = [
+        "//worlds:visual_effects_world",
+        "//models:rendering_models",
+    ],
+)
+
+# Convenience target to build all rendering demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":material_showcase",
+        ":lighting_demo",
+        ":camera_demo", 
+        ":pbr_explorer",
+        ":visual_effects",
+    ],
+)

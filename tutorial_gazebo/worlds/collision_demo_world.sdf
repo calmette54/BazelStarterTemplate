@@ -1,0 +1,342 @@
+<?xml version="1.0" ?>
+<!--
+  Collision Detection Demo World
+  
+  This world demonstrates various collision detection scenarios,
+  surface materials, and collision response behaviors.
+  
+  Features:
+  1. Different collision shapes (box, sphere, cylinder, complex)
+  2. Varying surface properties (friction, restitution, damping)
+  3. Contact sensors for collision monitoring
+  4. Performance-optimized collision detection
+-->
+
+<sdf version="1.10">
+  <world name="collision_demo">
+    
+    <!-- Physics with contact reporting -->
+    <physics name="default" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <max_contacts>20</max_contacts>
+      <dart>
+        <collision_detector>fcl</collision_detector>
+      </dart>
+    </physics>
+    
+    <!-- Essential plugins -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    
+    <!-- Lighting -->
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <direction>0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+    </light>
+    
+    <!-- Ground plane with contact sensor -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <restitution>0.1</restitution>
+            <contact>
+              <ode>
+                <max_vel>0.01</max_vel>
+                <min_depth>0.001</min_depth>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+        
+        <!-- Contact sensor for ground collisions -->
+        <sensor name="ground_contact_sensor" type="contact">
+          <contact>
+            <collision>collision</collision>
+          </contact>
+          <update_rate>1000</update_rate>
+          <always_on>true</always_on>
+        </sensor>
+      </link>
+    </model>
+    
+    <!-- High-friction box -->
+    <model name="high_friction_box">
+      <pose>-3 -3 3 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>2.0</mass>
+          <inertia>
+            <ixx>0.33</ixx>
+            <iyy>0.33</iyy>
+            <izz>0.33</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>2.0</mu>
+                <mu2>2.0</mu2>
+              </ode>
+            </friction>
+            <restitution>0.1</restitution>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+        <sensor name="box_contact_sensor" type="contact">
+          <contact>
+            <collision>collision</collision>
+          </contact>
+          <update_rate>1000</update_rate>
+          <always_on>true</always_on>
+        </sensor>
+      </link>
+    </model>
+    
+    <!-- Low-friction box -->
+    <model name="low_friction_box">
+      <pose>0 -3 3 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>2.0</mass>
+          <inertia>
+            <ixx>0.33</ixx>
+            <iyy>0.33</iyy>
+            <izz>0.33</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.1</mu>
+                <mu2>0.1</mu2>
+              </ode>
+            </friction>
+            <restitution>0.1</restitution>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0 0 1</ambient>
+            <diffuse>0.5 0 0 1</diffuse>
+          </material>
+        </visual>
+        <sensor name="box2_contact_sensor" type="contact">
+          <contact>
+            <collision>collision</collision>
+          </contact>
+          <update_rate>1000</update_rate>
+          <always_on>true</always_on>
+        </sensor>
+      </link>
+    </model>
+    
+    <!-- High-bounce sphere -->
+    <model name="bouncy_sphere">
+      <pose>3 -3 4 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.8</mu>
+                <mu2>0.8</mu2>
+              </ode>
+            </friction>
+            <restitution>0.9</restitution>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0 1 0 1</ambient>
+            <diffuse>0 1 0 1</diffuse>
+          </material>
+        </visual>
+        <sensor name="sphere1_contact_sensor" type="contact">
+          <contact>
+            <collision>collision</collision>
+          </contact>
+          <update_rate>1000</update_rate>
+          <always_on>true</always_on>
+        </sensor>
+      </link>
+    </model>
+    
+    <!-- Low-bounce sphere -->
+    <model name="dead_sphere">
+      <pose>6 -3 4 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.8</mu>
+                <mu2>0.8</mu2>
+              </ode>
+            </friction>
+            <restitution>0.0</restitution>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.5</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0 0.5 0 1</ambient>
+            <diffuse>0 0.5 0 1</diffuse>
+          </material>
+        </visual>
+        <sensor name="sphere2_contact_sensor" type="contact">
+          <contact>
+            <collision>collision</collision>
+          </contact>
+          <update_rate>1000</update_rate>
+          <always_on>true</always_on>
+        </sensor>
+      </link>
+    </model>
+    
+    <!-- Rolling cylinder -->
+    <model name="rolling_cylinder">
+      <pose>-6 0 2 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>3.0</mass>
+          <inertia>
+            <ixx>1.5</ixx>
+            <iyy>1.5</iyy>
+            <izz>0.75</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.5</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.5</mu>
+                <mu2>1.5</mu2>
+              </ode>
+            </friction>
+            <restitution>0.3</restitution>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.5</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+          </material>
+        </visual>
+        <sensor name="cylinder_contact_sensor" type="contact">
+          <contact>
+            <collision>collision</collision>
+          </contact>
+          <update_rate>1000</update_rate>
+          <always_on>true</always_on>
+        </sensor>
+      </link>
+    </model>
+    
+  </world>
+</sdf>

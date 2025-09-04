@@ -1,0 +1,179 @@
+<?xml version="1.0"?>
+<!--
+  Simple Box Model
+  
+  This model demonstrates:
+  1. Basic model structure with single link
+  2. Proper inertial properties for a box
+  3. Collision and visual geometry definition
+  4. Material specification
+  5. Standard model configuration
+  
+  Learning objectives:
+  - Understanding model SDF structure
+  - Proper mass and inertia calculation
+  - Collision vs visual geometry
+  - Material properties and appearance
+-->
+
+<sdf version="1.10">
+  <model name="simple_box">
+    
+    <!-- Model-level pose (can be overridden when spawned) -->
+    <pose>0 0 0.5 0 0 0</pose>
+    
+    <!-- Single link containing all geometry and physics -->
+    <link name="link">
+      
+      <!-- 
+        Inertial Properties
+        Proper mass and inertia are crucial for realistic physics
+        For a 1x1x1 box with mass=1kg:
+        - Ixx = Iyy = Izz = (1/12) * m * (w² + h²) = (1/12) * 1 * (1² + 1²) = 0.166
+      -->
+      <inertial>
+        <pose>0 0 0 0 0 0</pose> <!-- Center of mass at geometric center -->
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.166</ixx>  <!-- Moment of inertia about X axis -->
+          <iyy>0.166</iyy>  <!-- Moment of inertia about Y axis -->
+          <izz>0.166</izz>  <!-- Moment of inertia about Z axis -->
+          <ixy>0</ixy>      <!-- Product of inertia (0 for symmetric objects) -->
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      
+      <!-- 
+        Collision Geometry
+        Defines the shape for physics collision detection
+        Usually simpler than visual geometry for performance
+      -->
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size> <!-- 1 meter cube -->
+          </box>
+        </geometry>
+        
+        <!-- Surface properties affecting physics interaction -->
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.0</mu>    <!-- Coefficient of friction -->
+              <mu2>1.0</mu2>  <!-- Second coefficient of friction -->
+            </ode>
+          </friction>
+          <restitution>0.3</restitution> <!-- Bounciness (0=no bounce, 1=perfect bounce) -->
+          <contact>
+            <ode>
+              <max_vel>0.01</max_vel>      <!-- Maximum contact velocity -->
+              <min_depth>0.001</min_depth> <!-- Minimum penetration depth -->
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      
+      <!-- 
+        Visual Geometry
+        Defines the appearance for rendering
+        Can be more detailed than collision geometry
+      -->
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        
+        <!-- Material properties for appearance -->
+        <material>
+          <script>
+            <name>Gazebo/Blue</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <!-- Alternative: Direct color specification -->
+          <ambient>0.2 0.5 0.8 1</ambient>  <!-- Ambient color (RGBA) -->
+          <diffuse>0.2 0.5 0.8 1</diffuse>  <!-- Diffuse color (main color) -->
+          <specular>0.1 0.1 0.1 1</specular> <!-- Specular highlights -->
+          <emissive>0 0 0 1</emissive>       <!-- Self-illumination -->
+          
+          <!-- PBR (Physically Based Rendering) properties -->
+          <pbr>
+            <metal>
+              <metalness>0.1</metalness>  <!-- How metallic (0=dielectric, 1=metal) -->
+              <roughness>0.6</roughness>  <!-- Surface roughness (0=mirror, 1=rough) -->
+            </metal>
+          </pbr>
+        </material>
+        
+        <!-- Optional: Transparency -->
+        <transparency>0.0</transparency> <!-- 0=opaque, 1=fully transparent -->
+        
+        <!-- Optional: Cast shadows -->
+        <cast_shadows>true</cast_shadows>
+      </visual>
+      
+    </link>
+    
+    <!-- 
+      Optional: Static flag
+      Set to true if the object should not move (like buildings)
+      Static objects have better performance but cannot be moved by physics
+    -->
+    <static>false</static>
+    
+    <!-- 
+      Optional: Allow auto-disable
+      Physics objects can be put to sleep when not moving for performance
+    -->
+    <allow_auto_disable>true</allow_auto_disable>
+    
+  </model>
+</sdf>
+
+<!--
+  Key Concepts Explained:
+
+  1. Model Structure:
+     - model: Top-level container with unique name
+     - link: Physical body with mass, geometry, and material
+     - pose: Position and orientation (x y z roll pitch yaw)
+
+  2. Physics Properties:
+     - mass: Total mass in kilograms
+     - inertia: Resistance to rotational acceleration
+     - center of mass: Point where mass is concentrated
+
+  3. Geometry Types:
+     - collision: Simple shapes for physics (box, sphere, cylinder)
+     - visual: Detailed appearance (can use meshes, textures)
+     - Different complexity levels for performance optimization
+
+  4. Material Properties:
+     - ambient: Color in shadows/indirect lighting
+     - diffuse: Main surface color in direct lighting
+     - specular: Highlight color and shininess
+     - pbr: Modern physically-based material properties
+
+  5. Surface Physics:
+     - friction: Resistance to sliding motion
+     - restitution: Bounciness factor
+     - contact: Collision detection parameters
+
+  Usage Examples:
+  - Use as-is for basic physics demonstrations
+  - Modify size for different box dimensions
+  - Change material colors and properties
+  - Adjust mass and inertia for different behaviors
+  - Set static=true for immovable objects
+
+  Common Modifications:
+  1. Different sizes: <size>2 1 0.5</size>
+  2. Different colors: Change ambient/diffuse values
+  3. Different physics: Adjust mass, friction, restitution
+  4. Transparency: Set transparency value between 0-1
+  5. No shadows: Set cast_shadows to false
+-->
