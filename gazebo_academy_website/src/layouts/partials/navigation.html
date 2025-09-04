@@ -1,0 +1,194 @@
+{{/* Main Navigation Bar */}}
+<nav class="nav-main" :class="{ 'nav-scrolled': isScrolled }" role="navigation" aria-label="Main navigation">
+    <div class="content-container">
+        <div class="flex items-center justify-between h-16">
+            {{/* Logo and Brand */}}
+            <div class="flex items-center">
+                <a href="/" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                    {{ if .Site.Params.logo }}
+                        <img src="{{ .Site.Params.logo }}" alt="{{ .Site.Title }} Logo" class="h-8 w-auto">
+                    {{ else }}
+                        <div class="h-8 w-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">
+                            GM
+                        </div>
+                    {{ end }}
+                    <span class="text-xl font-bold text-gray-900 hidden sm:block">{{ .Site.Title }}</span>
+                </a>
+            </div>
+            
+            {{/* Desktop Menu */}}
+            <div class="hidden md:block">
+                <div class="ml-10 flex items-baseline space-x-4">
+                    {{ range .Site.Menus.main }}
+                        <a href="{{ .URL }}" 
+                           class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors duration-200
+                                  {{ if $.IsMenuCurrent "main" . }}text-primary-600 bg-primary-50 rounded-md{{ end }}"
+                           {{ if .Pre }}aria-label="{{ .Pre }}"{{ end }}>
+                            {{ .Name }}
+                        </a>
+                    {{ end }}
+                </div>
+            </div>
+            
+            {{/* User Actions */}}
+            <div class="hidden md:flex items-center space-x-4">
+                {{/* Search Button */}}
+                <button x-data="search()" 
+                        @click="$refs.searchInput.focus()"
+                        class="p-2 text-gray-400 hover:text-gray-500 focus-visible-ring"
+                        aria-label="Search">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                
+                {{/* Quick Search */}}
+                <div x-data="search()" class="relative">
+                    <input x-ref="searchInput"
+                           x-model="query"
+                           @input.debounce.300ms="performSearch()"
+                           @click.away="clearSearch()"
+                           type="text"
+                           placeholder="Search courses..."
+                           class="search-input w-64 text-sm"
+                           style="display: none;">
+                    
+                    {{/* Search Results */}}
+                    <div x-show="showResults" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-1 transform scale-100"
+                         class="search-results">
+                        <template x-for="result in results" :key="result.url">
+                            <div @click="selectResult(result)" 
+                                 class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0">
+                                <div class="font-medium text-sm" x-text="result.title"></div>
+                                <div class="text-xs text-gray-600 mt-1" x-text="result.excerpt"></div>
+                                <span class="inline-block mt-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded" 
+                                      x-text="result.type"></span>
+                            </div>
+                        </template>
+                        <div x-show="results.length === 0 && query.length > 2" 
+                             class="p-3 text-sm text-gray-500 text-center">
+                            No results found
+                        </div>
+                    </div>
+                </div>
+                
+                {{/* User Menu / Auth Buttons */}}
+                {{ if .Site.Params.auth_enabled }}
+                    {{/* Authenticated User Menu */}}
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" 
+                                class="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-gray-900">
+                            <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm">
+                                U
+                            </div>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        
+                        <div x-show="open" 
+                             @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                            <div class="py-1">
+                                <a href="/dashboard/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                                <a href="/profile/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                                <a href="/settings/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                <hr class="my-1">
+                                <a href="/logout/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                            </div>
+                        </div>
+                    </div>
+                {{ else }}
+                    {{/* Sign In / Sign Up Buttons */}}
+                    <a href="/login/" class="text-sm font-medium text-gray-700 hover:text-gray-900">Sign In</a>
+                    <a href="/pricing/" class="btn-primary text-sm">Start Free</a>
+                {{ end }}
+            </div>
+            
+            {{/* Mobile Menu Button */}}
+            <div class="md:hidden">
+                <button @click="toggleMenu()" 
+                        class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus-visible-ring"
+                        aria-expanded="false" 
+                        aria-label="Toggle main menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path x-show="!isOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        <path x-show="isOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    {{/* Mobile Menu */}}
+    <div class="mobile-menu md:hidden" :class="{ 'open': isOpen }" x-show="isOpen" 
+         x-transition:enter="transition ease-in-out duration-300 transform"
+         x-transition:enter-start="translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in-out duration-300 transform"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="translate-x-full">
+        
+        {{/* Mobile Header */}}
+        <div class="flex items-center justify-between p-4 border-b border-gray-200">
+            <div class="flex items-center space-x-2">
+                {{ if .Site.Params.logo }}
+                    <img src="{{ .Site.Params.logo }}" alt="{{ .Site.Title }} Logo" class="h-8 w-auto">
+                {{ else }}
+                    <div class="h-8 w-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">
+                        GM
+                    </div>
+                {{ end }}
+                <span class="text-lg font-bold text-gray-900">{{ .Site.Title }}</span>
+            </div>
+            <button @click="closeMenu()" 
+                    class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                    aria-label="Close menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        {{/* Mobile Navigation Links */}}
+        <div class="px-4 py-6 space-y-4">
+            {{ range .Site.Menus.main }}
+                <a href="{{ .URL }}" 
+                   @click="closeMenu()"
+                   class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md
+                          {{ if $.IsMenuCurrent "main" . }}text-primary-600 bg-primary-50{{ end }}">
+                    {{ .Name }}
+                </a>
+            {{ end }}
+        </div>
+        
+        {{/* Mobile User Actions */}}
+        <div class="px-4 py-4 border-t border-gray-200">
+            {{ if .Site.Params.auth_enabled }}
+                <div class="space-y-2">
+                    <a href="/dashboard/" class="block px-3 py-2 text-base text-gray-700 hover:bg-gray-50 rounded-md">Dashboard</a>
+                    <a href="/profile/" class="block px-3 py-2 text-base text-gray-700 hover:bg-gray-50 rounded-md">Profile</a>
+                    <a href="/logout/" class="block px-3 py-2 text-base text-gray-700 hover:bg-gray-50 rounded-md">Sign out</a>
+                </div>
+            {{ else }}
+                <div class="space-y-2">
+                    <a href="/login/" @click="closeMenu()" 
+                       class="block w-full text-center px-4 py-2 text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        Sign In
+                    </a>
+                    <a href="/pricing/" @click="closeMenu()" 
+                       class="block w-full text-center btn-primary">
+                        Start Free
+                    </a>
+                </div>
+            {{ end }}
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,129 @@
+baseURL: "https://gazebomaster.academy"
+languageCode: "en-us"
+title: "GazeboMaster Academy"
+theme: ""
+
+# Site configuration
+params:
+  description: "Master Gazebo Harmonic LTS with comprehensive, hands-on tutorials covering physics, sensors, rendering, and advanced robotics simulation"
+  author: "GazeboMaster Academy"
+  keywords: ["gazebo", "robotics", "simulation", "physics", "sensors", "rendering", "education"]
+  
+  # Branding
+  logo: "/images/logo.svg"
+  favicon: "/favicon.ico"
+  
+  # Social & SEO
+  twitter: "@gazeboacademy"
+  github: "gazebo-academy"
+  
+  # Education platform settings
+  course:
+    total_modules: 8
+    free_modules: 2
+    estimated_hours: 40
+  
+  # Pricing (monthly USD)
+  pricing:
+    pro: 29
+    enterprise: 99
+  
+  # Features
+  features:
+    code_playground: true
+    progress_tracking: true
+    certificates: true
+    community: true
+
+# Menu configuration
+menu:
+  main:
+    - name: "Home"
+      url: "/"
+      weight: 10
+    - name: "Courses"
+      url: "/modules/"
+      weight: 20
+    - name: "Playground"
+      url: "/playground/"
+      weight: 30
+    - name: "Docs"
+      url: "/docs/"
+      weight: 40
+    - name: "Community"
+      url: "/community/"
+      weight: 50
+    - name: "Pricing"
+      url: "/pricing/"
+      weight: 60
+
+  footer:
+    - name: "About"
+      url: "/about/"
+      weight: 10
+    - name: "Contact"
+      url: "/contact/"
+      weight: 20
+    - name: "Privacy"
+      url: "/privacy/"
+      weight: 30
+    - name: "Terms"
+      url: "/terms/"
+      weight: 40
+
+# Content configuration
+contentTypes:
+  module:
+    title: "Learning Module"
+    layout: "module"
+  lesson:
+    title: "Lesson"
+    layout: "lesson"
+
+# Taxonomies for course organization
+taxonomies:
+  tag: "tags"
+  category: "categories" 
+  difficulty: "difficulties"
+  topic: "topics"
+
+# Markup configuration for code highlighting
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    style: "github"
+    lineNos: true
+    lineNumbersInTable: false
+    tabWidth: 2
+    codeFences: true
+
+# Output formats
+outputs:
+  home: ["HTML", "RSS", "JSON"]
+  page: ["HTML"]
+  section: ["HTML", "RSS"]
+
+# Security
+security:
+  exec:
+    allow: ["^dart-sass-embedded$", "^go$", "^npx$", "^postcss$"]
+  funcs:
+    getenv: ["^HUGO_"]
+  http:
+    urls: [".*"]
+
+# Build configuration
+build:
+  writeStats: true
+  
+# Development server
+server:
+  headers:
+    - for: "/**"
+      values:
+        X-Frame-Options: "DENY"
+        X-XSS-Protection: "1; mode=block"
+        X-Content-Type-Options: "nosniff"
+        Referrer-Policy: "strict-origin-when-cross-origin"

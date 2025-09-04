@@ -1,0 +1,204 @@
+"""
+GazeboMaster Academy Website Build Configuration
+
+Hermetic static site generation using pure Bazel genrules.
+Uses CDN-based Tailwind CSS for zero external build dependencies.
+"""
+
+package(default_visibility = ["//visibility:public"])
+
+# Process HTML files with CDN Tailwind CSS
+genrule(
+    name = "process_html",
+    srcs = ["src/index.html"],
+    outs = ["dist/index.html"],
+    cmd = """
+        mkdir -p $$(dirname $@)
+        cp $< $@
+        # Replace local CSS with CDN Tailwind CSS
+        sed -i 's|<link rel="stylesheet" href="/assets/css/main.css">|<script src="https://cdn.tailwindcss.com"></script>|g' $@
+        # Update asset paths to be relative
+        sed -i 's|href="/assets/|href="assets/|g' $@
+        sed -i 's|src="/assets/|src="assets/|g' $@
+    """,
+)
+
+# Process CSS files (fallback styles)
+genrule(
+    name = "process_css",
+    srcs = glob(["src/assets/css/*.css"], allow_empty = True),
+    outs = ["dist/assets/css/main.css"],
+    cmd = """
+        mkdir -p $$(dirname $@)
+        if [ -n "$(SRCS)" ]; then
+            cat $(SRCS) > $@
+        else
+            echo "/* Fallback styles - Tailwind loaded via CDN */" > $@
+            echo "body { font-family: system-ui, sans-serif; margin: 0; }" >> $@
+        fi
+    """,
+)
+
+# Process JavaScript files
+genrule(
+    name = "process_js", 
+    srcs = glob(["src/assets/js/*.js"], allow_empty = True),
+    outs = ["dist/assets/js/main.js"],
+    cmd = """
+        mkdir -p $$(dirname $@)
+        if [ -n "$(SRCS)" ]; then
+            cat $(SRCS) > $@
+        else
+            echo "console.log('GazeboMaster Academy - Hermetic Build');" > $@
+        fi
+    """,
+)
+
+# Create favicon
+genrule(
+    name = "create_favicon",
+    outs = ["dist/favicon.ico"],
+    cmd = "mkdir -p $$(dirname $@) && touch $@",
+)
+
+# Main site build target
+filegroup(
+    name = "site",
+    srcs = [
+        ":process_html",
+        ":process_css",
+        ":process_js", 
+        ":create_favicon",
+    ],
+)
+
+# Development server script (hermetic)
+genrule(
+    name = "dev_server_script",
+    outs = ["serve.py"],
+    cmd = '''
+        cat > $@ << 'EOF'
+#!/usr/bin/env python3
+import http.server
+import socketserver
+import os
+import sys
+import webbrowser
+
+PORT = 8080
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        # Get the dist directory from command line
+        directory = sys.argv[1] if len(sys.argv) > 1 else "."
+        super().__init__(*args, directory=directory, **kwargs)
+    
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        super().end_headers()
+    
+    def do_GET(self):
+        if self.path == '/':
+            self.path = '/index.html'
+        return super().do_GET()
+
+if __name__ == "__main__":
+    dist_dir = sys.argv[1] if len(sys.argv) > 1 else "."
+    print(f"🚀 GazeboMaster Academy Development Server")
+    print(f"📁 Serving: {os.path.abspath(dist_dir)}")
+    print(f"🌐 URL: http://localhost:{PORT}")
+    print("Press Ctrl+C to stop")
+    
+    try:
+        webbrowser.open(f'http://localhost:{PORT}')
+        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\\nServer stopped")
+EOF
+        chmod +x $@
+    ''',
+    executable = True,
+)
+
+# Hermetic development server (runs via Bazel)
+sh_binary(
+    name = "serve",
+    srcs = [":dev_server_script"],
+    args = ["dist"],
+    data = [":site"],
+)
+
+# Production build (creates tarball)
+genrule(
+    name = "build_prod",
+    srcs = [":site"],
+    outs = ["gazebo_academy_website.tar.gz"],
+    cmd = """
+        TMPDIR=$$(mktemp -d)
+        
+        # Copy all site files to temp directory
+        for file in $(SRCS); do
+            # Get the relative path after 'dist/'
+            relpath=$${file#*dist/}
+            target_dir=$$TMPDIR/$$(dirname $$relpath)
+            mkdir -p $$target_dir
+            cp $$file $$TMPDIR/$$relpath
+        done
+        
+        # Create tarball
+        cd $$TMPDIR
+        tar -czf $@ *
+        
+        # Cleanup
+        rm -rf $$TMPDIR
+    """,
+)
+
+# Validation
+genrule(
+    name = "validate",
+    srcs = ["src/index.html"],
+    outs = ["validation.txt"],
+    cmd = """
+        echo "🔍 GazeboMaster Academy - Build Validation" > $@
+        echo "==========================================" >> $@
+        
+        if grep -q "<html" $< && grep -q "</html>" $<; then
+            echo "✅ Valid HTML structure" >> $@
+        else
+            echo "❌ Invalid HTML structure" >> $@
+        fi
+        
+        if grep -q "<title>" $<; then
+            echo "✅ Has title tag" >> $@
+        else
+            echo "❌ Missing title tag" >> $@
+        fi
+        
+        if grep -q "GazeboMaster Academy" $<; then
+            echo "✅ Contains branding" >> $@
+        else
+            echo "❌ Missing branding" >> $@
+        fi
+        
+        echo "" >> $@
+        echo "📊 Build completed successfully via Bazel" >> $@
+    """,
+)
+
+# Test target (basic validation)
+sh_test(
+    name = "test_build", 
+    size = "small",
+    srcs = [":validate"],
+    args = [],
+    data = [],
+)
+
+# Default target
+alias(
+    name = "all",
+    actual = ":site",
+)

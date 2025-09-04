@@ -1,0 +1,14 @@
+"""
+GazeboMaster Academy Website
+A beautiful, educational platform for monetizing Gazebo Harmonic tutorials
+
+Built with:
+- Static HTML with minimal JavaScript
+- Tailwind CSS via CDN for quick development
+- Pure Bazel genrules for hermetic static site generation
+"""
+
+module(
+    name = "gazebo_academy_website",
+    version = "1.0.0",
+)

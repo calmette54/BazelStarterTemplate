@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="{{ site.LanguageCode | default "en" }}" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    {{/* SEO Meta Tags */}}
+    <title>{{ block "title" . }}{{ .Title }} - {{ .Site.Title }}{{ end }}</title>
+    <meta name="description" content="{{ .Description | default .Site.Params.description }}">
+    <meta name="keywords" content="{{ delimit (.Keywords | default .Site.Params.keywords) ", " }}">
+    <meta name="author" content="{{ .Site.Params.author }}">
+    
+    {{/* Open Graph / Facebook */}}
+    <meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+    <meta property="og:url" content="{{ .Permalink }}">
+    <meta property="og:title" content="{{ .Title }}">
+    <meta property="og:description" content="{{ .Description | default .Site.Params.description }}">
+    <meta property="og:image" content="{{ .Site.BaseURL }}images/og-image.jpg">
+    <meta property="og:site_name" content="{{ .Site.Title }}">
+    
+    {{/* Twitter */}}
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ .Permalink }}">
+    <meta property="twitter:title" content="{{ .Title }}">
+    <meta property="twitter:description" content="{{ .Description | default .Site.Params.description }}">
+    <meta property="twitter:image" content="{{ .Site.BaseURL }}images/og-image.jpg">
+    {{ with .Site.Params.twitter }}<meta property="twitter:site" content="{{ . }}">{{ end }}
+    
+    {{/* Favicon and Icons */}}
+    <link rel="icon" type="image/x-icon" href="{{ .Site.BaseURL }}favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ .Site.BaseURL }}images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ .Site.BaseURL }}images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ .Site.BaseURL }}images/apple-touch-icon.png">
+    
+    {{/* Preconnect to external domains */}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    {{/* Stylesheets */}}
+    {{ $css := resources.Get "css/main.css" }}
+    {{ $css = $css | resources.PostCSS }}
+    {{ if hugo.IsProduction }}
+        {{ $css = $css | resources.Minify | resources.Fingerprint }}
+    {{ end }}
+    <link rel="stylesheet" href="{{ $css.RelPermalink }}" {{ if hugo.IsProduction }}integrity="{{ $css.Data.Integrity }}"{{ end }}>
+    
+    {{/* JSON-LD Structured Data */}}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "{{ if .IsHome }}Organization{{ else if eq .Type "module" }}Course{{ else }}WebPage{{ end }}",
+        {{ if .IsHome }}
+        "name": "{{ .Site.Title }}",
+        "description": "{{ .Site.Params.description }}",
+        "url": "{{ .Site.BaseURL }}",
+        "logo": "{{ .Site.BaseURL }}{{ .Site.Params.logo }}",
+        "sameAs": [
+            "{{ .Site.Params.github }}",
+            "{{ .Site.Params.twitter }}"
+        ]
+        {{ else if eq .Type "module" }}
+        "name": "{{ .Title }}",
+        "description": "{{ .Description }}",
+        "provider": {
+            "@type": "Organization",
+            "name": "{{ .Site.Title }}"
+        },
+        "educationalLevel": "{{ .Params.difficulty }}",
+        "timeRequired": "{{ .Params.duration }}"
+        {{ else }}
+        "name": "{{ .Title }}",
+        "description": "{{ .Description }}",
+        "url": "{{ .Permalink }}"
+        {{ end }}
+    }
+    </script>
+    
+    {{/* Additional head content from pages */}}
+    {{ block "head" . }}{{ end }}
+</head>
+
+<body class="min-h-full bg-gray-50 text-gray-900" x-data="navigation()">
+    {{/* Skip to main content for accessibility */}}
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg z-50">
+        Skip to main content
+    </a>
+    
+    {{/* Navigation */}}
+    {{ partial "navigation.html" . }}
+    
+    {{/* Main content area */}}
+    <main id="main-content" class="flex-1">
+        {{ block "main" . }}{{ end }}
+    </main>
+    
+    {{/* Footer */}}
+    {{ partial "footer.html" . }}
+    
+    {{/* JavaScript */}}
+    {{ $js := resources.Get "js/main.js" }}
+    {{ if hugo.IsProduction }}
+        {{ $js = $js | resources.Minify | resources.Fingerprint }}
+    {{ end }}
+    <script type="module" src="{{ $js.RelPermalink }}" {{ if hugo.IsProduction }}integrity="{{ $js.Data.Integrity }}"{{ end }}></script>
+    
+    {{/* Analytics - only in production */}}
+    {{ if hugo.IsProduction }}
+        {{ template "_internal/google_analytics.html" . }}
+    {{ end }}
+    
+    {{/* Additional scripts from pages */}}
+    {{ block "scripts" . }}{{ end }}
+    
+    {{/* Service Worker for offline support */}}
+    {{ if hugo.IsProduction }}
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+    {{ end }}
+</body>
+</html>

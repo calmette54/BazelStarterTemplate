@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "all_static_files",
+    srcs = glob([
+        "**/*",
+    ], exclude = [
+        "BUILD.bazel",
+    ]),
+)

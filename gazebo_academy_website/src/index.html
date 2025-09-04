@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- SEO Meta Tags -->
+    <title>GazeboMaster Academy - Master Robotics Simulation</title>
+    <meta name="description" content="Learn robotics simulation with the most comprehensive Gazebo tutorial available. From basic world creation to advanced actor systems with 40+ hours of expert content.">
+    <meta name="keywords" content="gazebo, robotics, simulation, physics, sensors, rendering, education">
+    <meta name="author" content="GazeboMaster Academy">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gazebomaster.academy">
+    <meta property="og:title" content="GazeboMaster Academy - Master Robotics Simulation">
+    <meta property="og:description" content="Learn robotics simulation with the most comprehensive Gazebo tutorial available.">
+    <meta property="og:image" content="https://gazebomaster.academy/images/og-image.jpg">
+    <meta property="og:site_name" content="GazeboMaster Academy">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="GazeboMaster Academy - Master Robotics Simulation">
+    <meta property="twitter:description" content="Learn robotics simulation with the most comprehensive Gazebo tutorial available.">
+    <meta property="twitter:image" content="https://gazebomaster.academy/images/og-image.jpg">
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/main.css">
+    
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "GazeboMaster Academy",
+        "description": "Master Gazebo Harmonic LTS with comprehensive, hands-on tutorials covering physics, sensors, rendering, and advanced robotics simulation",
+        "url": "https://gazebomaster.academy",
+        "logo": "https://gazebomaster.academy/images/logo.svg"
+    }
+    </script>
+</head>
+
+<body class="min-h-full bg-gray-50 text-gray-900" x-data="navigation()">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg z-50">
+        Skip to main content
+    </a>
+    
+    <!-- Navigation -->
+    <nav class="nav-main" :class="{ 'nav-scrolled': isScrolled }" role="navigation" aria-label="Main navigation">
+        <div class="content-container">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo and Brand -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                        <div class="h-8 w-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">
+                            GM
+                        </div>
+                        <span class="text-xl font-bold text-gray-900 hidden sm:block">GazeboMaster Academy</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="/" class="px-3 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-md">Home</a>
+                        <a href="/modules.html" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors duration-200">Courses</a>
+                        <a href="#playground" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors duration-200">Playground</a>
+                        <a href="#docs" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors duration-200">Docs</a>
+                        <a href="#community" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors duration-200">Community</a>
+                        <a href="/pricing.html" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors duration-200">Pricing</a>
+                    </div>
+                </div>
+                
+                <!-- User Actions -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="/pricing.html" class="text-sm font-medium text-gray-700 hover:text-gray-900">Sign In</a>
+                    <a href="/pricing.html" class="btn-primary text-sm">Start Free</a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button @click="toggleMenu()" 
+                            class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus-visible-ring"
+                            aria-expanded="false" 
+                            aria-label="Toggle main menu">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path x-show="!isOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            <path x-show="isOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu md:hidden" :class="{ 'open': isOpen }" x-show="isOpen" 
+             x-transition:enter="transition ease-in-out duration-300 transform"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0">
+            
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">GM</div>
+                    <span class="text-lg font-bold text-gray-900">GazeboMaster Academy</span>
+                </div>
+                <button @click="closeMenu()" class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="px-4 py-6 space-y-4">
+                <a href="/" @click="closeMenu()" class="block px-3 py-2 text-base font-medium text-primary-600 bg-primary-50 rounded-md">Home</a>
+                <a href="/modules.html" @click="closeMenu()" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Courses</a>
+                <a href="/pricing.html" @click="closeMenu()" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Pricing</a>
+            </div>
+            
+            <div class="px-4 py-4 border-t border-gray-200">
+                <div class="space-y-2">
+                    <a href="/pricing.html" @click="closeMenu()" class="block w-full text-center px-4 py-2 text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Sign In</a>
+                    <a href="/pricing.html" @click="closeMenu()" class="block w-full text-center btn-primary">Start Free</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main content area -->
+    <main id="main-content" class="flex-1">
+        <!-- Hero Section -->
+        <section class="hero-section py-20 lg:py-32">
+            <div class="hero-content py-16 px-4 sm:px-6 lg:px-8">
+                <h1 class="hero-title animate-fade-in-up">
+                    Master Gazebo Harmonic LTS
+                </h1>
+                <p class="hero-subtitle animate-fade-in-up" style="animation-delay: 0.2s;">
+                    Learn robotics simulation with the most comprehensive tutorial available. 
+                    From basic world creation to advanced actor systems with 40+ hours of expert content.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 animate-fade-in-up" style="animation-delay: 0.4s;">
+                    <a href="/modules.html" class="btn-primary text-lg px-8 py-4 shadow-large hover:shadow-xl">
+                        Start Learning Free
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </a>
+                    <a href="/pricing.html" class="btn-secondary text-lg px-8 py-4 bg-white/20 border-white/30 text-white hover:bg-white/30">
+                        View Pricing
+                    </a>
+                </div>
+                
+                <!-- Trust Indicators -->
+                <div class="mt-12 flex flex-wrap justify-center items-center gap-8 text-blue-100 text-sm animate-fade-in-up" style="animation-delay: 0.6s;">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        40+ Hours Content
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        37+ Code Examples
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Lifetime Access
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Animated Background Elements -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full animate-pulse-soft"></div>
+                <div class="absolute top-1/2 -left-10 w-32 h-32 bg-white/10 rounded-full animate-pulse-soft" style="animation-delay: 1s;"></div>
+                <div class="absolute -bottom-10 left-1/3 w-24 h-24 bg-white/10 rounded-full animate-pulse-soft" style="animation-delay: 2s;"></div>
+            </div>
+        </section>
+
+        <!-- Course Overview Section -->
+        <section class="py-16 bg-white">
+            <div class="content-container">
+                <!-- Section Header -->
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Complete Gazebo Mastery Path</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        8 progressive modules designed by simulation experts to take you from beginner to advanced practitioner
+                    </p>
+                </div>
+                
+                <!-- Stats Row -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary-600 mb-2">8</div>
+                        <div class="text-gray-600">Progressive Modules</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary-600 mb-2">37+</div>
+                        <div class="text-gray-600">Code Examples</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary-600 mb-2">40+</div>
+                        <div class="text-gray-600">Hours Content</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary-600 mb-2">100%</div>
+                        <div class="text-gray-600">Hands-On</div>
+                    </div>
+                </div>
+                
+                <!-- Free Preview Modules -->
+                <div class="mb-16">
+                    <h3 class="text-2xl font-bold text-gray-900 text-center mb-8">
+                        🆓 Start Learning Free
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="module-card free hover-lift">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="status-badge free">Free</div>
+                                <div class="text-sm text-gray-500">4-6 hours</div>
+                            </div>
+                            <h4 class="text-xl font-bold mb-3">Module 1: Basic World Creation</h4>
+                            <p class="text-gray-600 mb-4">
+                                Master SDF worlds, entity-component systems, and fundamental simulation concepts. 
+                                Perfect starting point for newcomers.
+                            </p>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-gray-500">
+                                    ✅ 4 Code Examples • 6 Exercises
+                                </div>
+                                <a href="/modules.html#module-1" class="text-primary-600 hover:text-primary-700 font-medium">
+                                    Start Module →
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="module-card free hover-lift">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="status-badge free">Free</div>
+                                <div class="text-sm text-gray-500">5-7 hours</div>
+                            </div>
+                            <h4 class="text-xl font-bold mb-3">Module 2: Physics Simulation</h4>
+                            <p class="text-gray-600 mb-4">
+                                Explore DART, Bullet, and TPE physics engines. Learn collision detection, 
+                                joints, and material properties.
+                            </p>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-gray-500">
+                                    ✅ 5 Code Examples • 8 Exercises
+                                </div>
+                                <a href="/modules.html#module-2" class="text-primary-600 hover:text-primary-700 font-medium">
+                                    Start Module →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Premium Modules Preview -->
+                <div class="mb-16">
+                    <h3 class="text-2xl font-bold text-gray-900 text-center mb-2">
+                        💎 Advanced Modules (Pro Access)
+                    </h3>
+                    <p class="text-center text-gray-600 mb-8">
+                        Unlock professional-level techniques used in industry and research
+                    </p>
+                    
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="module-card premium hover-lift">
+                            <div class="status-badge premium">Pro</div>
+                            <h4 class="text-lg font-bold mb-2">Rendering & Materials</h4>
+                            <p class="text-gray-600 text-sm mb-3">PBR, lighting systems, visual effects</p>
+                            <div class="text-xs text-gray-500">6-8 hours • 6 examples</div>
+                        </div>
+                        
+                        <div class="module-card premium hover-lift">
+                            <div class="status-badge premium">Pro</div>
+                            <h4 class="text-lg font-bold mb-2">Sensor Simulation</h4>
+                            <p class="text-gray-600 text-sm mb-3">Cameras, LiDAR, IMU, GPS integration</p>
+                            <div class="text-xs text-gray-500">7-9 hours • 5 examples</div>
+                        </div>
+                        
+                        <div class="module-card premium hover-lift">
+                            <div class="status-badge premium">Pro</div>
+                            <h4 class="text-lg font-bold mb-2">Communication</h4>
+                            <p class="text-gray-600 text-sm mb-3">gz-transport, distributed systems</p>
+                            <div class="text-xs text-gray-500">5-7 hours • 5 examples</div>
+                        </div>
+                        
+                        <div class="module-card premium hover-lift">
+                            <div class="status-badge premium">Pro</div>
+                            <h4 class="text-lg font-bold mb-2">Plugin Development</h4>
+                            <p class="text-gray-600 text-sm mb-3">Custom system, visual, sensor plugins</p>
+                            <div class="text-xs text-gray-500">8-10 hours • 6 examples</div>
+                        </div>
+                        
+                        <div class="module-card premium hover-lift">
+                            <div class="status-badge premium">Pro</div>
+                            <h4 class="text-lg font-bold mb-2">Robot Simulation</h4>
+                            <p class="text-gray-600 text-sm mb-3">Complete robotic systems, control</p>
+                            <div class="text-xs text-gray-500">10-12 hours • 5 examples</div>
+                        </div>
+                        
+                        <div class="module-card premium hover-lift">
+                            <div class="status-badge premium">Pro</div>
+                            <h4 class="text-lg font-bold mb-2">Advanced Features</h4>
+                            <p class="text-gray-600 text-sm mb-3">Actors, optimization, performance</p>
+                            <div class="text-xs text-gray-500">8-10 hours • 5 examples</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-8">
+                        <a href="/pricing.html" class="btn-primary text-lg px-8 py-4">
+                            Unlock All Modules - $29/month
+                        </a>
+                        <p class="text-sm text-gray-500 mt-2">30-day money-back guarantee</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="py-16 bg-gray-50">
+            <div class="content-container">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Why Choose GazeboMaster Academy?</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        The most comprehensive and practical approach to learning robotics simulation
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="feature-card hover-lift">
+                        <div class="feature-icon">🎯</div>
+                        <h3 class="text-lg font-bold mb-2">Hands-On Learning</h3>
+                        <p class="text-gray-600 text-sm">
+                            Every concept is taught through practical examples and real code that you can run and modify.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card hover-lift">
+                        <div class="feature-icon">📚</div>
+                        <h3 class="text-lg font-bold mb-2">Expert-Created Content</h3>
+                        <p class="text-gray-600 text-sm">
+                            Developed by simulation professionals with years of industry and research experience.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card hover-lift">
+                        <div class="feature-icon">🚀</div>
+                        <h3 class="text-lg font-bold mb-2">Production-Ready</h3>
+                        <p class="text-gray-600 text-sm">
+                            Learn industry best practices, hermetic builds, and professional development workflows.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card hover-lift">
+                        <div class="feature-icon">💻</div>
+                        <h3 class="text-lg font-bold mb-2">Interactive Playground</h3>
+                        <p class="text-gray-600 text-sm">
+                            Built-in code editor with syntax highlighting and live examples (Pro tier).
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card hover-lift">
+                        <div class="feature-icon">📈</div>
+                        <h3 class="text-lg font-bold mb-2">Progress Tracking</h3>
+                        <p class="text-gray-600 text-sm">
+                            Track your learning journey with completion certificates and achievement badges.
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card hover-lift">
+                        <div class="feature-icon">🔄</div>
+                        <h3 class="text-lg font-bold mb-2">Lifetime Updates</h3>
+                        <p class="text-gray-600 text-sm">
+                            Content evolves with Gazebo releases. Never worry about outdated information.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="py-16 bg-white">
+            <div class="content-container">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">What Our Students Say</h2>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="testimonial hover-lift">
+                        <div class="testimonial-quote">
+                            "The most comprehensive Gazebo tutorial I've found. The progression from basics to advanced topics is perfect, and the code examples are production-ready."
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar"></div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Dr. Sarah Chen</div>
+                                <div class="text-sm text-gray-600">Robotics Research Lab</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="testimonial hover-lift">
+                        <div class="testimonial-quote">
+                            "Fantastic resource for learning simulation. The physics module alone was worth the subscription. Finally understand how to properly configure different engines."
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar"></div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Marcus Rodriguez</div>
+                                <div class="text-sm text-gray-600">Simulation Engineer</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="testimonial hover-lift">
+                        <div class="testimonial-quote">
+                            "The hermetic build approach and modern development practices make this course invaluable for professional development. Highly recommended."
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar"></div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Alex Kim</div>
+                                <div class="text-sm text-gray-600">Senior Software Engineer</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-16 bg-gradient-to-r from-primary-600 to-secondary-600 text-white">
+            <div class="content-container text-center">
+                <h2 class="text-4xl font-bold mb-4">Ready to Master Gazebo Simulation?</h2>
+                <p class="text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
+                    Join thousands of engineers and researchers who trust GazeboMaster Academy for their simulation education.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="/modules.html" class="btn-primary bg-white text-primary-600 hover:bg-gray-50 text-lg px-8 py-4">
+                        Start Free Modules
+                    </a>
+                    <a href="/pricing.html" class="btn-secondary border-white text-white hover:bg-white/10 text-lg px-8 py-4">
+                        View All Plans
+                    </a>
+                </div>
+                
+                <div class="mt-8 text-sm text-blue-100">
+                    No credit card required • 30-day money-back guarantee • Instant access
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16" role="contentinfo">
+        <div class="content-container">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div class="lg:col-span-2">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="h-8 w-8 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">GM</div>
+                        <span class="text-xl font-bold">GazeboMaster Academy</span>
+                    </div>
+                    <p class="text-gray-400 mb-6 max-w-md">
+                        Master robotics simulation with the most comprehensive Gazebo tutorial available. 
+                        From fundamentals to advanced techniques, learn from industry experts.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200" aria-label="GitHub">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="/modules.html" class="hover:text-white transition-colors duration-200">All Modules</a></li>
+                        <li><a href="#playground" class="hover:text-white transition-colors duration-200">Code Playground</a></li>
+                        <li><a href="#docs" class="hover:text-white transition-colors duration-200">Documentation</a></li>
+                        <li><a href="/pricing.html" class="hover:text-white transition-colors duration-200">Pricing</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#about" class="hover:text-white transition-colors duration-200">About</a></li>
+                        <li><a href="#contact" class="hover:text-white transition-colors duration-200">Contact</a></li>
+                        <li><a href="#help" class="hover:text-white transition-colors duration-200">Help Center</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row md:items-center md:justify-between">
+                <div class="text-gray-400 text-sm mb-4 md:mb-0">
+                    <p>© 2024 GazeboMaster Academy. All rights reserved.</p>
+                    <p class="mt-1">Built with ❤️ using Tailwind CSS + Bazel</p>
+                </div>
+                
+                <div class="flex items-center space-x-6 text-sm text-gray-400">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        SSL Secured
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        30-Day Guarantee
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script src="/assets/js/main.js" type="module"></script>
+
+    <!-- Simple Alpine.js data for navigation -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('navigation', () => ({
+                isOpen: false,
+                isScrolled: false,
+                
+                init() {
+                    window.addEventListener('scroll', () => {
+                        this.isScrolled = window.scrollY > 10
+                    })
+                },
+                
+                toggleMenu() {
+                    this.isOpen = !this.isOpen
+                    document.body.classList.toggle('overflow-hidden', this.isOpen)
+                },
+                
+                closeMenu() {
+                    this.isOpen = false
+                    document.body.classList.remove('overflow-hidden')
+                }
+            }))
+        })
+    </script>
+</body>
+</html>

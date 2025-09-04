@@ -1,0 +1,446 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font for beautiful typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* Custom CSS Variables for Theme */
+:root {
+  --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-premium: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Base Layer Customizations */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  body {
+    @apply antialiased text-gray-800 bg-gray-50;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+  }
+  
+  /* Improve typography for better readability */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold text-gray-900;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+  }
+  
+  h1 { @apply text-4xl md:text-5xl lg:text-6xl; }
+  h2 { @apply text-3xl md:text-4xl lg:text-5xl; }
+  h3 { @apply text-2xl md:text-3xl; }
+  h4 { @apply text-xl md:text-2xl; }
+  h5 { @apply text-lg md:text-xl; }
+  h6 { @apply text-base md:text-lg; }
+  
+  /* Optimized paragraph spacing */
+  p {
+    @apply mb-4 text-gray-700 leading-relaxed;
+    max-width: 65ch; /* Optimal line length for readability */
+  }
+  
+  /* Better link styles */
+  a {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Code and preformatted text */
+  code {
+    @apply font-mono text-sm bg-gray-100 px-1.5 py-0.5 rounded;
+  }
+  
+  pre {
+    @apply font-mono text-sm bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto;
+  }
+  
+  /* Custom scrollbar for webkit browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+}
+
+/* Component Layer - Educational Platform Components */
+@layer components {
+  
+  /* Navigation Styles */
+  .nav-main {
+    @apply fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200;
+    transition: var(--transition-smooth);
+  }
+  
+  .nav-scrolled {
+    @apply shadow-soft;
+  }
+  
+  /* Hero Section */
+  .hero-section {
+    background: var(--gradient-hero);
+    @apply relative overflow-hidden;
+  }
+  
+  .hero-content {
+    @apply relative z-10 max-w-4xl mx-auto text-center text-white;
+  }
+  
+  .hero-title {
+    @apply text-5xl md:text-6xl font-bold mb-6;
+    background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+  }
+  
+  .hero-subtitle {
+    @apply text-xl md:text-2xl mb-8 text-blue-100 max-w-2xl mx-auto;
+  }
+  
+  /* Card Components */
+  .module-card {
+    @apply card hover:shadow-large transition-all duration-300;
+    
+    &.free {
+      @apply border-l-4 border-l-success-500;
+    }
+    
+    &.premium {
+      @apply border-l-4 border-l-premium-500 relative;
+      
+      &::before {
+        content: '⭐';
+        @apply absolute -top-2 -right-2 bg-premium-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm;
+      }
+    }
+  }
+  
+  .feature-card {
+    @apply card text-center;
+    
+    .feature-icon {
+      @apply w-12 h-12 mx-auto mb-4 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center text-white text-2xl;
+    }
+  }
+  
+  /* Progress and Status Indicators */
+  .progress-ring {
+    @apply relative inline-flex items-center justify-center;
+  }
+  
+  .progress-ring svg {
+    @apply transform -rotate-90;
+  }
+  
+  .progress-ring .progress-circle {
+    @apply transition-all duration-700 ease-out;
+    stroke-dasharray: calc(var(--progress) * 2.51) 251;
+  }
+  
+  /* Module Status Badges */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    
+    &.free {
+      @apply bg-success-100 text-success-800;
+    }
+    
+    &.premium {
+      @apply bg-premium-100 text-premium-800;
+    }
+    
+    &.completed {
+      @apply bg-green-100 text-green-800;
+    }
+    
+    &.in-progress {
+      @apply bg-blue-100 text-blue-800;
+    }
+  }
+  
+  /* Code Syntax Highlighting */
+  .code-container {
+    @apply relative bg-gray-900 rounded-lg overflow-hidden mb-6;
+  }
+  
+  .code-header {
+    @apply bg-gray-800 px-4 py-2 text-sm text-gray-300 border-b border-gray-700 flex items-center justify-between;
+  }
+  
+  .code-language {
+    @apply text-xs bg-gray-700 px-2 py-1 rounded text-gray-400;
+  }
+  
+  .copy-button {
+    @apply text-gray-400 hover:text-white transition-colors duration-200 cursor-pointer;
+  }
+  
+  /* Interactive Elements */
+  .tab-container {
+    @apply border-b border-gray-200;
+  }
+  
+  .tab-button {
+    @apply px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition-colors duration-200;
+    
+    &.active {
+      @apply text-primary-600 border-primary-600;
+    }
+  }
+  
+  /* Course Dashboard */
+  .dashboard-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+  
+  .dashboard-stat {
+    @apply bg-white rounded-xl p-6 border border-gray-200;
+    
+    .stat-icon {
+      @apply w-10 h-10 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center mb-3;
+    }
+    
+    .stat-value {
+      @apply text-2xl font-bold text-gray-900;
+    }
+    
+    .stat-label {
+      @apply text-sm text-gray-600;
+    }
+  }
+  
+  /* Pricing Tables */
+  .pricing-comparison {
+    @apply overflow-x-auto;
+    
+    table {
+      @apply w-full border-collapse;
+    }
+    
+    th, td {
+      @apply p-4 text-left border-b border-gray-200;
+    }
+    
+    th {
+      @apply bg-gray-50 font-semibold text-gray-900;
+    }
+    
+    .feature-check {
+      @apply text-green-500 font-bold;
+    }
+    
+    .feature-cross {
+      @apply text-gray-400;
+    }
+  }
+  
+  /* Testimonials */
+  .testimonial {
+    @apply bg-white rounded-2xl p-8 shadow-soft border border-gray-100;
+    
+    .testimonial-quote {
+      @apply text-lg text-gray-700 mb-6 italic;
+    }
+    
+    .testimonial-author {
+      @apply flex items-center;
+    }
+    
+    .author-avatar {
+      @apply w-12 h-12 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 mr-4;
+    }
+  }
+  
+  /* Newsletter Signup */
+  .newsletter-form {
+    @apply flex flex-col sm:flex-row gap-3 max-w-md;
+    
+    input {
+      @apply flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    }
+    
+    button {
+      @apply btn-primary;
+    }
+  }
+  
+  /* Loading States */
+  .loading-spinner {
+    @apply animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full;
+  }
+  
+  .loading-skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+  
+  /* Mobile Menu */
+  .mobile-menu {
+    @apply fixed inset-0 z-50 bg-white transform transition-transform duration-300 ease-in-out;
+    transform: translateX(100%);
+    
+    &.open {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Search Interface */
+  .search-container {
+    @apply relative;
+    
+    .search-input {
+      @apply w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    }
+    
+    .search-icon {
+      @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400;
+    }
+    
+    .search-results {
+      @apply absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-large mt-1 max-h-64 overflow-y-auto;
+    }
+  }
+}
+
+/* Utility Layer - Custom Utilities */
+@layer utilities {
+  
+  /* Gradient Text */
+  .text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .text-gradient-premium {
+    background: var(--gradient-premium);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* Custom Animations */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Focus Styles */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
+  }
+  
+  /* Backdrop Effects */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  
+  .backdrop-blur-md {
+    backdrop-filter: blur(8px);
+  }
+  
+  /* Content Containers */
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .content-narrow {
+    @apply max-w-3xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Responsive Text */
+  .text-responsive {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+  
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+  
+  .hover-glow {
+    @apply transition-shadow duration-300 hover:shadow-xl;
+  }
+  
+  /* Print Styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    
+    .print-break {
+      page-break-after: always;
+    }
+  }
+}
+
+/* Dark Mode Support (for code editor) */
+.dark {
+  color-scheme: dark;
+  
+  .code-editor {
+    @apply bg-gray-900 text-gray-100;
+  }
+  
+  .code-line-numbers {
+    @apply text-gray-500;
+  }
+  
+  .code-highlight {
+    @apply bg-gray-800;
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
