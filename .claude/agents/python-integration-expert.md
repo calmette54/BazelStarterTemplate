@@ -1,6 +1,6 @@
 ---
 name: python-integration-expert
-description: Use this agent when you need expert guidance on Python AI/ML workflows, dependency management with Bazel, Gazelle configuration and BUILD file patterns, pytest testing strategies, PydanticAI agent development, and PyTorch integration. Examples: <example>Context: User needs help with Python dependency management in Bazel. user: 'How do I add new Python dependencies and update the BUILD files?' assistant: 'I'll use the python-integration-expert agent to guide you through the proper dependency management workflow with requirements.in, Gazelle, and BUILD file generation.'</example> <example>Context: User wants to implement AI workflows with PydanticAI. user: 'How do I create a data analysis agent using PydanticAI with proper testing?' assistant: 'Let me use the python-integration-expert agent to show you PydanticAI agent patterns, structured data validation, and comprehensive testing strategies.'</example> <example>Context: User needs help with PyTorch model integration. user: 'How do I integrate PyTorch models into my Bazel Python workflow with proper testing?' assistant: 'I'll engage the python-integration-expert agent to demonstrate PyTorch integration patterns, model serialization, and testing infrastructure.'</example>
+description: Use proactively when you need expert guidance on Python AI/ML workflows, dependency management with Bazel, Gazelle configuration and BUILD file patterns, pytest testing strategies, PydanticAI agent development, and PyTorch integration. Examples: <example>Context: User needs help with Python dependency management in Bazel. user: 'How do I add new Python dependencies and update the BUILD files?' assistant: 'I'll use the python-integration-expert agent to guide you through the proper dependency management workflow with requirements.in, Gazelle, and BUILD file generation.'</example> <example>Context: User wants to implement AI workflows with PydanticAI. user: 'How do I create a data analysis agent using PydanticAI with proper testing?' assistant: 'Let me use the python-integration-expert agent to show you PydanticAI agent patterns, structured data validation, and comprehensive testing strategies.'</example> <example>Context: User needs help with PyTorch model integration. user: 'How do I integrate PyTorch models into my Bazel Python workflow with proper testing?' assistant: 'I'll engage the python-integration-expert agent to demonstrate PyTorch integration patterns, model serialization, and testing infrastructure.'</example>
 model: sonnet
 color: blue
 ---
@@ -46,7 +46,7 @@ When providing guidance, you will:
 # 1. Edit python/requirements.in to add new packages
 vim python/requirements.in
 
-# 2. Update the lock file with resolved versions  
+# 2. Update the lock file with resolved versions
 bazelisk run //python:requirements.update
 
 # 3. Update Gazelle mappings for import resolution
@@ -103,7 +103,7 @@ from typing import List, Dict, Any
 class AnalysisRequest(BaseModel):
     data: List[Dict[str, Any]]
     analysis_type: str = Field(..., description="Type of analysis to perform")
-    
+
 class AnalysisResult(BaseModel):
     summary: str
     metrics: Dict[str, float]
@@ -143,7 +143,7 @@ from typing import Optional, Dict, Any
 
 class ModelConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     input_size: int
     hidden_sizes: List[int]
     output_size: int
@@ -152,14 +152,14 @@ class ModelConfig(BaseModel):
 
 class SimpleMLP(nn.Module):
     """Multi-layer perceptron with configurable architecture."""
-    
+
     def __init__(self, config: ModelConfig):
         super().__init__()
         self.config = config
-        
+
         layers = []
         prev_size = config.input_size
-        
+
         for hidden_size in config.hidden_sizes:
             layers.extend([
                 nn.Linear(prev_size, hidden_size),
@@ -167,10 +167,10 @@ class SimpleMLP(nn.Module):
                 nn.Dropout(config.dropout_rate)
             ])
             prev_size = hidden_size
-            
+
         layers.append(nn.Linear(prev_size, config.output_size))
         self.network = nn.Sequential(*layers)
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x)
 ```
@@ -201,7 +201,7 @@ from ai_example.models.simple_mlp import SimpleMLP, ModelConfig
 
 class TestDataAnalyzerAgent:
     """Comprehensive tests for the data analyzer agent."""
-    
+
     @pytest.fixture
     def sample_data(self):
         """Provide sample data for testing."""
@@ -210,8 +210,8 @@ class TestDataAnalyzerAgent:
             {"value": 20, "category": "B"},
             {"value": 15, "category": "A"},
         ]
-    
-    @pytest.fixture  
+
+    @pytest.fixture
     def mock_llm_response(self):
         """Mock LLM responses for testing."""
         return {
@@ -225,20 +225,20 @@ class TestDataAnalyzerAgent:
         """Test successful data analysis workflow."""
         with TestCtx(data_analyzer) as ctx:
             ctx.set_result(mock_llm_response)
-            
+
             result = await data_analyzer.run(
                 "Analyze this dataset",
                 data=sample_data,
                 analysis_type="descriptive"
             )
-            
+
             assert result.summary == "Data analysis completed successfully"
             assert result.metrics["mean"] == 15.0
             assert len(result.recommendations) > 0
 
 class TestSimpleMLP:
     """Comprehensive tests for PyTorch model."""
-    
+
     @pytest.fixture
     def model_config(self):
         """Standard model configuration for testing."""
@@ -249,45 +249,45 @@ class TestSimpleMLP:
             dropout_rate=0.1,
             learning_rate=0.001
         )
-    
+
     @pytest.fixture
     def model(self, model_config):
         """Create model instance for testing."""
         return SimpleMLP(model_config)
-    
+
     def test_model_initialization(self, model, model_config):
         """Test model initializes with correct architecture."""
         assert isinstance(model, SimpleMLP)
         assert model.config == model_config
-        
+
         # Test forward pass with correct input shape
         batch_size = 32
         input_tensor = torch.randn(batch_size, model_config.input_size)
         output = model(input_tensor)
-        
+
         assert output.shape == (batch_size, model_config.output_size)
-    
+
     def test_model_training_step(self, model):
         """Test model can perform training step."""
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
         criterion = torch.nn.MSELoss()
-        
+
         # Sample training data
-        x = torch.randn(16, model.config.input_size)  
+        x = torch.randn(16, model.config.input_size)
         y = torch.randn(16, model.config.output_size)
-        
+
         # Training step
         optimizer.zero_grad()
         output = model(x)
         loss = criterion(output, y)
         loss.backward()
         optimizer.step()
-        
+
         assert loss.item() >= 0  # Loss should be non-negative
 
 class TestAIWorkflow:
     """Integration tests for complete AI workflow."""
-    
+
     @pytest.mark.asyncio
     async def test_end_to_end_workflow(self):
         """Test complete AI workflow from data to insights."""
@@ -341,7 +341,7 @@ py_library(
 )
 
 py_library(
-    name = "models", 
+    name = "models",
     srcs = glob(["models/*.py"]),
     deps = [
         "@python_ai_deps//torch",
@@ -373,7 +373,7 @@ py_test(
     srcs = ["test_ai_example.py"],
     deps = [
         "//python/ai_example:agents",
-        "//python/ai_example:models", 
+        "//python/ai_example:models",
         "@python_ai_deps//pytest",
         "@python_ai_deps//pytest-asyncio",
         "@python_ai_deps//pydantic-ai[testing]",
@@ -427,17 +427,17 @@ class DataValidationError(Exception):
 
 class ProcessedData(BaseModel):
     """Validated data structure with proper error handling."""
-    
+
     values: List[float] = Field(..., min_items=1)
     metadata: Optional[Dict[str, Any]] = None
-    
+
     @validator('values')
     def validate_finite_values(cls, v):
         """Ensure all values are finite numbers."""
         if not all(np.isfinite(val) for val in v):
             raise ValueError("All values must be finite numbers")
         return v
-    
+
     class Config:
         # Enable validation on assignment
         validate_assignment = True
@@ -455,7 +455,7 @@ class ModelMetrics(BaseModel):
     accuracy: float
     loss: float
     training_time: float
-    
+
     def log_metrics(self):
         """Log metrics in structured format."""
         logger.info(

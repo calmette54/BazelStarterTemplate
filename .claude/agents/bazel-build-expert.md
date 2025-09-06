@@ -1,6 +1,6 @@
 ---
 name: bazel-build-expert
-description: Use this agent when you need expert guidance on Bazel build system configurations, MODULE.bazel setup, bzlmod dependency management, Remote Build Execution (RBE) optimization, hermetic build practices, or troubleshooting complex Bazel issues. Examples: <example>Context: User is setting up a new Bazel project and needs help with MODULE.bazel configuration. user: 'I need to set up a new C++ project with Bazel using bzlmod. Can you help me create the MODULE.bazel file?' assistant: 'I'll use the bazel-build-expert agent to provide comprehensive guidance on setting up your MODULE.bazel configuration with best practices for C++ development.'</example> <example>Context: User is experiencing slow build times and wants to optimize their Bazel configuration. user: 'My Bazel builds are taking too long. How can I optimize them for better performance?' assistant: 'Let me use the bazel-build-expert agent to analyze your build performance and recommend optimization strategies including RBE setup and caching improvements.'</example> <example>Context: User needs help with cross-compilation setup in Bazel. user: 'I need to set up cross-compilation for ARM64 targets in my Bazel project' assistant: 'I'll engage the bazel-build-expert agent to guide you through setting up hermetic cross-compilation toolchains and platform configurations.'</example>
+description: Use proactively when you need expert guidance on Bazel build system configurations, MODULE.bazel setup, bzlmod dependency management, Remote Build Execution (RBE) optimization, hermetic build practices, or troubleshooting complex Bazel issues. Examples: <example>Context: User is setting up a new Bazel project and needs help with MODULE.bazel configuration. user: 'I need to set up a new C++ project with Bazel using bzlmod. Can you help me create the MODULE.bazel file?' assistant: 'I'll use the bazel-build-expert agent to provide comprehensive guidance on setting up your MODULE.bazel configuration with best practices for C++ development.'</example> <example>Context: User is experiencing slow build times and wants to optimize their Bazel configuration. user: 'My Bazel builds are taking too long. How can I optimize them for better performance?' assistant: 'Let me use the bazel-build-expert agent to analyze your build performance and recommend optimization strategies including RBE setup and caching improvements.'</example> <example>Context: User needs help with cross-compilation setup in Bazel. user: 'I need to set up cross-compilation for ARM64 targets in my Bazel project' assistant: 'I'll engage the bazel-build-expert agent to guide you through setting up hermetic cross-compilation toolchains and platform configurations.'</example>
 model: sonnet
 color: green
 ---
@@ -91,12 +91,12 @@ cc_library(
     copts = ["-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"],
 )
 
-# pybind11 Extension  
+# pybind11 Extension
 pybind_extension(
     name = "your_bindings",
     srcs = ["python_bindings.cpp"],
     deps = [
-        ":your_library", 
+        ":your_library",
         "@eigen",  # Include dependencies needed by bindings
     ],
     copts = ["-std=c++23", "-O3", "-DEIGEN_NO_DEBUG"],
@@ -126,7 +126,7 @@ py_library(
 
 PYBIND11_MODULE(your_bindings, m) {
     m.doc() = "Python bindings for YourLibrary using pybind11";
-    
+
     py::class_<YourClass>(m, "YourClass")
         .def(py::init<>(), "Default constructor")
         .def_static("your_function", &YourClass::yourFunction,
@@ -150,8 +150,8 @@ CGO bindings require a bridge architecture since Go can only interface with C co
 ┌─────────────────┐
 │   Go Code       │ ← Idiomatic Go APIs, automatic memory management
 ├─────────────────┤
-│   CGO Layer     │ ← C function calls, type conversion, data marshaling  
-├─────────────────┤ 
+│   CGO Layer     │ ← C function calls, type conversion, data marshaling
+├─────────────────┤
 │   C Wrapper     │ ← C functions calling C++ methods (extern "C")
 ├─────────────────┤
 │ C++ Library     │ ← Your actual C++ implementation
@@ -354,7 +354,7 @@ platform(
 )
 
 platform(
-    name = "aarch64_linux", 
+    name = "aarch64_linux",
     constraint_values = [
         "@platforms//os:linux",
         "@platforms//cpu:aarch64",
@@ -384,7 +384,7 @@ bazelisk query "somepath(//from:target, //to:target)"
 
 **Build Performance Issues:**
 ```bash
-# Profile build performance  
+# Profile build performance
 bazelisk build //target --profile=profile.json
 bazel analyze-profile profile.json
 

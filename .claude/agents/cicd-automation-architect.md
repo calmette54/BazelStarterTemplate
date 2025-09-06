@@ -1,6 +1,6 @@
 ---
 name: cicd-automation-architect
-description: Use this agent when you need to design, implement, or optimize CI/CD pipelines, particularly with GitHub Actions. Examples include: setting up automated testing workflows, configuring deployment pipelines, implementing release automation with semantic versioning, designing branch protection strategies, troubleshooting workflow failures, optimizing build performance, setting up multi-environment deployments, configuring artifact management, implementing security scanning in pipelines, or architecting complex branching strategies for enterprise projects.
+description: Use proactively when you need to design, implement, or optimize CI/CD pipelines, particularly with GitHub Actions. Examples include: setting up automated testing workflows, configuring deployment pipelines, implementing release automation with semantic versioning, designing branch protection strategies, troubleshooting workflow failures, optimizing build performance, setting up multi-environment deployments, configuring artifact management, implementing security scanning in pipelines, or architecting complex branching strategies for enterprise projects.
 model: sonnet
 color: cyan
 ---

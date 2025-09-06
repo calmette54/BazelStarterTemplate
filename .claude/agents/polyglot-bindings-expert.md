@@ -1,6 +1,6 @@
 ---
 name: polyglot-bindings-expert
-description: Use this agent when you need expert guidance on language interoperability patterns, including pybind11 Python-C++ bindings, Go CGO integration, FFI strategies, memory management across language boundaries, and cross-language testing patterns. Examples: <example>Context: User needs help with advanced pybind11 patterns and memory management. user: 'How do I handle complex C++ object lifetimes in Python bindings with automatic cleanup?' assistant: 'I'll use the polyglot-bindings-expert agent to show you advanced pybind11 patterns for object lifetime management, smart pointer integration, and automatic cleanup strategies.'</example> <example>Context: User wants to understand CGO pointer rules and performance optimization. user: 'How do I optimize CGO performance and avoid pointer rule violations?' assistant: 'Let me use the polyglot-bindings-expert agent to explain CGO pointer rules, performance optimization techniques, and safe memory management patterns.'</example> <example>Context: User needs cross-language testing strategies. user: 'How do I test language bindings effectively across different languages?' assistant: 'I'll engage the polyglot-bindings-expert agent to demonstrate comprehensive testing strategies for multi-language codebases, including unit tests, integration tests, and memory safety validation.'</example>
+description: Use proactively when you need expert guidance on language interoperability patterns, including pybind11 Python-C++ bindings, Go CGO integration, FFI strategies, memory management across language boundaries, and cross-language testing patterns. Examples: <example>Context: User needs help with advanced pybind11 patterns and memory management. user: 'How do I handle complex C++ object lifetimes in Python bindings with automatic cleanup?' assistant: 'I'll use the polyglot-bindings-expert agent to show you advanced pybind11 patterns for object lifetime management, smart pointer integration, and automatic cleanup strategies.'</example> <example>Context: User wants to understand CGO pointer rules and performance optimization. user: 'How do I optimize CGO performance and avoid pointer rule violations?' assistant: 'Let me use the polyglot-bindings-expert agent to explain CGO pointer rules, performance optimization techniques, and safe memory management patterns.'</example> <example>Context: User needs cross-language testing strategies. user: 'How do I test language bindings effectively across different languages?' assistant: 'I'll engage the polyglot-bindings-expert agent to demonstrate comprehensive testing strategies for multi-language codebases, including unit tests, integration tests, and memory safety validation.'</example>
 model: sonnet
 color: purple
 ---
@@ -56,18 +56,18 @@ When providing guidance, you will:
 class ResourceManager {
 private:
     std::unique_ptr<ExpensiveResource> resource_;
-    
+
 public:
-    ResourceManager(const std::string& config) 
+    ResourceManager(const std::string& config)
         : resource_(std::make_unique<ExpensiveResource>(config)) {}
-    
+
     // Return shared ownership to Python
     std::shared_ptr<const ExpensiveResource> getResource() const {
         return std::shared_ptr<const ExpensiveResource>(resource_.get(), [](const ExpensiveResource*){
             // Custom deleter that doesn't actually delete (lifetime managed by ResourceManager)
         });
     }
-    
+
     bool isValid() const { return resource_ != nullptr; }
 };
 
@@ -75,7 +75,7 @@ PYBIND11_MODULE(advanced_bindings, m) {
     py::class_<ExpensiveResource, std::shared_ptr<ExpensiveResource>>(m, "ExpensiveResource")
         .def("process", &ExpensiveResource::process)
         .def("getStatus", &ExpensiveResource::getStatus);
-        
+
     py::class_<ResourceManager>(m, "ResourceManager")
         .def(py::init<const std::string&>())
         .def("getResource", &ResourceManager::getResource,
@@ -94,18 +94,18 @@ PYBIND11_MODULE(advanced_bindings, m) {
 class ImageProcessor {
 private:
     Eigen::MatrixXf data_;
-    
+
 public:
     // Accept NumPy array with zero-copy (when possible)
     void setData(const Eigen::Ref<const Eigen::MatrixXf>& input) {
         data_ = input; // This will copy if needed, but pybind11 optimizes for zero-copy when possible
     }
-    
+
     // Return view of internal data (zero-copy)
     Eigen::Ref<const Eigen::MatrixXf> getData() const {
         return data_;
     }
-    
+
     // In-place operations for maximum efficiency
     void normalize() {
         data_ = (data_.array() - data_.mean()) / data_.array().abs().maxCoeff();
@@ -146,7 +146,7 @@ PYBIND11_MODULE(exception_handling, m) {
     // Register custom exceptions
     py::register_exception<ProcessingError>(m, "ProcessingError", PyExc_RuntimeError);
     py::register_exception<ValidationError>(m, "ValidationError", PyExc_ValueError);
-    
+
     // Global exception translator for unhandled exceptions
     py::register_exception_translator([](std::exception_ptr p) {
         try {
@@ -170,24 +170,24 @@ PYBIND11_MODULE(exception_handling, m) {
 class EventProcessor {
 private:
     std::function<void(const std::string&)> callback_;
-    
+
 public:
     // Store callback efficiently
     void setCallback(std::function<void(const std::string&)> cb) {
         callback_ = std::move(cb);
     }
-    
+
     // Batch processing to minimize Python callback overhead
     void processBatch(const std::vector<std::string>& events) {
         if (!callback_) return;
-        
+
         // Process in batches to reduce callback overhead
         for (size_t i = 0; i < events.size(); i += 100) {
             py::list batch;
             for (size_t j = i; j < std::min(i + 100, events.size()); ++j) {
                 batch.append(events[j]);
             }
-            
+
             // Single callback for the batch
             py::cast(callback_)(batch);
         }
@@ -249,9 +249,9 @@ func NewSafeDoubleArray(length int) *SafeDoubleArray {
     if cArray == nil {
         return nil
     }
-    
+
     arr := &SafeDoubleArray{cArray: cArray}
-    
+
     // Set finalizer for automatic cleanup
     runtime.SetFinalizer(arr, (*SafeDoubleArray).finalize)
     return arr
@@ -262,21 +262,21 @@ func (a *SafeDoubleArray) SetData(data []float64) error {
     if a.cArray == nil {
         return errors.New("array is closed")
     }
-    
+
     if len(data) == 0 {
         return nil
     }
-    
+
     // Allocate C memory and copy Go data
     cData := C.malloc(C.size_t(len(data)) * C.size_t(unsafe.Sizeof(C.double(0))))
     defer C.free(cData)
-    
+
     // Convert to C double slice and copy
     cSlice := (*[1 << 30]C.double)(cData)[:len(data):len(data)]
     for i, val := range data {
         cSlice[i] = C.double(val)
     }
-    
+
     // Transfer to C array
     C.fill_array(a.cArray, (*C.double)(cData), C.size_t(len(data)))
     return nil
@@ -287,20 +287,20 @@ func (a *SafeDoubleArray) GetData() ([]float64, error) {
     if a.cArray == nil {
         return nil, errors.New("array is closed")
     }
-    
+
     length := int(a.cArray.length)
     if length == 0 {
         return []float64{}, nil
     }
-    
+
     // Create Go slice and copy data from C
     result := make([]float64, length)
     cSlice := (*[1 << 30]C.double)(unsafe.Pointer(a.cArray.data))[:length:length]
-    
+
     for i, val := range cSlice {
         result[i] = float64(val)
     }
-    
+
     return result, nil
 }
 
@@ -331,7 +331,7 @@ func NewBatchProcessor(bufferSize int) *BatchProcessor {
         handle: C.create_processor(),
         buffer: make([]C.double, bufferSize),
     }
-    
+
     runtime.SetFinalizer(processor, (*BatchProcessor).finalize)
     return processor
 }
@@ -341,9 +341,9 @@ func (p *BatchProcessor) ProcessBatch(data []float64) ([]float64, error) {
     if p.handle == nil {
         return nil, errors.New("processor is closed")
     }
-    
+
     results := make([]float64, len(data))
-    
+
     // Process in chunks to manage memory and optimize CGO calls
     chunkSize := len(p.buffer)
     for i := 0; i < len(data); i += chunkSize {
@@ -351,35 +351,35 @@ func (p *BatchProcessor) ProcessBatch(data []float64) ([]float64, error) {
         if end > len(data) {
             end = len(data)
         }
-        
+
         chunk := data[i:end]
-        
+
         // Copy to C buffer
         for j, val := range chunk {
             p.buffer[j] = C.double(val)
         }
-        
+
         // Single CGO call for the entire chunk
         resultPtr := C.process_chunk(
             p.handle,
             (*C.double)(unsafe.Pointer(&p.buffer[0])),
             C.size_t(len(chunk))
         )
-        
+
         if resultPtr == nil {
             return nil, errors.New("processing failed")
         }
-        
+
         // Copy results back
         resultSlice := (*[1 << 30]C.double)(unsafe.Pointer(resultPtr))[:len(chunk):len(chunk)]
         for j, val := range resultSlice {
             results[i+j] = float64(val)
         }
-        
+
         // Free C result memory
         C.free(unsafe.Pointer(resultPtr))
     }
-    
+
     return results, nil
 }
 ```
@@ -400,21 +400,21 @@ from contextlib import contextmanager
 
 class TestPythonCppBindings:
     """Comprehensive tests for Python-C++ bindings."""
-    
+
     @pytest.fixture
     def large_dataset(self):
         """Generate large dataset for performance testing."""
         np.random.seed(42)
         return np.random.randn(10000, 100).astype(np.float32)
-    
+
     def test_memory_leak_detection(self, large_dataset):
         """Test for memory leaks in binding operations."""
         import psutil
         import gc
-        
+
         process = psutil.Process()
         initial_memory = process.memory_info().rss
-        
+
         # Perform many operations that could leak memory
         for i in range(1000):
             processor = ImageProcessor()
@@ -422,33 +422,33 @@ class TestPythonCppBindings:
             result = processor.getData()
             processor.normalize()
             del processor
-            
+
             if i % 100 == 0:
                 gc.collect() # Force garbage collection
-        
+
         final_memory = process.memory_info().rss
         memory_increase = final_memory - initial_memory
-        
+
         # Memory increase should be minimal (< 50MB)
         assert memory_increase < 50 * 1024 * 1024, f"Memory leak detected: {memory_increase} bytes"
-    
+
     def test_numpy_zero_copy_validation(self):
         """Validate zero-copy NumPy integration."""
         data = np.random.randn(1000, 1000).astype(np.float32)
-        
+
         processor = ImageProcessor()
         processor.setData(data)
-        
+
         # Get reference to internal data
         internal_data = processor.getData()
-        
+
         # Modify original data
         data[0, 0] = 999.0
-        
+
         # Check if internal data reflects the change (indicating zero-copy)
         # Note: This test depends on the specific implementation
         # In practice, you'd test the specific behavior your binding guarantees
-    
+
     @pytest.mark.benchmark
     def test_performance_vs_pure_python(self, large_dataset, benchmark):
         """Benchmark binding performance against pure Python."""
@@ -457,41 +457,41 @@ class TestPythonCppBindings:
             processor.setData(large_dataset)
             processor.normalize()
             return processor.getData()
-        
+
         def python_processing():
             data = large_dataset.copy()
             return (data - data.mean()) / np.abs(data).max()
-        
+
         # Benchmark both approaches
         cpp_result = benchmark(cpp_processing)
-        
+
         # Validate correctness
         python_result = python_processing()
         np.testing.assert_allclose(cpp_result, python_result, rtol=1e-5)
 
 class TestGoCInterop:
     """Tests for Go-C interoperability."""
-    
+
     def test_go_memory_safety(self):
         """Test Go CGO memory safety patterns."""
         # This would run Go tests that validate memory safety
         result = subprocess.run([
             "go", "test", "-race", "-v", "./go_bindings/...",
         ], capture_output=True, text=True)
-        
+
         assert result.returncode == 0, f"Go tests failed: {result.stderr}"
         assert "DATA RACE" not in result.stderr, "Data race detected in Go code"
-    
+
     def test_cgo_pointer_rule_compliance(self):
         """Validate compliance with CGO pointer passing rules."""
         # Run with GODEBUG=cgocheck=2 to enable strict pointer checking
         env = os.environ.copy()
         env["GODEBUG"] = "cgocheck=2"
-        
+
         result = subprocess.run([
             "go", "test", "-v", "./go_bindings/...",
         ], env=env, capture_output=True, text=True)
-        
+
         assert result.returncode == 0, f"CGO pointer rule violation: {result.stderr}"
 
 @contextmanager
@@ -523,47 +523,47 @@ class BenchmarkResult:
 
 class PerformanceTester:
     """Comprehensive performance testing framework."""
-    
+
     def __init__(self):
         self.results: List[BenchmarkResult] = []
-    
+
     def benchmark(self, name: str, func: Callable, iterations: int = 1000):
         """Benchmark a function with memory tracking."""
         # Warmup
         for _ in range(10):
             func()
-        
+
         gc.collect()
         process = psutil.Process()
         initial_memory = process.memory_info().rss
-        
+
         start_time = time.perf_counter()
-        
+
         for _ in range(iterations):
             func()
-        
+
         end_time = time.perf_counter()
         final_memory = process.memory_info().rss
-        
+
         execution_time = end_time - start_time
         memory_usage = final_memory - initial_memory
         ops_per_second = iterations / execution_time
-        
+
         result = BenchmarkResult(
             name=name,
             execution_time=execution_time,
             memory_usage=memory_usage,
             operations_per_second=ops_per_second
         )
-        
+
         self.results.append(result)
         return result
-    
+
     def compare_performance(self, baseline_name: str, comparison_name: str) -> dict:
         """Compare performance between two benchmarks."""
         baseline = next(r for r in self.results if r.name == baseline_name)
         comparison = next(r for r in self.results if r.name == comparison_name)
-        
+
         return {
             "speed_improvement": comparison.operations_per_second / baseline.operations_per_second,
             "memory_difference": comparison.memory_usage - baseline.memory_usage,
@@ -588,14 +588,14 @@ struct ErrorInfo {
 class BindingException : public std::exception {
 private:
     ErrorInfo error_info_;
-    
+
 public:
     BindingException(const ErrorInfo& info) : error_info_(info) {}
-    
+
     const char* what() const noexcept override {
         return error_info_.message.c_str();
     }
-    
+
     const ErrorInfo& getErrorInfo() const { return error_info_; }
 };
 
@@ -606,23 +606,23 @@ PYBIND11_MODULE(error_handling, m) {
         .def_readonly("location", &ErrorInfo::location)
         .def_readonly("error_code", &ErrorInfo::error_code)
         .def_readonly("stack_trace", &ErrorInfo::stack_trace);
-    
+
     py::register_exception<BindingException>(m, "BindingException", PyExc_RuntimeError);
-    
+
     // Enhanced exception translator with debugging info
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);
         } catch (const BindingException& e) {
             const auto& info = e.getErrorInfo();
-            
+
             // Create rich Python exception with debugging info
             py::dict error_dict;
             error_dict["message"] = info.message;
             error_dict["location"] = info.location;
             error_dict["error_code"] = info.error_code;
             error_dict["stack_trace"] = info.stack_trace;
-            
+
             PyErr_SetObject(PyExc_RuntimeError, error_dict.ptr());
         }
     });
