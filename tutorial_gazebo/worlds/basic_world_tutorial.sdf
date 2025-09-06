@@ -32,15 +32,28 @@
         </physics>
         
         <!-- 
-          Note: NO plugin declarations here!
+          System Plugin Declarations - Educational Example
           
-          In this tutorial, system plugins are statically linked into the executable:
-          - gz::sim::systems::Physics (handles physics simulation)
-          - gz::sim::systems::UserCommands (enables interaction)
-          - gz::sim::systems::SceneBroadcaster (publishes scene data)
+          TUTORIAL NOTE: This SDF demonstrates standard Gazebo plugin syntax. 
+          However, for hermetic Bazel builds, the plugins are statically linked rather than
+          dynamically loaded. This approach ensures reliable, reproducible builds without
+          complex runtime plugin path management.
           
-          This is done via BUILD.bazel dependencies for hermetic builds.
+          In production Gazebo deployments, these plugins would typically be loaded dynamically
+          from shared library files (.so) located via plugin search paths.
         -->
+        
+        <!-- Physics System: Handles physics simulation and dynamics -->
+        <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin>
+        
+        <!-- User Commands System: Enables user interaction (create, move, delete models) -->
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        
+        <!-- Scene Broadcaster System: Publishes scene data for visualization and GUI -->
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
         
         <!-- 
           Lighting Setup
@@ -208,9 +221,10 @@
 <!--
   Educational Notes for Tutorial:
   
-  1. Static vs Dynamic Plugin Loading:
-     Traditional Gazebo worlds include <plugin> tags for dynamic loading.
-     This tutorial uses static linking for hermetic Bazel builds.
+  1. Plugin Architecture - Static vs Dynamic:
+     This tutorial shows standard Gazebo SDF syntax with <plugin> tags.
+     For hermetic builds, plugins are statically linked in Bazel for reliability.
+     Production deployments typically use dynamic loading from .so files.
   
   2. Physics Demonstration:
      - All objects start above ground level

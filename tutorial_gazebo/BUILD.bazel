@@ -1,8 +1,20 @@
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files", "pkg_mkdirs")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 # Root package for the Gazebo Tutorial project
 package(default_visibility = ["//visibility:public"])
+
+#################################################################################
+# Dynamic System Plugins for Gazebo
+# Using existing shared libraries provided by gz-sim package
+#################################################################################
+
+# Note: We use the existing shared library targets from gz-sim:
+# - "@gz-sim//:gz-sim-physics-system.so"
+# - "@gz-sim//:gz-sim-user-commands-system.so" 
+# - "@gz-sim//:gz-sim-scene-broadcaster-system.so"
+# These are already compiled as proper shared libraries for dynamic loading
 
 # Export all tutorial files for packaging
 pkg_files(

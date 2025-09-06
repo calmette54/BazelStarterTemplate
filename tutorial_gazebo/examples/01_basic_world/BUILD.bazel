@@ -17,7 +17,8 @@ cc_binary(
         "@gz-common//:gz-common", 
         "@gz-math//:gz-math",
         "@gz-transport//:gz-transport",
-        # Link static system plugins directly into binary for hermetic execution
+        # Hermetic static plugin integration for reliable builds
+        # Note: This approach ensures all plugins are available without complex runtime dependencies
         "@gz-sim//:gz-sim-physics-system-static",
         "@gz-sim//:gz-sim-user-commands-system-static",
         "@gz-sim//:gz-sim-scene-broadcaster-system-static",

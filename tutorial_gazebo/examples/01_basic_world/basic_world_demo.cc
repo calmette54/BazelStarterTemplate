@@ -125,6 +125,8 @@ int main(int argc, char **argv)
     signal(SIGTERM, signalHandler);  // Termination signal
     
     gzmsg << "TUTORIAL: Setting up Gazebo simulation environment..." << std::endl;
+    gzmsg << "TUTORIAL: This demo uses a hermetic static plugin approach for reliable builds" << std::endl;
+    gzmsg << "TUTORIAL: You may see harmless 'Failed to load plugin' messages - this is expected!" << std::endl;
 
     // Set console verbosity for educational output
     gz::common::Console::SetVerbosity(4);
@@ -166,8 +168,9 @@ int main(int argc, char **argv)
     gzmsg << "TUTORIAL: Server configured with:" << std::endl;
     gzmsg << "TUTORIAL:   - World file: " << resolvedPath << std::endl; 
     gzmsg << "TUTORIAL:   - Update rate: 100 Hz (physics timestep = 10ms)" << std::endl;
-    gzmsg << "TUTORIAL:   - Static plugins: Linked in BUILD.bazel (Physics, UserCommands, SceneBroadcaster)" << std::endl;
-    gzmsg << "TUTORIAL: Note: Static plugins will be loaded as 'defaults' since SDF has no plugin declarations" << std::endl;
+    gzmsg << "TUTORIAL:   - Plugin approach: Hermetic static linking (BUILD.bazel)" << std::endl;
+    gzmsg << "TUTORIAL:   - SDF demonstrates standard plugin syntax for educational purposes" << std::endl;
+    gzmsg << "TUTORIAL: Note: Gazebo will show 'No systems loaded from SDF' and use statically linked defaults" << std::endl;
 
     // === STAGE 3: Server Construction and Startup ===
     std::cout << "\n--- STAGE 3: Simulation Server Startup ---" << std::endl;
