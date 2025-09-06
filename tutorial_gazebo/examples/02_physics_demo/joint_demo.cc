@@ -1,19 +1,21 @@
 /*
- * Gazebo Joint and Constraint Demonstration
+ * Gazebo Tutorial Example 02: Joint and Constraint Demonstration with Static Plugin Integration
  * 
- * This example demonstrates:
- * 1. Different joint types (revolute, prismatic, universal, ball, fixed)
- * 2. Joint limits and constraints
- * 3. Joint control and actuation
- * 4. Complex multi-body mechanisms
- * 5. Joint force and torque feedback
+ * This comprehensive tutorial demonstrates:
+ * 1. Different joint types (revolute, prismatic, universal, fixed) with structured analysis
+ * 2. Joint limits and constraints with educational progression and real-time monitoring
+ * 3. Joint control and actuation using hermetic builds for consistent behavior
+ * 4. Complex multi-body mechanisms with performance insights and best practices
+ * 5. Joint force and torque feedback with detailed analysis and debugging strategies
  * 
  * Learning objectives:
- * - Understanding mechanical joints and degrees of freedom
- * - Joint configuration and parameter tuning
- * - Building complex mechanical systems
- * - Joint control and actuation strategies
- * - Debugging joint behavior and constraints
+ * - Master mechanical joints, degrees of freedom, and kinematic chain design
+ * - Understand hermetic builds with static plugin linking for reliable joint simulation
+ * - Learn joint configuration, parameter tuning, and optimization strategies
+ * - Develop complex mechanical system design and debugging methodologies
+ * - Explore joint control strategies and actuation patterns for robotics applications
+ * - Signal-based application control and graceful resource management
+ * - Why we use static plugins for reliable, reproducible joint mechanism testing
  */
 
 #include <gz/sim/Server.hh>
@@ -29,7 +31,6 @@
 #include <gz/sim/components/Pose.hh>
 
 #include <gz/common/Console.hh>
-#include <gz/common/Time.hh>
 
 #include <gz/msgs/double.pb.h>
 #include <gz/msgs/joint_cmd.pb.h>
@@ -45,9 +46,29 @@
 #include <chrono>
 #include <map>
 #include <cmath>
+#include <signal.h>
+#include <atomic>
+#include <cstdlib>
+#include <unistd.h>
+#include <cstring>
+#include <iomanip>
 
 using namespace gz;
 using namespace sim;
+
+// Global flags for signal-safe shutdown
+volatile sig_atomic_t g_running = 1;
+
+/// \brief Signal handler for graceful shutdown
+void signalHandler(int signal)
+{
+    // Use write() instead of gzmsg for signal safety
+    const char* msg = "\n=== TUTORIAL: Received signal, shutting down joint demo... ===\n";
+    write(STDOUT_FILENO, msg, strlen(msg));
+    
+    // Set shutdown flag atomically
+    g_running = 0;
+}
 
 /**
  * Joint Mechanism Controller
@@ -105,13 +126,13 @@ public:
         gzmsg << "- Universal joint demonstration\n";
         gzmsg << "- Four-bar linkage mechanism\n\n";
         
-        // Run simulation with joint control
+        // Run simulation with joint control and signal handling
         const int simulation_steps = 15000;  // 15 seconds
         int step_count = 0;
         
         auto start_time = std::chrono::steady_clock::now();
         
-        while (step_count < simulation_steps)
+        while (step_count < simulation_steps && g_running)
         {
             // Control joints based on simulation time
             double sim_time = step_count * 0.001;  // Convert to seconds
@@ -120,18 +141,29 @@ public:
             server.RunOnce(false);
             step_count++;
             
-            // Print periodic updates
+            // Print enhanced periodic updates with tutorial style
             if (step_count % 2000 == 0)
             {
                 auto current_time = std::chrono::steady_clock::now();
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
                 
-                gzmsg << "Simulation time: " << std::fixed << std::setprecision(1) << sim_time 
-                      << "s (real: " << elapsed << "s)\n";
+                gzmsg << "TUTORIAL: Joint Demo progress: " << (step_count * 100 / simulation_steps) << "% - ";
+                gzmsg << "Sim time: " << std::fixed << std::setprecision(1) << sim_time 
+                      << "s (real: " << elapsed << "s) | ";
+                gzmsg << "RTF: " << std::fixed << std::setprecision(2) << (sim_time / elapsed) << "x";
+                gzmsg << "\n";
                 PrintJointStatus(sim_time);
             }
             
+            // Brief pause to prevent overwhelming the system and allow signal processing
             std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
+        
+        // Check if shutdown was triggered by signal
+        if (g_running == 0)
+        {
+            gzmsg << "\nTUTORIAL: ✓ Signal received during joint demo - stopping gracefully..." << std::endl;
+            gzmsg << "TUTORIAL: Final simulation time: " << std::fixed << std::setprecision(1) << (step_count * 0.001) << " seconds" << std::endl;
         }
         
         gzmsg << "\nJoint demonstration completed!\n";
@@ -614,42 +646,157 @@ private:
     }
 };
 
+class TutorialJointDemo
+{
+public:
+    TutorialJointDemo() {}
+
+    int Run()
+    {
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "    GAZEBO TUTORIAL: Joint and Constraint Demonstration" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        gzmsg << "TUTORIAL: Setting up hermetic joint mechanism environment..." << std::endl;
+        gzmsg << "TUTORIAL: This demo uses static plugin approach for reliable joint testing" << std::endl;
+
+        // === STAGE 1: Environment Configuration ===
+        std::cout << "\n--- STAGE 1: Environment Configuration ---" << std::endl;
+        
+        // Set console verbosity and disable config file loading
+        gz::common::Console::SetVerbosity(4);
+        gzmsg << "TUTORIAL: Console verbosity set to level 4 for detailed joint analysis output" << std::endl;
+        
+        setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
+        setenv("GZ_CONFIG_PATH", "", 1);
+        gzmsg << "TUTORIAL: Disabled system config files for consistent joint mechanism testing" << std::endl;
+
+        // === STAGE 2: Joint Mechanism Setup ===
+        std::cout << "\n--- STAGE 2: Joint Mechanism Setup ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Joint mechanisms configured for comprehensive testing:" << std::endl;
+        gzmsg << "TUTORIAL:   - Pendulum (revolute joint with oscillating motion and limits)" << std::endl;
+        gzmsg << "TUTORIAL:   - Piston (prismatic joint with linear actuation and constraints)" << std::endl;
+        gzmsg << "TUTORIAL:   - Door (revolute joint with friction, damping, and position control)" << std::endl;
+        gzmsg << "TUTORIAL:   - Universal joint (two-axis rotational coupling for complex motion)" << std::endl;
+        gzmsg << "TUTORIAL: Each mechanism demonstrates different joint types and control strategies" << std::endl;
+
+        // === STAGE 3: Joint Control Configuration ===
+        std::cout << "\n--- STAGE 3: Joint Control Configuration ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Initializing joint controllers with PID feedback..." << std::endl;
+        gzmsg << "TUTORIAL: Static plugins (Physics, JointPositionController, UserCommands, SceneBroadcaster) are active" << std::endl;
+        gzmsg << "TUTORIAL: Joint position commands will drive realistic mechanical motions" << std::endl;
+        gzmsg << "TUTORIAL: Hermetic approach ensures consistent joint behavior across environments" << std::endl;
+
+        // === STAGE 4: Joint Mechanism Execution ===
+        std::cout << "\n--- STAGE 4: Joint Mechanism Execution ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Starting comprehensive joint mechanism demonstration..." << std::endl;
+        gzmsg << "TUTORIAL: Press Ctrl+C to stop the joint analysis at any time" << std::endl;
+        
+        try
+        {
+            JointController controller;
+            controller.RunDemo();
+        }
+        catch (const std::exception& e)
+        {
+            gzerr << "TUTORIAL: Error during joint demo: " << e.what() << std::endl;
+            return -1;
+        }
+
+        // === STAGE 5: Results Analysis and Educational Conclusions ===
+        std::cout << "\n--- STAGE 5: Results Analysis and Educational Conclusions ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: ✓ Joint mechanism demonstration completed successfully!" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Key Learning Points:" << std::endl;
+        gzmsg << "TUTORIAL: - Joints define how links move relative to each other in kinematic chains" << std::endl;
+        gzmsg << "TUTORIAL: - Joint limits prevent unrealistic or damaging motions in mechanical systems" << std::endl;
+        gzmsg << "TUTORIAL: - Damping and friction provide realistic energy dissipation and control" << std::endl;
+        gzmsg << "TUTORIAL: - PID controllers enable precise joint position and velocity control" << std::endl;
+        gzmsg << "TUTORIAL: - Different joint types (revolute, prismatic, universal) serve specific mechanical purposes" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Joint Mechanism Best Practices:" << std::endl;
+        gzmsg << "TUTORIAL: - Choose joint types based on required degrees of freedom" << std::endl;
+        gzmsg << "TUTORIAL: - Set appropriate joint limits to match real-world mechanical constraints" << std::endl;
+        gzmsg << "TUTORIAL: - Tune PID parameters for desired control response and stability" << std::endl;
+        gzmsg << "TUTORIAL: - Use damping to prevent oscillations and improve system stability" << std::endl;
+        gzmsg << "TUTORIAL: - Consider joint friction for realistic mechanical behavior" << std::endl;
+        gzmsg << "TUTORIAL: - Build complex mechanisms by combining simple joint types systematically" << std::endl;
+        
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "   TUTORIAL COMPLETED - Joint Mechanism Analysis Success!" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        return 0;
+    }
+};
+
 /**
- * Main function - Joint and Constraint Demo
+ * Main function - Tutorial Joint and Constraint Demo
  */
 int main(int argc, char* argv[])
 {
-    // Configure console output
-    common::Console::SetVerbosity(4);
-    
-    gzmsg << "=== Gazebo Joint and Constraint Demonstration ===\n";
-    gzmsg << "This demo shows various joint types and mechanical mechanisms.\n\n";
-    
-    gzmsg << "Mechanisms to observe:\n";
-    gzmsg << "- Pendulum: Revolute joint with oscillating motion\n";
-    gzmsg << "- Piston: Prismatic joint with linear actuation\n";
-    gzmsg << "- Door: Revolute joint with friction and limits\n";
-    gzmsg << "- Universal Joint: Two-axis rotational coupling\n\n";
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);   // Ctrl+C
+    signal(SIGTERM, signalHandler);  // Termination signal
 
     try
     {
-        JointController controller;
-        controller.RunDemo();
+        TutorialJointDemo tutorial;
+        return tutorial.Run();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        gzerr << "Error during joint demo: " << e.what() << "\n";
+        gzerr << "Exception in Joint Mechanism Tutorial: " << e.what() << std::endl;
         return -1;
     }
-
-    gzmsg << "\nJoint and constraint demo completed successfully!\n";
-    gzmsg << "\nKey Learning Points:\n";
-    gzmsg << "- Joints define how links can move relative to each other\n";
-    gzmsg << "- Joint limits prevent unrealistic or damaging motions\n";
-    gzmsg << "- Damping and friction provide realistic energy dissipation\n";
-    gzmsg << "- Joint controllers enable precise motion control\n";
-    gzmsg << "- Different joint types serve different mechanical purposes\n";
-    gzmsg << "- Complex mechanisms can be built by combining simple joints\n";
-    
-    return 0;
+    catch (...)
+    {
+        gzerr << "Unknown exception in Joint Mechanism Tutorial" << std::endl;
+        return -1;
+    }
 }
+
+/*
+ * Key Concepts Demonstrated:
+ * 
+ * 1. **Joint Mechanism Systems**: How to systematically design and control different joint
+ *    types (revolute, prismatic, universal) for complex mechanical system behaviors.
+ * 
+ * 2. **Hermetic Static Plugins**: Understanding why we use static linking for reliable,
+ *    reproducible joint mechanism testing across different environments.
+ * 
+ * 3. **PID Joint Control**: Comprehensive analysis of joint position control using PID
+ *    controllers with proper gain tuning and stability considerations.
+ * 
+ * 4. **Signal Handling**: Proper application lifecycle management with graceful shutdown
+ *    during long-running joint mechanism demonstrations and control sequences.
+ * 
+ * 5. **Educational Progression**: Step-by-step tutorial structure that teaches joint
+ *    mechanism design and optimization strategies for robotics applications.
+ * 
+ * 6. **Joint Constraint Analysis**: Real-time monitoring and analysis of joint limits,
+ *    damping, friction, and force feedback for system validation and tuning.
+ * 
+ * Usage Examples:
+ * - ./joint_demo                                 # Run complete joint mechanism demo
+ * - timeout 60s ./joint_demo                     # Run with 60-second timeout
+ * - ./joint_demo 2>&1 | grep "TUTORIAL"         # Extract only tutorial messages
+ * 
+ * Next Steps:
+ * - Experiment with different PID controller parameters for joint performance tuning
+ * - Design custom joint mechanisms for specific robotic applications
+ * - Integrate joint control insights into multi-DOF robotic system design
+ * - Use joint analysis results for kinematics and dynamics optimization
+ * 
+ * Educational Notes:
+ * - Static plugin messages are expected and demonstrate hermetic build reliability
+ * - Joint performance depends on PID gains, damping, friction, and system dynamics
+ * - Revolute joints provide rotational motion with configurable limits and control
+ * - Prismatic joints enable linear motion with position constraints and force control  
+ * - Universal joints combine two revolute joints for complex 3D orientation control
+ * - Tutorial demonstrates best practices for production joint mechanism development
+ */

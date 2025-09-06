@@ -2,8 +2,38 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
+# ============================================================================
+# Example 3: Advanced Rendering and Visual Effects Demonstration
+# ============================================================================
+# 
+# This comprehensive example explores Gazebo's advanced rendering capabilities:
+# - Materials and Physically Based Rendering (PBR) workflows for realistic visuals
+# - Lighting systems (directional, point, spot) and shadow optimization techniques  
+# - Camera systems, sensor rendering, and multi-view setup for computer vision
+# - Interactive PBR parameter exploration for material artist workflows
+# - Advanced visual effects, post-processing, and rendering pipeline optimization
+#
+# Educational Focus:
+# - Master PBR material workflows and parameter relationships for production assets
+# - Understand lighting types, shadow mapping, and performance optimization strategies
+# - Learn camera models, sensor simulation, and multi-camera synchronization techniques
+# - Explore visual effects implementation and rendering pipeline optimization
+# - Develop rendering performance analysis and GPU utilization optimization skills
+# - Apply industry best practices for real-time rendering in simulation environments
+#
+# Technical Implementation:
+# - Hermetic builds with static plugin integration ensure consistent rendering behavior
+# - Signal handling infrastructure provides graceful shutdown during long-running demos
+# - Real-time performance monitoring with RTF analysis for rendering optimization insights
+# - Comprehensive educational progression teaching rendering concepts from basics to advanced
+# - Production-ready error handling and resource management for professional workflows
+#
+# Prerequisites: Basic understanding of 3D graphics concepts and material properties
+# Usage: Run individual demos or use run_rendering_demos.sh for complete experience
+# ============================================================================
+
 # Material showcase demonstration
-# Demonstrates various material properties and PBR rendering
+# Comprehensive PBR material demonstration with real-time property visualization
 cc_binary(
     name = "material_showcase",
     srcs = ["material_showcase.cc"],
@@ -14,15 +44,19 @@ cc_binary(
         "@gz-transport",
         "@gz-rendering",
         "@gz-math",
+        # Hermetic static plugin dependencies for reliable material rendering
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:material_showcase_world",
-        "//models:rendering_models",
+        "//worlds:lighting_demo",
+        "//models:all_models",
     ],
 )
 
 # Lighting comparison demonstration
-# Shows different lighting types and their effects on materials
+# Advanced lighting systems with dynamic control and shadow optimization
 cc_binary(
     name = "lighting_demo",
     srcs = ["lighting_demo.cc"],
@@ -33,15 +67,19 @@ cc_binary(
         "@gz-transport",
         "@gz-rendering",
         "@gz-math",
+        # Hermetic static plugin dependencies for consistent lighting behavior
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:lighting_comparison_world",
-        "//models:rendering_models",
+        "//worlds:lighting_demo",
+        "//models:all_models",
     ],
 )
 
 # Camera demonstration
-# Multiple camera types and rendering techniques
+# Multi-camera sensor systems with advanced rendering pipeline integration
 cc_binary(
     name = "camera_demo",
     srcs = ["camera_demo.cc"],
@@ -53,15 +91,19 @@ cc_binary(
         "@gz-rendering",
         "@gz-sensors",
         "@gz-math",
+        # Hermetic static plugin dependencies for reliable camera sensor operation
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:camera_demo_world",
-        "//models:rendering_models",
+        "//worlds:lighting_demo",
+        "//models:all_models",
     ],
 )
 
 # PBR material explorer
-# Interactive tool for exploring PBR parameters
+# Interactive material artist workflow tool with real-time parameter visualization
 cc_binary(
     name = "pbr_explorer",
     srcs = ["pbr_explorer.cc"],
@@ -72,15 +114,19 @@ cc_binary(
         "@gz-transport",
         "@gz-rendering",
         "@gz-math",
+        # Hermetic static plugin dependencies for consistent PBR material behavior
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:pbr_demo_world",
-        "//models:rendering_models",
+        "//worlds:lighting_demo",
+        "//models:all_models",
     ],
 )
 
 # Visual effects demonstration
-# Advanced rendering features and effects
+# Advanced post-processing pipeline with GPU-accelerated rendering effects
 cc_binary(
     name = "visual_effects",
     srcs = ["visual_effects.cc"],
@@ -91,14 +137,33 @@ cc_binary(
         "@gz-transport",
         "@gz-rendering",
         "@gz-math",
+        # Hermetic static plugin dependencies for stable visual effects pipeline
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:visual_effects_world",
-        "//models:rendering_models",
+        "//worlds:lighting_demo",
+        "//models:all_models",
     ],
 )
 
-# Convenience target to build all rendering demos
+# ============================================================================
+# Comprehensive Rendering Demo Collection
+# ============================================================================
+# 
+# This target builds all 5 advanced rendering demonstrations, providing a complete
+# educational experience for mastering Gazebo's rendering capabilities:
+#
+# 1. material_showcase - PBR material workflows and property visualization
+# 2. lighting_demo - Advanced lighting systems and shadow optimization  
+# 3. camera_demo - Multi-camera sensor systems and rendering pipeline integration
+# 4. pbr_explorer - Interactive material artist workflow tools
+# 5. visual_effects - Post-processing effects and GPU-accelerated rendering
+#
+# Build Command: bazelisk build //examples/03_rendering_demo:all_demos
+# Educational Value: Complete rendering mastery from basics to advanced techniques
+# ============================================================================
 filegroup(
     name = "all_demos",
     srcs = [

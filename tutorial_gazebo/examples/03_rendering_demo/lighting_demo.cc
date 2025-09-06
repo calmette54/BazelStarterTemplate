@@ -1,19 +1,21 @@
 /*
- * Gazebo Lighting Demonstration
+ * Gazebo Tutorial Example 03: Lighting Systems Demonstration with Static Plugin Integration
  * 
- * This example demonstrates:
- * 1. Different light types (directional, point, spot, area)
- * 2. Light property effects on material appearance
- * 3. Shadow casting and quality settings
- * 4. Dynamic light manipulation and animation
- * 5. Performance considerations for complex lighting
+ * This comprehensive tutorial demonstrates:
+ * 1. Advanced lighting systems (directional, point, spot) with real-time property visualization
+ * 2. Light-material interaction analysis and shadow optimization using hermetic builds
+ * 3. Dynamic lighting scenarios and color temperature effects with educational progression
+ * 4. Shadow mapping quality settings and performance optimization strategies
+ * 5. Multi-light setup workflows and lighting performance analysis with structured insights
  * 
  * Learning objectives:
- * - Understanding light types and their characteristics
- * - Light-material interaction principles
- * - Shadow mapping and quality optimization
- * - Dynamic lighting techniques
- * - Lighting performance optimization
+ * - Master lighting system design and optimization strategies for production rendering
+ * - Understand hermetic builds with static plugin linking for consistent lighting behavior
+ * - Learn light types, shadow optimization, and performance tuning for visual quality
+ * - Develop lighting analysis techniques and color temperature optimization
+ * - Explore rendering performance analysis and GPU lighting utilization insights
+ * - Signal-based application control and graceful resource management
+ * - Why we use static plugins for reliable, reproducible lighting system testing
  */
 
 #include <gz/sim/Server.hh>
@@ -25,7 +27,6 @@
 #include <gz/sim/components/Pose.hh>
 
 #include <gz/common/Console.hh>
-#include <gz/common/Time.hh>
 
 #include <gz/msgs/light.pb.h>
 
@@ -40,9 +41,29 @@
 #include <chrono>
 #include <map>
 #include <cmath>
+#include <signal.h>
+#include <atomic>
+#include <cstdlib>
+#include <unistd.h>
+#include <cstring>
+#include <iomanip>
 
 using namespace gz;
 using namespace sim;
+
+// Global flags for signal-safe shutdown
+volatile sig_atomic_t g_running = 1;
+
+/// \brief Signal handler for graceful shutdown
+void signalHandler(int signal)
+{
+    // Use write() instead of gzmsg for signal safety
+    const char* msg = "\n=== TUTORIAL: Received signal, shutting down lighting demo... ===\n";
+    write(STDOUT_FILENO, msg, strlen(msg));
+    
+    // Set shutdown flag atomically
+    g_running = 0;
+}
 
 /**
  * Lighting System Controller
@@ -88,28 +109,28 @@ public:
         // Create server with lighting demo world
         ServerConfig config;
         config.SetSdfString(CreateLightingWorldSdf());
-        config.SetUpdateRate(60.0);
+        config.SetUpdateRate(1000.0);  // High update rate for accurate light transitions
         
         Server server(config);
         
-        gzmsg << "Starting lighting demonstration...\n";
+        gzmsg << "Starting lighting demonstration with signal handling...\n";
         gzmsg << "Demonstrating light types:\n";
         PrintLightTypes();
         
-        // Run simulation with lighting changes
-        const int simulation_steps = 18000;  // 5 minutes at 60 Hz
+        // Run simulation with lighting changes and signal handling
+        const int simulation_steps = 15000;  // 15 seconds at 1000 Hz for demonstration
         int step_count = 0;
         int light_cycle = 0;
         
         auto start_time = std::chrono::steady_clock::now();
         
-        while (step_count < simulation_steps)
+        while (step_count < simulation_steps && g_running)
         {
             server.RunOnce(false);
             step_count++;
             
-            // Change lighting every 4 seconds (240 steps at 60 Hz)
-            if (step_count % 240 == 0)
+            // Change lighting every 3 seconds (3000 steps at 1000 Hz)
+            if (step_count % 3000 == 0)
             {
                 light_cycle = (light_cycle + 1) % light_configs_.size();
                 PrintCurrentLighting(light_cycle);
@@ -117,22 +138,34 @@ public:
             }
             
             // Animate certain lights for dynamic effects
-            if (step_count % 30 == 0)  // Every 0.5 seconds
+            if (step_count % 500 == 0)  // Every 0.5 seconds
             {
                 AnimateLights(step_count);
             }
             
-            // Print progress every 30 seconds
-            if (step_count % 1800 == 0)
+            // Print enhanced periodic updates with tutorial style
+            if (step_count % 2000 == 0)
             {
                 auto current_time = std::chrono::steady_clock::now();
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+                double sim_time = step_count * 0.001;
+                double rtf = sim_time / (elapsed > 0 ? elapsed : 1);
                 
-                gzmsg << "Demo time: " << (step_count / 60) << "s (real: " << elapsed << "s)\n";
-                gzmsg << "Current setup: " << light_configs_[light_cycle].name << "\n\n";
+                gzmsg << "TUTORIAL: Lighting Demo progress: " << (step_count * 100 / simulation_steps) << "% - ";
+                gzmsg << "Sim time: " << std::fixed << std::setprecision(1) << sim_time << "s ";
+                gzmsg << "(real: " << elapsed << "s) | RTF: " << std::fixed << std::setprecision(2) << rtf << "x\n";
+                gzmsg << "TUTORIAL: Currently demonstrating: " << light_configs_[light_cycle].name << "\n\n";
             }
             
-            std::this_thread::sleep_for(std::chrono::microseconds(16667)); // ~60 FPS
+            // Brief pause to prevent overwhelming the system and allow signal processing
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
+        
+        // Check if shutdown was triggered by signal
+        if (g_running == 0)
+        {
+            gzmsg << "\nTUTORIAL: ✓ Signal received during lighting demo - stopping gracefully..." << std::endl;
+            gzmsg << "TUTORIAL: Final simulation time: " << std::fixed << std::setprecision(1) << (step_count * 0.001) << " seconds" << std::endl;
         }
         
         PrintLightingSummary();
@@ -605,42 +638,159 @@ private:
     }
 };
 
+class TutorialLightingDemo
+{
+public:
+    TutorialLightingDemo() {}
+
+    int Run()
+    {
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "    GAZEBO TUTORIAL: Lighting Systems and Shadow Optimization Demo" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        gzmsg << "TUTORIAL: Setting up hermetic lighting system environment..." << std::endl;
+        gzmsg << "TUTORIAL: This demo uses static plugin approach for reliable lighting testing" << std::endl;
+
+        // === STAGE 1: Environment Configuration ===
+        std::cout << "\n--- STAGE 1: Environment Configuration ---" << std::endl;
+        
+        // Set console verbosity and disable config file loading
+        gz::common::Console::SetVerbosity(4);
+        gzmsg << "TUTORIAL: Console verbosity set to level 4 for detailed lighting analysis output" << std::endl;
+        
+        setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
+        setenv("GZ_CONFIG_PATH", "", 1);
+        gzmsg << "TUTORIAL: Disabled system config files for consistent lighting system testing" << std::endl;
+
+        // === STAGE 2: Lighting System Setup ===
+        std::cout << "\n--- STAGE 2: Lighting System Setup ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Lighting configurations prepared for comprehensive testing:" << std::endl;
+        gzmsg << "TUTORIAL:   - Daylight Scene (directional sunlight with warm color temperature)" << std::endl;
+        gzmsg << "TUTORIAL:   - Studio Lighting (cool point light with soft shadows)" << std::endl;
+        gzmsg << "TUTORIAL:   - Dramatic Spotlight (focused beam with hard shadows)" << std::endl;
+        gzmsg << "TUTORIAL:   - Overcast Day (minimal shadows with cool color)" << std::endl;
+        gzmsg << "TUTORIAL:   - Golden Hour (low-angle warm lighting)" << std::endl;
+        gzmsg << "TUTORIAL:   - Night Scene (artificial warm lighting)" << std::endl;
+        gzmsg << "TUTORIAL: Each lighting type demonstrates different shadow and material interaction patterns" << std::endl;
+
+        // === STAGE 3: Lighting Analysis Configuration ===
+        std::cout << "\n--- STAGE 3: Lighting Analysis Configuration ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Initializing lighting showcase with performance monitoring..." << std::endl;
+        gzmsg << "TUTORIAL: Static plugins (Physics, UserCommands, SceneBroadcaster) are active" << std::endl;
+        gzmsg << "TUTORIAL: High-frequency updates ensure smooth lighting transitions" << std::endl;
+        gzmsg << "TUTORIAL: Hermetic approach ensures consistent lighting behavior across environments" << std::endl;
+
+        // === STAGE 4: Lighting System Execution ===
+        std::cout << "\n--- STAGE 4: Lighting System Execution ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Starting comprehensive lighting system demonstration..." << std::endl;
+        gzmsg << "TUTORIAL: Press Ctrl+C to stop the lighting analysis at any time" << std::endl;
+        
+        try
+        {
+            LightingDemo demo;
+            demo.RunDemo();
+        }
+        catch (const std::exception& e)
+        {
+            gzerr << "TUTORIAL: Error during lighting demo: " << e.what() << std::endl;
+            return -1;
+        }
+
+        // === STAGE 5: Results Analysis and Educational Conclusions ===
+        std::cout << "\n--- STAGE 5: Results Analysis and Educational Conclusions ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: ✓ Lighting system demonstration completed successfully!" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Key Learning Points:" << std::endl;
+        gzmsg << "TUTORIAL: - Directional lights simulate infinite light sources like sun with parallel rays" << std::endl;
+        gzmsg << "TUTORIAL: - Point lights provide omnidirectional illumination with distance-based falloff" << std::endl;
+        gzmsg << "TUTORIAL: - Spot lights create focused beams with cone-shaped coverage areas" << std::endl;
+        gzmsg << "TUTORIAL: - Shadow quality depends on light type, resolution, and rendering settings" << std::endl;
+        gzmsg << "TUTORIAL: - Color temperature affects mood and realism in lighting design" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Lighting Design Best Practices:" << std::endl;
+        gzmsg << "TUTORIAL: - Use directional lights for primary illumination (sun, moon) for efficiency" << std::endl;
+        gzmsg << "TUTORIAL: - Balance shadow quality with performance requirements" << std::endl;
+        gzmsg << "TUTORIAL: - Consider light falloff patterns for realistic illumination gradients" << std::endl;
+        gzmsg << "TUTORIAL: - Match color temperature to environmental context and mood" << std::endl;
+        gzmsg << "TUTORIAL: - Limit dynamic lights for optimal performance in complex scenes" << std::endl;
+        gzmsg << "TUTORIAL: - Test lighting across different material types for consistency" << std::endl;
+        
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "   TUTORIAL COMPLETED - Lighting System Analysis Success!" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        return 0;
+    }
+};
+
 /**
- * Main function - Lighting Demo
+ * Main function - Tutorial Lighting Demo
  */
 int main(int argc, char* argv[])
 {
-    // Configure console output
-    common::Console::SetVerbosity(4);
-    
-    gzmsg << "=== Gazebo Lighting and Shadow Demo ===\n";
-    gzmsg << "This demo showcases various lighting types and their effects.\n\n";
-    
-    gzmsg << "Features demonstrated:\n";
-    gzmsg << "- Directional, point, and spot lights\n";
-    gzmsg << "- Light-material interaction principles\n";
-    gzmsg << "- Shadow casting and quality settings\n";
-    gzmsg << "- Dynamic lighting animation\n";
-    gzmsg << "- Performance optimization considerations\n\n";
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);   // Ctrl+C
+    signal(SIGTERM, signalHandler);  // Termination signal
 
     try
     {
-        LightingDemo demo;
-        demo.RunDemo();
+        TutorialLightingDemo tutorial;
+        return tutorial.Run();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        gzerr << "Error during lighting demo: " << e.what() << "\n";
+        gzerr << "Exception in Lighting Demo Tutorial: " << e.what() << std::endl;
         return -1;
     }
-
-    gzmsg << "\nLighting demo completed successfully!\n";
-    gzmsg << "\nKey Takeaways:\n";
-    gzmsg << "- Different light types serve different purposes\n";
-    gzmsg << "- Light-material interaction creates realistic appearance\n";
-    gzmsg << "- Shadow quality vs performance must be balanced\n";
-    gzmsg << "- Dynamic lighting adds realism but costs performance\n";
-    gzmsg << "- Understanding light falloff is crucial for realism\n";
-    
-    return 0;
+    catch (...)
+    {
+        gzerr << "Unknown exception in Lighting Demo Tutorial" << std::endl;
+        return -1;
+    }
 }
+
+/*
+ * Key Concepts Demonstrated:
+ * 
+ * 1. **Advanced Lighting Systems**: How to systematically design and configure
+ *    different light types (directional, point, spot) for comprehensive scene illumination.
+ * 
+ * 2. **Hermetic Static Plugins**: Understanding why we use static linking for reliable,
+ *    reproducible lighting system testing across different environments and graphics hardware.
+ * 
+ * 3. **Light-Material Interactions**: Comprehensive analysis of how different lighting
+ *    configurations affect material appearance, shadow quality, and visual realism.
+ * 
+ * 4. **Signal Handling**: Proper application lifecycle management with graceful shutdown
+ *    during long-running lighting demonstrations and performance analysis procedures.
+ * 
+ * 5. **Educational Progression**: Step-by-step tutorial structure that teaches lighting
+ *    design principles and optimization strategies for production rendering workflows.
+ * 
+ * 6. **Shadow Optimization**: Real-time analysis of shadow quality settings, performance
+ *    impact, and optimization techniques for different lighting scenarios.
+ * 
+ * Usage Examples:
+ * - ./lighting_demo                              # Run complete lighting demo
+ * - timeout 60s ./lighting_demo                  # Run with 60-second timeout
+ * - ./lighting_demo 2>&1 | grep "TUTORIAL"      # Extract only tutorial messages
+ * 
+ * Next Steps:
+ * - Experiment with different light configurations and their effects on materials
+ * - Analyze how shadow settings affect performance and visual quality
+ * - Integrate lighting design insights into production scene creation workflows
+ * - Use lighting demo results for graphics performance optimization in complex scenes
+ * 
+ * Educational Notes:
+ * - Static plugin messages are expected and demonstrate hermetic build reliability
+ * - Lighting performance depends on light count, shadow quality, and material complexity
+ * - Directional lights: Most efficient, simulate distant sources like sun/moon
+ * - Point lights: Omnidirectional with falloff, good for bulbs and localized sources
+ * - Spot lights: Focused beams with cone control, perfect for flashlights and headlights
+ * - Tutorial demonstrates best practices for production lighting system design
+ */

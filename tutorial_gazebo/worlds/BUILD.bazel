@@ -70,6 +70,12 @@ filegroup(
     srcs = ["physics_benchmark_world.sdf"],
 )
 
+# Individual rendering world targets
+filegroup(
+    name = "rendering_showcase",
+    srcs = ["rendering_showcase.sdf"],
+)
+
 filegroup(
     name = "rendering_worlds",
     srcs = [

@@ -9,21 +9,8 @@ filegroup(
     srcs = ["articulated_robot.sdf"],
 )
 
-# Mobile robot model - wheeled robot with sensors
-filegroup(
-    name = "mobile_robot", 
-    srcs = ["mobile_robot.sdf"],
-)
-
-# Manipulation objects - various graspable objects
-filegroup(
-    name = "manipulation_objects",
-    srcs = [
-        "manipulation_box.sdf",
-        "manipulation_sphere.sdf", 
-        "manipulation_cylinder.sdf",
-    ],
-)
+# Note: Mobile robot and manipulation objects models not yet implemented
+# These targets are commented out until the corresponding SDF files are created
 
 # Basic environment models used by tutorial examples
 filegroup(
@@ -56,15 +43,13 @@ filegroup(
     srcs = ["collision_shapes/model.sdf"],
 )
 
-# All robot models
+# All available robot models (only includes existing files)
 filegroup(
     name = "all_models",
     srcs = [
         ":articulated_robot",
-        ":mobile_robot",
-        ":manipulation_objects",
         ":simple_box",
-        ":ground_plane", 
+        ":ground_plane",
         ":physics_box",
         ":bouncing_ball",
         ":pendulum",

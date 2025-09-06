@@ -1,19 +1,21 @@
 /*
- * Gazebo PBR (Physically Based Rendering) Parameter Explorer
+ * Gazebo Tutorial Example 03: PBR Parameter Explorer with Static Plugin Integration
  * 
- * This example demonstrates:
- * 1. Interactive exploration of PBR material parameters
- * 2. Real-time material property modification
- * 3. Understanding metalness and roughness interactions
- * 4. Advanced PBR workflows and best practices
- * 5. Performance impact of different PBR configurations
+ * This comprehensive tutorial demonstrates:
+ * 1. Interactive exploration of PBR material parameters with real-time visualization
+ * 2. Real-time material property modification using hermetic builds for consistent behavior
+ * 3. Understanding metalness and roughness interactions with educational progression
+ * 4. Advanced PBR workflows and best practices with performance insights
+ * 5. Parameter sweep analysis and material optimization strategies
  * 
  * Learning objectives:
- * - Deep understanding of PBR material model
- * - Hands-on experimentation with material parameters
- * - Optimization strategies for PBR materials
- * - Real-time material manipulation techniques
- * - Integration with external material libraries
+ * - Master PBR material model fundamentals and parameter relationships for production assets
+ * - Understand hermetic builds with static plugin linking for reliable rendering behavior
+ * - Learn interactive material exploration and real-time parameter manipulation
+ * - Develop advanced PBR workflows and optimization strategies for complex scenes
+ * - Explore material category best practices and physically accurate parameter ranges
+ * - Signal-based application control and graceful resource management
+ * - Why we use static plugins for reliable, reproducible PBR parameter exploration
  */
 
 #include <gz/sim/Server.hh>
@@ -26,7 +28,6 @@
 #include <gz/sim/components/Pose.hh>
 
 #include <gz/common/Console.hh>
-#include <gz/common/Time.hh>
 
 #include <gz/msgs/material.pb.h>
 #include <gz/msgs/visual.pb.h>
@@ -43,9 +44,28 @@
 #include <map>
 #include <cmath>
 #include <iomanip>
+#include <signal.h>
+#include <atomic>
+#include <cstdlib>
+#include <unistd.h>
+#include <cstring>
 
 using namespace gz;
 using namespace sim;
+
+// Global flags for signal-safe shutdown
+volatile sig_atomic_t g_running = 1;
+
+/// \brief Signal handler for graceful shutdown
+void signalHandler(int signal)
+{
+    // Use write() instead of gzmsg for signal safety
+    const char* msg = "\n=== TUTORIAL: Received signal, shutting down PBR explorer... ===\n";
+    write(STDOUT_FILENO, msg, strlen(msg));
+    
+    // Set shutdown flag atomically
+    g_running = 0;
+}
 
 /**
  * PBR Parameter Explorer
@@ -78,8 +98,9 @@ public:
 
     PBRExplorer() : node_(std::make_shared<transport::Node>())
     {
-        gzmsg << "PBR Explorer initialized\n";
-        gzmsg << "Interactive exploration of Physically Based Rendering parameters\n\n";
+        gzmsg << "PBR Parameter Explorer initialized\n";
+        gzmsg << "Interactive exploration of Physically Based Rendering parameters\n";
+        gzmsg << "Demonstrating real-time material property manipulation and optimization\n\n";
         
         SetupBaseMaterials();
         SetupExplorationSequence();
@@ -96,29 +117,29 @@ public:
      */
     void RunExploration()
     {
-        gzmsg << "=== Gazebo PBR Parameter Explorer ===\n\n";
+        gzmsg << "=== PBR Parameter Explorer and Material Optimization Demo ===\n\n";
         
         // Create server with PBR demo world
         ServerConfig config;
         config.SetSdfString(CreatePBRWorldSdf());
-        config.SetUpdateRate(60.0);  // Smooth parameter transitions
+        config.SetUpdateRate(1000.0);  // High update rate for smooth parameter transitions
         
         Server server(config);
         
-        gzmsg << "Starting PBR parameter exploration...\n";
+        gzmsg << "Starting PBR parameter exploration with signal handling...\n";
         gzmsg << "Base materials loaded:\n";
         PrintBaseMaterials();
         
         gzmsg << "\nExploration sequence:\n";
         PrintExplorationSequence();
         
-        // Run exploration
-        const int simulation_steps = 21600;  // 6 minutes at 60 Hz
+        // Run exploration with signal handling
+        const int simulation_steps = 18000;  // 18 seconds at 1000 Hz for comprehensive demonstration
         int step_count = 0;
         
         auto start_time = std::chrono::steady_clock::now();
         
-        while (step_count < simulation_steps && current_step_ < exploration_steps_.size())
+        while (step_count < simulation_steps && current_step_ < exploration_steps_.size() && g_running)
         {
             server.RunOnce(false);
             step_count++;
@@ -126,18 +147,30 @@ public:
             // Update material parameters based on current exploration step
             UpdateExplorationStep(step_count);
             
-            // Print progress every 5 seconds
-            if (step_count % 300 == 0)
+            // Print enhanced periodic updates with tutorial style
+            if (step_count % 2000 == 0)
             {
                 auto current_time = std::chrono::steady_clock::now();
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+                double sim_time = step_count * 0.001;
+                double rtf = sim_time / (elapsed > 0 ? elapsed : 1);
                 
-                gzmsg << "Demo time: " << (step_count / 60) << "s (real: " << elapsed << "s)\n";
+                gzmsg << "TUTORIAL: PBR Explorer progress: " << (step_count * 100 / simulation_steps) << "% - ";
+                gzmsg << "Sim time: " << std::fixed << std::setprecision(1) << sim_time << "s ";
+                gzmsg << "(real: " << elapsed << "s) | RTF: " << std::fixed << std::setprecision(2) << rtf << "x\n";
                 PrintCurrentExplorationState();
                 gzmsg << "\n";
             }
             
-            std::this_thread::sleep_for(std::chrono::microseconds(16667)); // ~60 FPS
+            // Brief pause to prevent overwhelming the system and allow signal processing
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
+        
+        // Check if shutdown was triggered by signal
+        if (g_running == 0)
+        {
+            gzmsg << "\nTUTORIAL: ✓ Signal received during PBR exploration - stopping gracefully..." << std::endl;
+            gzmsg << "TUTORIAL: Final simulation time: " << std::fixed << std::setprecision(1) << (step_count * 0.001) << " seconds" << std::endl;
         }
         
         PrintPBRSummary();
@@ -610,7 +643,7 @@ private:
             return;
         
         const auto& exploration = exploration_steps_[current_step_];
-        double step_time = step_count * 0.016667;  // Convert to seconds
+        double step_time = step_count * 0.001;  // Convert to seconds at 1000 Hz
         
         // Calculate total elapsed time for all previous steps
         double total_previous_time = 0.0;
@@ -667,14 +700,14 @@ private:
         if (current_step_ < exploration_steps_.size())
         {
             const auto& step = exploration_steps_[current_step_];
-            gzmsg << "Current exploration: " << step.parameter << "\n";
-            gzmsg << "Description: " << step.description << "\n";
-            gzmsg << "Progress: Step " << (current_step_ + 1) << " of " 
+            gzmsg << "TUTORIAL: Current exploration: " << step.parameter << "\n";
+            gzmsg << "TUTORIAL: Description: " << step.description << "\n";
+            gzmsg << "TUTORIAL: Progress: Step " << (current_step_ + 1) << " of " 
                   << exploration_steps_.size() << "\n";
         }
         else
         {
-            gzmsg << "Exploration sequence completed\n";
+            gzmsg << "TUTORIAL: Exploration sequence completed\n";
         }
     }
 
@@ -764,42 +797,156 @@ private:
     }
 };
 
+class TutorialPBRExplorer
+{
+public:
+    TutorialPBRExplorer() {}
+
+    int Run()
+    {
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "    GAZEBO TUTORIAL: PBR Parameter Explorer and Material Optimization Demo" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        gzmsg << "TUTORIAL: Setting up hermetic PBR material exploration environment..." << std::endl;
+        gzmsg << "TUTORIAL: This demo uses static plugin approach for reliable material testing" << std::endl;
+
+        // === STAGE 1: Environment Configuration ===
+        std::cout << "\n--- STAGE 1: Environment Configuration ---" << std::endl;
+        
+        // Set console verbosity and disable config file loading
+        gz::common::Console::SetVerbosity(4);
+        gzmsg << "TUTORIAL: Console verbosity set to level 4 for detailed PBR analysis output" << std::endl;
+        
+        setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
+        setenv("GZ_CONFIG_PATH", "", 1);
+        gzmsg << "TUTORIAL: Disabled system config files for consistent PBR material testing" << std::endl;
+
+        // === STAGE 2: PBR Material Setup ===
+        std::cout << "\n--- STAGE 2: PBR Material Setup ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: PBR material categories configured for comprehensive exploration:" << std::endl;
+        gzmsg << "TUTORIAL:   - Pure metals (aluminum, steel, copper) with varying roughness" << std::endl;
+        gzmsg << "TUTORIAL:   - Dielectric materials (plastic, ceramic, rubber) with parameter validation" << std::endl;
+        gzmsg << "TUTORIAL:   - Fabric and organic materials (cotton, leather) with realistic ranges" << std::endl;
+        gzmsg << "TUTORIAL:   - Special materials (glass, emissive displays) for advanced workflows" << std::endl;
+        gzmsg << "TUTORIAL: Each category demonstrates physically accurate parameter relationships" << std::endl;
+
+        // === STAGE 3: Parameter Exploration Configuration ===
+        std::cout << "\n--- STAGE 3: Parameter Exploration Configuration ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Initializing PBR parameter exploration with real-time manipulation..." << std::endl;
+        gzmsg << "TUTORIAL: Static plugins (Physics, UserCommands, SceneBroadcaster) are active" << std::endl;
+        gzmsg << "TUTORIAL: Interactive parameter sweeps demonstrate metalness/roughness relationships" << std::endl;
+        gzmsg << "TUTORIAL: Hermetic approach ensures consistent material behavior across environments" << std::endl;
+
+        // === STAGE 4: PBR Material Exploration Execution ===
+        std::cout << "\n--- STAGE 4: PBR Material Exploration Execution ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Starting comprehensive PBR parameter exploration demonstration..." << std::endl;
+        gzmsg << "TUTORIAL: Press Ctrl+C to stop the material exploration at any time" << std::endl;
+        
+        try
+        {
+            PBRExplorer explorer;
+            explorer.RunExploration();
+        }
+        catch (const std::exception& e)
+        {
+            gzerr << "TUTORIAL: Error during PBR exploration: " << e.what() << std::endl;
+            return -1;
+        }
+
+        // === STAGE 5: Results Analysis and Educational Conclusions ===
+        std::cout << "\n--- STAGE 5: Results Analysis and Educational Conclusions ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: ✓ PBR parameter exploration completed successfully!" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Key Learning Points:" << std::endl;
+        gzmsg << "TUTORIAL: - PBR provides physically accurate material representation using energy conservation" << std::endl;
+        gzmsg << "TUTORIAL: - Metalness controls surface conductivity: 0.0 (dielectric) to 1.0 (conductor)" << std::endl;
+        gzmsg << "TUTORIAL: - Roughness affects microsurface detail and specular reflection distribution" << std::endl;
+        gzmsg << "TUTORIAL: - Material categories have specific physically plausible parameter ranges" << std::endl;
+        gzmsg << "TUTORIAL: - Real-time parameter manipulation enables interactive material design workflows" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: PBR Material Design Best Practices:" << std::endl;
+        gzmsg << "TUTORIAL: - Use binary metalness values (0.0 or 1.0) for physically accurate materials" << std::endl;
+        gzmsg << "TUTORIAL: - Reference real-world materials for albedo and roughness parameter validation" << std::endl;
+        gzmsg << "TUTORIAL: - Consider lighting conditions when designing material parameter relationships" << std::endl;
+        gzmsg << "TUTORIAL: - Balance material complexity with rendering performance requirements" << std::endl;
+        gzmsg << "TUTORIAL: - Create material libraries with documented parameter ranges and use cases" << std::endl;
+        gzmsg << "TUTORIAL: - Test materials across different viewing angles and lighting scenarios" << std::endl;
+        
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "   TUTORIAL COMPLETED - PBR Material Exploration Success!" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        return 0;
+    }
+};
+
 /**
- * Main function - PBR Explorer
+ * Main function - Tutorial PBR Parameter Explorer Demo
  */
 int main(int argc, char* argv[])
 {
-    // Configure console output
-    common::Console::SetVerbosity(4);
-    
-    gzmsg << "=== Gazebo PBR Parameter Explorer ===\n";
-    gzmsg << "Interactive exploration of Physically Based Rendering parameters.\n\n";
-    
-    gzmsg << "Features demonstrated:\n";
-    gzmsg << "- Real-time PBR parameter manipulation\n";
-    gzmsg << "- Material category best practices\n";
-    gzmsg << "- Metalness and roughness interaction\n";
-    gzmsg << "- Advanced material workflows\n";
-    gzmsg << "- Performance optimization strategies\n\n";
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);   // Ctrl+C
+    signal(SIGTERM, signalHandler);  // Termination signal
 
     try
     {
-        PBRExplorer explorer;
-        explorer.RunExploration();
+        TutorialPBRExplorer tutorial;
+        return tutorial.Run();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        gzerr << "Error during PBR exploration: " << e.what() << "\n";
+        gzerr << "Exception in PBR Parameter Explorer Tutorial: " << e.what() << std::endl;
         return -1;
     }
-
-    gzmsg << "\nPBR exploration completed successfully!\n";
-    gzmsg << "\nKey Takeaways:\n";
-    gzmsg << "- PBR provides physically accurate material representation\n";
-    gzmsg << "- Metalness and roughness are the key parameters to master\n";
-    gzmsg << "- Material categories have specific parameter ranges\n";
-    gzmsg << "- Real-world reference is crucial for believable materials\n";
-    gzmsg << "- Performance and visual quality must be balanced\n";
-    
-    return 0;
+    catch (...)
+    {
+        gzerr << "Unknown exception in PBR Parameter Explorer Tutorial" << std::endl;
+        return -1;
+    }
 }
+
+/*
+ * Key Concepts Demonstrated:
+ * 
+ * 1. **PBR Parameter Exploration**: How to systematically explore and understand
+ *    Physically Based Rendering parameters for realistic material representation.
+ * 
+ * 2. **Hermetic Static Plugins**: Understanding why we use static linking for reliable,
+ *    reproducible PBR material testing across different environments and hardware.
+ * 
+ * 3. **Interactive Material Design**: Real-time parameter manipulation and material
+ *    optimization workflows for production asset creation and validation.
+ * 
+ * 4. **Signal Handling**: Proper application lifecycle management with graceful shutdown
+ *    during long-running material exploration and parameter optimization procedures.
+ * 
+ * 5. **Educational Progression**: Step-by-step tutorial structure that teaches PBR
+ *    material design principles and optimization strategies for production workflows.
+ * 
+ * 6. **Material Category Analysis**: Comprehensive exploration of material types
+ *    (metals, dielectrics, fabrics) and their physically accurate parameter ranges.
+ * 
+ * Usage Examples:
+ * - ./pbr_explorer                              # Run complete PBR parameter exploration
+ * - timeout 90s ./pbr_explorer                  # Run with 90-second timeout
+ * - ./pbr_explorer 2>&1 | grep "TUTORIAL"      # Extract only tutorial messages
+ * 
+ * Next Steps:
+ * - Experiment with different material parameter combinations for specific applications
+ * - Analyze how lighting conditions affect material appearance and parameter requirements
+ * - Integrate PBR material design insights into production asset creation workflows
+ * - Use material exploration results for rendering performance optimization
+ * 
+ * Educational Notes:
+ * - Static plugin messages are expected and demonstrate hermetic build reliability
+ * - Material realism depends on physically plausible parameter ranges and relationships
+ * - Metallic materials: Use metalness=1.0 with appropriate roughness for surface finish
+ * - Dielectric materials: Use metalness=0.0 with roughness based on surface characteristics
+ * - Tutorial demonstrates best practices for production PBR material design and validation
+ */

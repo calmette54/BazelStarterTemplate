@@ -1,19 +1,21 @@
 /*
- * Gazebo Physics Configuration Utility
+ * Gazebo Tutorial Example 02: Physics Configuration and Tuning Tool with Static Plugin Integration
  * 
- * This example demonstrates:
- * 1. Dynamic physics parameter configuration
- * 2. Real-time physics engine parameter tuning
- * 3. Physics debugging and troubleshooting tools
- * 4. Parameter optimization for specific scenarios
- * 5. Physics engine behavior analysis
+ * This comprehensive tutorial demonstrates:
+ * 1. Dynamic physics parameter configuration and real-time tuning with structured analysis
+ * 2. Physics troubleshooting and debugging methodologies using hermetic builds
+ * 3. Performance vs accuracy tradeoff analysis with educational progression
+ * 4. Advanced parameter optimization strategies with best practices and insights
+ * 5. Physics stability analysis and constraint tuning with real-time monitoring
  * 
  * Learning objectives:
- * - Understanding physics engine parameters and their effects
- * - Real-time parameter tuning techniques
- * - Physics troubleshooting methodology
- * - Performance optimization through parameter adjustment
- * - Advanced physics configuration strategies
+ * - Master physics engine parameters (CFM, ERP, step size) and their simulation effects
+ * - Understand hermetic builds with static plugin linking for consistent configuration testing
+ * - Learn systematic physics troubleshooting and parameter optimization strategies  
+ * - Develop performance analysis and stability assessment methodologies for production
+ * - Explore advanced physics configuration patterns and debugging techniques
+ * - Signal-based application control and graceful resource management
+ * - Why we use static plugins for reliable, reproducible physics configuration testing
  */
 
 #include <gz/sim/Server.hh>
@@ -22,12 +24,9 @@
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/components/Physics.hh>
 #include <gz/sim/components/PhysicsEnginePlugin.hh>
-#include <gz/sim/components/WorldLinearVelocity.hh>
-#include <gz/sim/components/WorldAngularVelocity.hh>
 #include <gz/sim/components/Pose.hh>
 
 #include <gz/common/Console.hh>
-#include <gz/common/Time.hh>
 
 #include <gz/msgs/physics.pb.h>
 #include <gz/msgs/world_control.pb.h>
@@ -44,9 +43,30 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <signal.h>
+#include <atomic>
+#include <cstdlib>
+#include <unistd.h>
+#include <cstring>
+#include <numeric>
+#include <algorithm>
 
 using namespace gz;
 using namespace sim;
+
+// Global flags for signal-safe shutdown
+volatile sig_atomic_t g_running = 1;
+
+/// \brief Signal handler for graceful shutdown
+void signalHandler(int signal)
+{
+    // Use write() instead of gzmsg for signal safety
+    const char* msg = "\n=== TUTORIAL: Received signal, shutting down physics configurator... ===\n";
+    write(STDOUT_FILENO, msg, strlen(msg));
+    
+    // Set shutdown flag atomically
+    g_running = 0;
+}
 
 /**
  * Physics Configuration Manager
@@ -348,35 +368,47 @@ private:
      */
     void RunConfigurationScenarios(Server& server)
     {
-        gzmsg << "Running Physics Configuration Scenarios:\n";
-        gzmsg << "========================================\n\n";
+        gzmsg << "TUTORIAL: Running Physics Configuration Scenarios:\n";
+        gzmsg << "TUTORIAL: ========================================\n\n";
         
         // Scenario 1: Default configuration
-        gzmsg << "Scenario 1: Default Physics Configuration\n";
-        gzmsg << "-----------------------------------------\n";
+        if (!g_running) return;
+        gzmsg << "TUTORIAL: Scenario 1: Default Physics Configuration\n";
+        gzmsg << "TUTORIAL: -----------------------------------------\n";
         RunScenarioWithConfig(server, GetDefaultConfig(), "Default settings - balanced performance");
         
         // Scenario 2: High precision configuration
-        gzmsg << "Scenario 2: High Precision Configuration\n";
-        gzmsg << "----------------------------------------\n";
+        if (!g_running) return;
+        gzmsg << "TUTORIAL: Scenario 2: High Precision Configuration\n";
+        gzmsg << "TUTORIAL: ----------------------------------------\n";
         RunScenarioWithConfig(server, GetHighPrecisionConfig(), "Small step size, high solver iterations");
         
         // Scenario 3: High performance configuration
-        gzmsg << "Scenario 3: High Performance Configuration\n";
-        gzmsg << "------------------------------------------\n";
+        if (!g_running) return;
+        gzmsg << "TUTORIAL: Scenario 3: High Performance Configuration\n";
+        gzmsg << "TUTORIAL: ------------------------------------------\n";
         RunScenarioWithConfig(server, GetHighPerformanceConfig(), "Large step size, fewer iterations");
         
         // Scenario 4: Stable simulation configuration
-        gzmsg << "Scenario 4: Stability-Focused Configuration\n";
-        gzmsg << "-------------------------------------------\n";
+        if (!g_running) return;
+        gzmsg << "TUTORIAL: Scenario 4: Stability-Focused Configuration\n";
+        gzmsg << "TUTORIAL: -------------------------------------------\n";
         RunScenarioWithConfig(server, GetStableConfig(), "Conservative parameters for stability");
         
         // Scenario 5: Contact-intensive configuration
-        gzmsg << "Scenario 5: Contact-Intensive Configuration\n";
-        gzmsg << "-------------------------------------------\n";
+        if (!g_running) return;
+        gzmsg << "TUTORIAL: Scenario 5: Contact-Intensive Configuration\n";
+        gzmsg << "TUTORIAL: -------------------------------------------\n";
         RunScenarioWithConfig(server, GetContactIntensiveConfig(), "Optimized for many contacts and collisions");
         
-        PrintConfigurationSummary();
+        if (g_running)
+        {
+            PrintConfigurationSummary();
+        }
+        else
+        {
+            gzmsg << "\nTUTORIAL: ✓ Signal received - configuration scenarios stopped gracefully" << std::endl;
+        }
     }
 
     /**
@@ -398,7 +430,7 @@ private:
         
         std::vector<double> step_times;
         
-        for (int i = 0; i < steps; ++i)
+        for (int i = 0; i < steps && g_running; ++i)
         {
             auto step_start = std::chrono::steady_clock::now();
             server.RunOnce(false);
@@ -409,8 +441,19 @@ private:
             
             if (i % 500 == 0)
             {
+                gzmsg << "TUTORIAL: Configuration test progress: " << (i * 100 / steps) << "% - " 
+                      << "Avg step: " << std::fixed << std::setprecision(3) 
+                      << (step_times.empty() ? 0.0 : std::accumulate(step_times.begin(), step_times.end(), 0.0) / step_times.size()) << "ms\r";
+                std::cout.flush();
                 std::this_thread::sleep_for(std::chrono::microseconds(100));
             }
+        }
+        
+        // Check if shutdown was triggered by signal
+        if (g_running == 0)
+        {
+            gzmsg << "\nTUTORIAL: ✓ Signal received during configuration test - stopping gracefully..." << std::endl;
+            return;
         }
         
         // Analyze performance
@@ -638,37 +681,161 @@ private:
     }
 };
 
+class TutorialPhysicsConfigurator
+{
+public:
+    TutorialPhysicsConfigurator() {}
+
+    int Run()
+    {
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "    GAZEBO TUTORIAL: Physics Configuration and Tuning Tool" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        gzmsg << "TUTORIAL: Setting up hermetic physics configuration environment..." << std::endl;
+        gzmsg << "TUTORIAL: This demo uses static plugin approach for reliable configuration testing" << std::endl;
+
+        // === STAGE 1: Environment Configuration ===
+        std::cout << "\n--- STAGE 1: Environment Configuration ---" << std::endl;
+        
+        // Set console verbosity and disable config file loading
+        gz::common::Console::SetVerbosity(4);
+        gzmsg << "TUTORIAL: Console verbosity set to level 4 for detailed configuration analysis output" << std::endl;
+        
+        setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
+        setenv("GZ_CONFIG_PATH", "", 1);
+        gzmsg << "TUTORIAL: Disabled system config files for consistent physics configuration testing" << std::endl;
+
+        // === STAGE 2: Physics Parameter Setup ===
+        std::cout << "\n--- STAGE 2: Physics Parameter Setup ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Physics configuration scenarios prepared for comprehensive testing:" << std::endl;
+        gzmsg << "TUTORIAL:   - Default Configuration: Balanced performance and accuracy" << std::endl;
+        gzmsg << "TUTORIAL:   - High Precision Configuration: Maximum accuracy with smaller step size" << std::endl;
+        gzmsg << "TUTORIAL:   - High Performance Configuration: Optimized speed with larger steps" << std::endl;
+        gzmsg << "TUTORIAL:   - Stability-Focused Configuration: Conservative parameters for robustness" << std::endl;
+        gzmsg << "TUTORIAL:   - Contact-Intensive Configuration: Optimized for collision-heavy scenarios" << std::endl;
+        gzmsg << "TUTORIAL: Each scenario demonstrates physics parameter effects on stability and performance" << std::endl;
+
+        // === STAGE 3: Physics Configuration Analysis ===
+        std::cout << "\n--- STAGE 3: Physics Configuration Analysis ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Initializing physics configurator with real-time parameter analysis..." << std::endl;
+        gzmsg << "TUTORIAL: Static plugins (Physics, UserCommands, SceneBroadcaster) are active" << std::endl;
+        gzmsg << "TUTORIAL: CFM, ERP, step size, and solver iteration effects will be analyzed" << std::endl;
+        gzmsg << "TUTORIAL: Hermetic approach ensures consistent configuration behavior across environments" << std::endl;
+
+        // === STAGE 4: Physics Configuration Execution ===
+        std::cout << "\n--- STAGE 4: Physics Configuration Execution ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: Starting comprehensive physics configuration demonstration..." << std::endl;
+        gzmsg << "TUTORIAL: Each configuration will run for 3 seconds with performance analysis" << std::endl;
+        gzmsg << "TUTORIAL: Press Ctrl+C to stop the configuration analysis at any time" << std::endl;
+        
+        try
+        {
+            PhysicsConfigurator configurator;
+            configurator.RunInteractiveSession();
+        }
+        catch (const std::exception& e)
+        {
+            gzerr << "TUTORIAL: Error during physics configuration: " << e.what() << std::endl;
+            return -1;
+        }
+
+        // === STAGE 5: Results Analysis and Educational Conclusions ===
+        std::cout << "\n--- STAGE 5: Results Analysis and Educational Conclusions ---" << std::endl;
+        
+        gzmsg << "TUTORIAL: ✓ Physics configuration demonstration completed successfully!" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Key Learning Points:" << std::endl;
+        gzmsg << "TUTORIAL: - Step size affects simulation accuracy vs performance tradeoffs" << std::endl;
+        gzmsg << "TUTORIAL: - Solver iterations control constraint satisfaction quality vs speed" << std::endl;
+        gzmsg << "TUTORIAL: - CFM (Constraint Force Mixing) controls contact rigidity and stability" << std::endl;
+        gzmsg << "TUTORIAL: - ERP (Error Reduction Parameter) controls constraint correction aggressiveness" << std::endl;
+        gzmsg << "TUTORIAL: - Physics stability requires careful balance of all parameters" << std::endl;
+        
+        gzmsg << "\nTUTORIAL: Physics Configuration Best Practices:" << std::endl;
+        gzmsg << "TUTORIAL: - Start with default parameters and adjust based on specific requirements" << std::endl;
+        gzmsg << "TUTORIAL: - Use smaller step sizes for high-precision applications" << std::endl;
+        gzmsg << "TUTORIAL: - Increase solver iterations when contacts are critical" << std::endl;
+        gzmsg << "TUTORIAL: - Tune CFM and ERP together to balance stability and accuracy" << std::endl;
+        gzmsg << "TUTORIAL: - Monitor coefficient of variation for stability assessment" << std::endl;
+        gzmsg << "TUTORIAL: - Test parameter changes with representative scenarios" << std::endl;
+        
+        std::cout << "\n" << std::string(70, '=') << std::endl;
+        std::cout << "   TUTORIAL COMPLETED - Physics Configuration Analysis Success!" << std::endl;
+        std::cout << std::string(70, '=') << std::endl;
+        
+        return 0;
+    }
+};
+
 /**
- * Main function - Physics Configuration Tool
+ * Main function - Tutorial Physics Configuration Tool
  */
 int main(int argc, char* argv[])
 {
-    // Configure console output
-    common::Console::SetVerbosity(4);
-    
-    gzmsg << "=== Gazebo Physics Configuration Tool ===\n";
-    gzmsg << "Interactive physics parameter tuning and analysis utility.\n\n";
-    
-    gzmsg << "This tool demonstrates:\n";
-    gzmsg << "- Effects of different physics parameter configurations\n";
-    gzmsg << "- Performance vs accuracy tradeoffs\n";
-    gzmsg << "- Stability considerations for different scenarios\n";
-    gzmsg << "- Troubleshooting techniques for physics issues\n\n";
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);   // Ctrl+C
+    signal(SIGTERM, signalHandler);  // Termination signal
 
     try
     {
-        PhysicsConfigurator configurator;
-        configurator.RunInteractiveSession();
+        TutorialPhysicsConfigurator tutorial;
+        return tutorial.Run();
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        gzerr << "Error during physics configuration: " << e.what() << "\n";
+        gzerr << "Exception in Physics Configuration Tutorial: " << e.what() << std::endl;
         return -1;
     }
-
-    gzmsg << "\nPhysics configuration analysis completed successfully!\n";
-    gzmsg << "\nUse this knowledge to optimize physics settings for your specific needs.\n";
-    gzmsg << "Remember: There's always a tradeoff between accuracy, stability, and performance.\n";
-    
-    return 0;
+    catch (...)
+    {
+        gzerr << "Unknown exception in Physics Configuration Tutorial" << std::endl;
+        return -1;
+    }
 }
+
+/*
+ * Key Concepts Demonstrated:
+ * 
+ * 1. **Physics Configuration Management**: How to systematically analyze and tune
+ *    physics parameters (CFM, ERP, step size, solver iterations) for optimal simulation behavior.
+ * 
+ * 2. **Hermetic Static Plugins**: Understanding why we use static linking for reliable,
+ *    reproducible physics configuration testing across different environments.
+ * 
+ * 3. **Parameter Tradeoff Analysis**: Comprehensive analysis of accuracy vs performance vs stability
+ *    tradeoffs when adjusting physics engine parameters for different scenarios.
+ * 
+ * 4. **Signal Handling**: Proper application lifecycle management with graceful shutdown
+ *    during long-running physics configuration analysis and parameter tuning procedures.
+ * 
+ * 5. **Educational Progression**: Step-by-step tutorial structure that teaches physics
+ *    troubleshooting and optimization strategies for production systems.
+ * 
+ * 6. **Stability Assessment**: Real-time monitoring and analysis of physics stability using
+ *    coefficient of variation and performance metrics for system validation.
+ * 
+ * Usage Examples:
+ * - ./physics_configurator                        # Run complete physics configuration analysis
+ * - timeout 180s ./physics_configurator           # Run with 3-minute timeout
+ * - ./physics_configurator 2>&1 | grep "TUTORIAL" # Extract only tutorial messages
+ * 
+ * Next Steps:
+ * - Use configuration analysis results to optimize physics parameters for your application
+ * - Experiment with parameter combinations to find optimal balance for specific scenarios
+ * - Integrate configuration insights into physics engine setup and tuning workflows
+ * - Apply stability assessment techniques to validate physics parameter choices
+ * 
+ * Educational Notes:
+ * - Static plugin messages are expected and demonstrate hermetic build reliability
+ * - Configuration results depend on hardware, scenario complexity, and physics engine choice
+ * - CFM controls contact softness: lower values = harder contacts, higher values = softer contacts
+ * - ERP controls constraint correction: lower values = gentler correction, higher values = aggressive correction
+ * - Step size affects accuracy vs speed: smaller steps = more accurate, larger steps = faster
+ * - Solver iterations control constraint satisfaction: more iterations = better satisfaction, slower performance
+ * - Coefficient of variation (CV) measures stability: lower CV = more stable simulation
+ * - Tutorial demonstrates best practices for production physics parameter optimization
+ */
