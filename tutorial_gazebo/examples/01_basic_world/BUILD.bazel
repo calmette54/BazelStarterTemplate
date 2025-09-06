@@ -50,6 +50,7 @@ cc_binary(
     ],
     data = [
         "//worlds:basic_world_simple",
+        "//worlds:basic_world_tutorial",
         "//worlds:lighting_demo.sdf",
         "//config:server_config",
     ],
