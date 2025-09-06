@@ -653,7 +653,7 @@
     },
     "@@aspect_rules_js+//npm:extensions.bzl%pnpm": {
       "general": {
-        "bzlTransitiveDigest": "cqzYMiLskzMs3rrX50MpkUtKGOIUnvAd9FYngBJL5FI=",
+        "bzlTransitiveDigest": "u1d3hzcUw4ymWiBGaNBAAVOpzg3ip6pUHhyhYHNWZsw=",
         "usagesDigest": "fgIozj3Siw6cYs9usn8up+ymSZ1+1zcwDhiSi/omptE=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -750,7 +750,7 @@
     },
     "@@gazelle+//:extensions.bzl%go_deps": {
       "general": {
-        "bzlTransitiveDigest": "iQMFuWT6ic2Zb0PjFSWfz0vPSZq9Cv2HLwyX+VO3Afc=",
+        "bzlTransitiveDigest": "5Ihe6KU4bTSU8bREbo6sN75pDsbG+Q+J/z9OaysUkDw=",
         "usagesDigest": "5t506i9t6CVUs7clrVP3jUCLxQgMdijw9PGnmaqrgGg=",
         "recordedFileInputs": {
           "@@gazelle+//go.mod": "5346019bf0673364b383d56ffbc9fced98b7b4ee921e865dfe905a1ebe82d326",
@@ -1014,7 +1014,7 @@
     },
     "@@pybind11_bazel+//:internal_configure.bzl%internal_configure_extension": {
       "general": {
-        "bzlTransitiveDigest": "vyKH4VZgvJxNRuv2Dn3yUi/i7TcjLFk2up5SgTbIUY8=",
+        "bzlTransitiveDigest": "G7xCmtNWXRuBtChRgB5OK5+gmM8Uoy8Mec/B7j3fhqs=",
         "usagesDigest": "D1r3lfzMuUBFxgG8V6o0bQTLMk3GkaGOaPzw53wrwyw=",
         "recordedFileInputs": {
           "@@pybind11_bazel+//MODULE.bazel": "e6f4c20442eaa7c90d7190d8dc539d0ab422f95c65a57cc59562170c58ae3d34"
@@ -1044,7 +1044,7 @@
     },
     "@@rules_apple+//apple:extensions.bzl%non_module_deps": {
       "general": {
-        "bzlTransitiveDigest": "CwnxZSval4booBn3AH4F4AU4C9LwBCZuIK9TxDRaO0k=",
+        "bzlTransitiveDigest": "hZq9NZQ3DfMM3SejWMrPlGSZAv38GRVt6iSG5FbwbhQ=",
         "usagesDigest": "nVxkKreSQeZiSDD2uTCzqF98fvkcZpq4JTrk3u5qIeo=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1480,7 +1480,7 @@
     },
     "@@rules_fuzzing+//fuzzing/private:extensions.bzl%non_module_dependencies": {
       "general": {
-        "bzlTransitiveDigest": "lxvzPQyluk241QRYY81nZHOcv5Id/5U2y6dp42qibis=",
+        "bzlTransitiveDigest": "v2H25KPHEkN56IHR41S67Kzp5Xjxd75GBiazhON8jzc=",
         "usagesDigest": "wy6ISK6UOcBEjj/mvJ/S3WeXoO67X+1llb9yPyFtPgc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1616,7 +1616,7 @@
     },
     "@@rules_go+//go/private:extensions.bzl%non_module_dependencies": {
       "general": {
-        "bzlTransitiveDigest": "YUw8ydB82Cf100s3VcU0zgXMcBucixUByg+LDtFYxrk=",
+        "bzlTransitiveDigest": "FKBiA9INoCLauofgST7ulCkPYUiTz3OpDZWUDGcCec0=",
         "usagesDigest": "wXfEypf5dx8CldENG2iBAbD5BcTuPmxnw78NFUFciD8=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1977,7 +1977,7 @@
     },
     "@@rules_perl+//perl:extensions.bzl%perl_repositories": {
       "general": {
-        "bzlTransitiveDigest": "DKAbT5Hv75ng+7437HBGby62c24WsBEitNFQsKvxS6U=",
+        "bzlTransitiveDigest": "2b+Kf0VvFQTw7hCgirLBKaJFU952JUAVdFELnLdMuf0=",
         "usagesDigest": "qSSNDdCNVxNhY36wMndEAFacdhR0ooLTmumfad0km9s=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -2051,7 +2051,7 @@
     },
     "@@rules_python+//python/extensions:pip.bzl%pip": {
       "general": {
-        "bzlTransitiveDigest": "20VrGGezp4dJ3DXRo74+97V2dCnq2h4DDGm49SvSqY4=",
+        "bzlTransitiveDigest": "Kwd0vv6h3dVOjEGHGAy6pc185ZfwS2rJN17sTkyx/9w=",
         "usagesDigest": "JVZSjIpNfQdnjvXJmVYUwWDCdv9saDVKmIn+Dwhp4jQ=",
         "recordedFileInputs": {
           "@@rules_fuzzing+//fuzzing/requirements.txt": "ab04664be026b632a0d2a2446c4f65982b7654f5b6851d2f9d399a19b7242a5b",
@@ -7778,7 +7778,7 @@
     },
     "@@rules_rust+//rust/private:extensions.bzl%i": {
       "general": {
-        "bzlTransitiveDigest": "NI7laY2weu4B1ctYDnBg4cT38ei9ZqndrOtSIWiblD0=",
+        "bzlTransitiveDigest": "sa0ICDrUKbRpSevFuHYXagZgrtOQ0xiUFH2TSOlYqEQ=",
         "usagesDigest": "cmoHByGEUkrUYi29nYHIHIq+fe1551lnSFI6CaNLugY=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -17916,7 +17916,7 @@
     },
     "@@rules_swift+//swift:extensions.bzl%non_module_deps": {
       "general": {
-        "bzlTransitiveDigest": "188HAR1B7/zgGCexknNy/LA9sxfIShSv1ttw1bk62XM=",
+        "bzlTransitiveDigest": "7HCu9g5L/A6rnapg3vth7ZT5JAXGhHB5cfk39qhGYuM=",
         "usagesDigest": "mhACFnrdMv9Wi0Mt67bxocJqviRkDSV+Ee5Mqdj5akA=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

@@ -23,7 +23,9 @@ cc_binary(
         "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:basic_world_simple",
+        "//worlds:basic_world",
+        "//worlds:basic_world_simple", 
+        "//worlds:basic_world_tutorial",
         "//models:simple_box",
         "//models:ground_plane",
         "//config:server_config",
