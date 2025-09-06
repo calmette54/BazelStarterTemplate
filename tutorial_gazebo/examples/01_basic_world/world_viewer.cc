@@ -1,203 +1,175 @@
 /*
- * Gazebo Tutorial Example 01: Interactive World Viewer
+ * Gazebo Tutorial Example 01: Headless World Viewer
  * 
  * This example demonstrates:
- * 1. Loading and visualizing SDF worlds
- * 2. Interactive GUI components
- * 3. Real-time rendering with Ogre2
- * 4. Camera controls and navigation
+ * 1. Loading and running SDF worlds in headless mode
+ * 2. Server-side simulation without GUI dependencies
+ * 3. Long-running simulation processes
+ * 4. Signal handling for graceful shutdown
  * 
  * Learning objectives:
- * - Understand Gazebo's GUI system
- * - Learn about rendering pipeline
- * - Explore visualization options
- * - Interactive world exploration
+ * - Understand Gazebo's headless server mode
+ * - Learn about simulation lifecycle management
+ * - Explore server-side world processing
+ * - Signal-based application control
  */
 
-#include <gz/sim/gui/Gui.hh>
 #include <gz/sim/Server.hh>
 #include <gz/sim/ServerConfig.hh>
 #include <gz/common/Console.hh>
-#include <gz/gui/Application.hh>
-#include <gz/gui/MainWindow.hh>
+#include <gz/common/Filesystem.hh>
 
-#include <QApplication>
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <signal.h>
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
 
 using namespace gz;
 
-class WorldViewerApp
+// Global flag for graceful shutdown
+std::atomic<bool> g_running{true};
+
+/// \brief Signal handler for graceful shutdown
+void signalHandler(int signal)
+{
+    gzmsg << "\nReceived signal " << signal << ", shutting down gracefully..." << std::endl;
+    g_running = false;
+}
+
+/// \brief Find SDF file in runfiles or relative paths
+std::string FindSdfFile(const std::string &filename)
+{
+    // Try common locations for SDF files
+    std::vector<std::string> paths = {
+        filename,                                    // Direct path
+        "worlds/" + filename,                        // Relative to current directory
+        "../worlds/" + filename,                     // Parent directory
+        "tutorial_gazebo/worlds/" + filename,        // Bazel runfiles path
+        "external/tutorial_gazebo/worlds/" + filename, // External workspace path
+    };
+
+    for (const auto &path : paths)
+    {
+        if (gz::common::exists(path))
+        {
+            gzmsg << "Found SDF file at: " << path << std::endl;
+            return path;
+        }
+    }
+
+    gzerr << "Could not find SDF file: " << filename << std::endl;
+    gzmsg << "Searched paths:" << std::endl;
+    for (const auto &path : paths)
+    {
+        gzmsg << "  - " << path << std::endl;
+    }
+    
+    return filename; // Return original if not found
+}
+
+class HeadlessWorldViewer
 {
 public:
-    WorldViewerApp(const std::string &worldFile) : worldFile_(worldFile) {}
+    HeadlessWorldViewer(const std::string &worldFile) : worldFile_(FindSdfFile(worldFile)) {}
 
-    int Run(int argc, char *argv[])
+    int Run()
     {
-        gzmsg << "Starting Interactive World Viewer..." << std::endl;
+        gzmsg << "Starting Headless World Viewer..." << std::endl;
         gzmsg << "World file: " << worldFile_ << std::endl;
 
-        // Initialize Qt Application
-        QApplication app(argc, argv);
-        app.setApplicationName("Gazebo World Viewer");
-        app.setApplicationVersion("1.0");
+        // Set console verbosity and disable config file loading
+        gz::common::Console::SetVerbosity(2);
+        setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
+        setenv("GZ_CONFIG_PATH", "", 1);
 
-        // Configure the simulation server
-        ServerConfig serverConfig;
+        // Configure the simulation server for headless operation
+        sim::ServerConfig serverConfig;
         serverConfig.SetSdfFile(worldFile_);
-        serverConfig.SetUpdateRate(100.0);
+        serverConfig.SetUpdateRate(100.0);  // 100 Hz update rate
         serverConfig.SetUseLevels(true);
 
-        // Add essential systems for visualization
-        serverConfig.AddPlugin("gz-sim-physics-system", "", "");
-        serverConfig.AddPlugin("gz-sim-user-commands-system", "", "");
-        serverConfig.AddPlugin("gz-sim-scene-broadcaster-system", "", "");
+        // Note: In Gazebo Harmonic, system plugins should be configured via SDF
+        // rather than programmatically through ServerConfig::AddPlugin
+        // The world SDF file includes the necessary plugin configurations
         
-        // Create and start the server in a separate thread
+        // Create and start the server
         server_ = std::make_unique<sim::Server>(serverConfig);
+        
+        // Check if server was constructed properly and start manually if needed
+        gzmsg << "Server constructed, checking if running..." << std::endl;
         
         if (!server_->Running())
         {
-            gzerr << "Failed to start simulation server" << std::endl;
-            return -1;
+            gzmsg << "Server not running after construction, attempting to start manually..." << std::endl;
+            bool started = server_->Run();
+            if (!started)
+            {
+                gzerr << "Failed to start server manually" << std::endl;
+                return -1;
+            }
+            
+            if (!server_->Running())
+            {
+                gzerr << "Server still not running after manual start" << std::endl;
+                return -1;
+            }
         }
 
-        // Start server thread
-        serverThread_ = std::thread([this]() {
-            while (this->server_->Running())
+        gzmsg << "Headless simulation server started successfully!" << std::endl;
+        gzmsg << "World loaded: " << worldFile_ << std::endl;
+        gzmsg << "Press Ctrl+C to stop the simulation" << std::endl;
+
+        // Run the simulation loop until stopped
+        size_t iterations = 0;
+        auto startTime = std::chrono::steady_clock::now();
+        
+        while (server_->Running() && g_running)
+        {
+            // Run one simulation step
+            server_->RunOnce();
+            iterations++;
+            
+            // Print status every 1000 iterations (10 seconds at 100Hz)
+            if (iterations % 1000 == 0)
             {
-                this->server_->RunOnce();
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                auto currentTime = std::chrono::steady_clock::now();
+                auto elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>
+                    (currentTime - startTime).count();
+                
+                gzmsg << "Simulation running - Steps: " << iterations 
+                      << ", Elapsed: " << elapsedSeconds << "s" << std::endl;
             }
-        });
+            
+            // Small sleep to prevent excessive CPU usage
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
 
-        // Configure GUI
-        ConfigureGui();
-
-        gzmsg << "World Viewer ready! Use mouse to navigate:" << std::endl;
-        gzmsg << "- Left click + drag: Rotate view" << std::endl;
-        gzmsg << "- Right click + drag: Pan view" << std::endl;
-        gzmsg << "- Scroll wheel: Zoom in/out" << std::endl;
-
-        // Run the GUI event loop
-        int result = app.exec();
-
+        gzmsg << "Simulation stopped after " << iterations << " iterations" << std::endl;
+        
         // Cleanup
         Cleanup();
-        return result;
+        return 0;
     }
 
 private:
-    void ConfigureGui()
-    {
-        // Initialize GUI application
-        char *argv[] = {const_cast<char*>("world_viewer")};
-        int argc = 1;
-
-        if (!gui::initApp(argc, argv))
-        {
-            gzerr << "Failed to initialize GUI application" << std::endl;
-            return;
-        }
-
-        // Create main window
-        auto mainWindow = gui::createMainWindow();
-        if (!mainWindow)
-        {
-            gzerr << "Failed to create main window" << std::endl;
-            return;
-        }
-
-        // Configure essential plugins
-        AddGuiPlugins();
-
-        // Show the window
-        mainWindow->show();
-    }
-
-    void AddGuiPlugins()
-    {
-        // Add 3D scene plugin for world visualization
-        std::string scenePluginConfig = R"(
-            <plugin filename="MinimalScene" name="3D View">
-              <gz-gui>
-                <title>3D View</title>
-                <property type="bool" key="showTitleBar">false</property>
-                <property type="string" key="state">docked</property>
-              </gz-gui>
-              <engine>ogre2</engine>
-              <scene>scene</scene>
-              <ambient_light>0.4 0.4 0.4</ambient_light>
-              <background_color>0.8 0.8 0.8</background_color>
-              <camera_pose>-6 0 6 0 0.5 0</camera_pose>
-              <camera_clip>
-                <near>0.25</near>
-                <far>25000</far>
-              </camera_clip>
-            </plugin>
-        )";
-
-        // Add entity tree plugin for world hierarchy
-        std::string treePluginConfig = R"(
-            <plugin filename="EntityTree" name="Entity Tree">
-              <gz-gui>
-                <title>Entity Tree</title>
-                <property type="string" key="state">docked</property>
-              </gz-gui>
-            </plugin>
-        )";
-
-        // Add transform control plugin
-        std::string transformPluginConfig = R"(
-            <plugin filename="TransformControl" name="Transform Control">
-              <gz-gui>
-                <title>Transform Control</title>
-                <property type="string" key="state">docked</property>
-              </gz-gui>
-            </plugin>
-        )";
-
-        // Add component inspector
-        std::string inspectorPluginConfig = R"(
-            <plugin filename="ComponentInspector" name="Component Inspector">
-              <gz-gui>
-                <title>Component Inspector</title>
-                <property type="string" key="state">docked</property>
-              </gz-gui>
-            </plugin>
-        )";
-
-        // Load plugins (simplified for this example)
-        // In a full implementation, these would be loaded through the GUI system
-        gzmsg << "GUI plugins configured:" << std::endl;
-        gzmsg << "- 3D Scene with Ogre2 rendering" << std::endl;
-        gzmsg << "- Entity tree browser" << std::endl;
-        gzmsg << "- Transform controls" << std::endl;
-        gzmsg << "- Component inspector" << std::endl;
-    }
-
     void Cleanup()
     {
-        gzmsg << "Shutting down World Viewer..." << std::endl;
+        gzmsg << "Shutting down Headless World Viewer..." << std::endl;
         
         if (server_)
         {
             server_.reset();
         }
 
-        if (serverThread_.joinable())
-        {
-            serverThread_.join();
-        }
-
-        gzmsg << "World Viewer shutdown complete." << std::endl;
+        gzmsg << "Headless World Viewer shutdown complete." << std::endl;
     }
 
 private:
     std::string worldFile_;
     std::unique_ptr<sim::Server> server_;
-    std::thread serverThread_;
 };
 
 int main(int argc, char *argv[])
@@ -205,8 +177,12 @@ int main(int argc, char *argv[])
     // Set up console logging
     gz::common::Console::SetVerbosity(2);
 
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);   // Ctrl+C
+    signal(SIGTERM, signalHandler);  // Termination signal
+
     // Determine world file to load
-    std::string worldFile = "worlds/basic_world.sdf";
+    std::string worldFile = "basic_world_simple.sdf";
     if (argc > 1)
     {
         worldFile = argv[1];
@@ -214,17 +190,17 @@ int main(int argc, char *argv[])
 
     try
     {
-        WorldViewerApp viewer(worldFile);
-        return viewer.Run(argc, argv);
+        HeadlessWorldViewer viewer(worldFile);
+        return viewer.Run();
     }
     catch (const std::exception &e)
     {
-        gzerr << "Exception in World Viewer: " << e.what() << std::endl;
+        gzerr << "Exception in Headless World Viewer: " << e.what() << std::endl;
         return -1;
     }
     catch (...)
     {
-        gzerr << "Unknown exception in World Viewer" << std::endl;
+        gzerr << "Unknown exception in Headless World Viewer" << std::endl;
         return -1;
     }
 }
@@ -232,19 +208,20 @@ int main(int argc, char *argv[])
 /*
  * Key Concepts Demonstrated:
  * 
- * 1. **GUI Integration**: How to create interactive Gazebo applications
- *    with graphical user interfaces.
+ * 1. **Headless Simulation**: How to run Gazebo simulations without GUI
+ *    dependencies, suitable for server environments or CI/CD.
  * 
- * 2. **Rendering Pipeline**: Understanding how Gazebo uses Ogre2 for
- *    real-time 3D rendering and visualization.
+ * 2. **Server-side Processing**: Understanding how to run long-running
+ *    simulations with minimal resource overhead.
  * 
- * 3. **Plugin Architecture**: How GUI plugins extend functionality
- *    for different visualization and interaction needs.
+ * 3. **Signal Handling**: Proper application lifecycle management with
+ *    graceful shutdown on system signals.
  * 
- * 4. **Multi-threading**: Running simulation and GUI in separate threads
- *    for responsive user interaction.
+ * 4. **Plugin Architecture**: Essential server-side systems for physics,
+ *    commands, and data broadcasting.
  * 
- * 5. **Camera Controls**: Basic 3D navigation and viewport manipulation.
+ * 5. **Resource Management**: Efficient memory and CPU usage patterns
+ *    for continuous simulation operation.
  * 
  * Usage Examples:
  * - ./world_viewer                          # Load default world
@@ -252,8 +229,8 @@ int main(int argc, char *argv[])
  * - ./world_viewer my_custom_world.sdf      # Load custom world
  * 
  * Advanced Features to Explore:
- * - Custom GUI plugins for specific visualization needs
- * - Real-time parameter tuning through the interface
- * - Recording and playback of simulation sessions
- * - Integration with external control systems
+ * - Integration with external visualization tools (Rviz, custom viewers)
+ * - Remote control via Gazebo Transport topics and services
+ * - Data logging and analysis for batch simulation runs
+ * - Integration with containerized deployment environments
  */

@@ -28,9 +28,18 @@ bazel_dep(name = "gz-plugin", version = "3.1.0")
 bazel_dep(name = "gz-transport", version = "14.1.0.bcr.1")
 bazel_dep(name = "gz-utils", version = "3.1.0")
 
+# SDF format library - required for working with .sdf world and model files
+bazel_dep(name = "sdformat", version = "15.3.0.bcr.2")
+
 # Build toolchain requirements
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+# Compression library for Gazebo components (version aligned with FreeImage)
+bazel_dep(name = "zlib", version = "1.3.1.bcr.5")
+
+# Image processing library - explicit dependency to ensure correct version
+bazel_dep(name = "freeimage", version = "3.19.10.bcr.3")
 
 # For comprehensive documentation generation (disabled for now - not in BCR)
 # bazel_dep(name = "rules_doxygen", version = "0.5.1")

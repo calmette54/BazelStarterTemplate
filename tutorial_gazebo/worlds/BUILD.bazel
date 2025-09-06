@@ -24,6 +24,11 @@ filegroup(
 )
 
 filegroup(
+    name = "basic_world_simple",
+    srcs = ["basic_world_simple.sdf"],
+)
+
+filegroup(
     name = "lighting_demo",
     srcs = ["lighting_demo.sdf"],
 )

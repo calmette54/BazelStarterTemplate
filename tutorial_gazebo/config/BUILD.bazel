@@ -1,0 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
+# Gazebo server configuration files
+filegroup(
+    name = "server_config",
+    srcs = ["server.config"],
+)

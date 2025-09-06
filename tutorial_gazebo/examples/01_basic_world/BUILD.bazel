@@ -17,12 +17,20 @@ cc_binary(
         "@gz-common//:gz-common", 
         "@gz-math//:gz-math",
         "@gz-transport//:gz-transport",
+        # Link static system plugins directly into binary for hermetic execution
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:basic_world.sdf",
+        "//worlds:basic_world_simple",
         "//models:simple_box",
         "//models:ground_plane",
+        "//config:server_config",
     ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
 )
 
 # Interactive world viewer
@@ -32,11 +40,19 @@ cc_binary(
     deps = [
         "@gz-sim//:gz-sim",
         "@gz-common//:gz-common",
+        # Link static system plugins directly into binary for hermetic execution
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
     ],
     data = [
-        "//worlds:basic_world.sdf",
+        "//worlds:basic_world_simple",
         "//worlds:lighting_demo.sdf",
+        "//config:server_config",
     ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
 )
 
 # SDF validation tool

@@ -20,281 +20,248 @@
      This world serves as the foundation for Example 01 and demonstrates
      the minimal setup needed for a functioning Gazebo simulation.
 -->
-
 <sdf version="1.10">
-  <world name="basic_world">
-    <!-- 
+    <world name="basic_world">
+        <!-- 
       Physics Configuration
       Sets up the physics engine with appropriate timestep and real-time factor
     -->
-    <physics name="1ms" type="ignored">
-      <max_step_size>0.001</max_step_size>
-      <real_time_factor>1.0</real_time_factor>
-      <real_time_update_rate>1000</real_time_update_rate>
-    </physics>
-
-    <!-- 
+        <physics name="1ms" type="ignored">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+            <real_time_update_rate>1000</real_time_update_rate>
+        </physics>
+        <!-- 
       Essential System Plugins
       These plugins provide core Gazebo functionality:
       - Physics: Handles physics simulation
       - UserCommands: Enables user interaction
       - SceneBroadcaster: Publishes scene information for rendering
     -->
-    <plugin
-      filename="gz-sim-physics-system"
-      name="gz::sim::systems::Physics">
-    </plugin>
-    
-    <plugin
-      filename="gz-sim-user-commands-system"
-      name="gz::sim::systems::UserCommands">
-    </plugin>
-    
-    <plugin
-      filename="gz-sim-scene-broadcaster-system"
-      name="gz::sim::systems::SceneBroadcaster">
-    </plugin>
-
-    <!-- 
+        <plugin name="gz::sim::systems::Physics"></plugin>
+        <plugin name="gz::sim::systems::UserCommands"></plugin>
+        <plugin name="gz::sim::systems::SceneBroadcaster"></plugin>
+        <!-- 
       Lighting Setup
       Provides basic illumination for the world with shadows
     -->
-    <light type="directional" name="sun">
-      <cast_shadows>true</cast_shadows>
-      <pose>0 0 10 0 0 0</pose>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <attenuation>
-        <range>1000</range>
-        <constant>0.9</constant>
-        <linear>0.01</linear>
-        <quadratic>0.001</quadratic>
-      </attenuation>
-      <direction>-0.5 0.1 -0.9</direction>
-    </light>
-
-    <!-- 
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+        <!-- 
       Ground Plane Model
       Provides a basic surface for objects to rest on
     -->
-    <model name="ground_plane">
-      <static>true</static>
-      <link name="link">
-        <!-- Collision geometry for physics -->
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-            </plane>
-          </geometry>
-        </collision>
-        
-        <!-- Visual representation -->
-        <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.8 0.8 0.8 1</ambient>
-            <diffuse>0.8 0.8 0.8 1</diffuse>
-            <specular>0.8 0.8 0.8 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 
+        <model name="ground_plane">
+            <static>true</static>
+            <link name="link">
+                <!-- Collision geometry for physics -->
+                <collision name="collision">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                        </plane>
+                    </geometry>
+                </collision>
+                <!-- Visual representation -->
+                <visual name="visual">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>100 100</size>
+                        </plane>
+                    </geometry>
+                    <material>
+                        <ambient>0.8 0.8 0.8 1</ambient>
+                        <diffuse>0.8 0.8 0.8 1</diffuse>
+                        <specular>0.8 0.8 0.8 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        <!-- 
       Simple Box Model
       Demonstrates basic model creation with visual and collision geometry
     -->
-    <model name="simple_box">
-      <pose>0 0 0.5 0 0 0</pose>
-      <link name="link">
-        <inertial>
-          <mass>1.0</mass>
-          <inertia>
-            <ixx>0.166</ixx>
-            <iyy>0.166</iyy>
-            <izz>0.166</izz>
-          </inertia>
-        </inertial>
-        
-        <!-- Collision geometry -->
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>1 1 1</size>
-            </box>
-          </geometry>
-        </collision>
-        
-        <!-- Visual geometry -->
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>1 1 1</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.2 0.5 0.8 1</ambient>
-            <diffuse>0.2 0.5 0.8 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 
+        <model name="simple_box">
+            <pose>0 0 0.5 0 0 0</pose>
+            <link name="link">
+                <inertial>
+                    <mass>1.0</mass>
+                    <inertia>
+                        <ixx>0.166</ixx>
+                        <iyy>0.166</iyy>
+                        <izz>0.166</izz>
+                    </inertia>
+                </inertial>
+                <!-- Collision geometry -->
+                <collision name="collision">
+                    <geometry>
+                        <box>
+                            <size>1 1 1</size>
+                        </box>
+                    </geometry>
+                </collision>
+                <!-- Visual geometry -->
+                <visual name="visual">
+                    <geometry>
+                        <box>
+                            <size>1 1 1</size>
+                        </box>
+                    </geometry>
+                    <material>
+                        <ambient>0.2 0.5 0.8 1</ambient>
+                        <diffuse>0.2 0.5 0.8 1</diffuse>
+                        <specular>0.1 0.1 0.1 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        <!-- 
       Simple Sphere Model
       Demonstrates sphere geometry and different material properties
     -->
-    <model name="simple_sphere">
-      <pose>2 0 0.5 0 0 0</pose>
-      <link name="link">
-        <inertial>
-          <mass>0.5</mass>
-          <inertia>
-            <ixx>0.1</ixx>
-            <iyy>0.1</iyy>
-            <izz>0.1</izz>
-          </inertia>
-        </inertial>
-        
-        <collision name="collision">
-          <geometry>
-            <sphere>
-              <radius>0.5</radius>
-            </sphere>
-          </geometry>
-        </collision>
-        
-        <visual name="visual">
-          <geometry>
-            <sphere>
-              <radius>0.5</radius>
-            </sphere>
-          </geometry>
-          <material>
-            <ambient>0.8 0.2 0.2 1</ambient>
-            <diffuse>0.8 0.2 0.2 1</diffuse>
-            <specular>0.3 0.3 0.3 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 
+        <model name="simple_sphere">
+            <pose>2 0 0.5 0 0 0</pose>
+            <link name="link">
+                <inertial>
+                    <mass>0.5</mass>
+                    <inertia>
+                        <ixx>0.1</ixx>
+                        <iyy>0.1</iyy>
+                        <izz>0.1</izz>
+                    </inertia>
+                </inertial>
+                <collision name="collision">
+                    <geometry>
+                        <sphere>
+                            <radius>0.5</radius>
+                        </sphere>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <sphere>
+                            <radius>0.5</radius>
+                        </sphere>
+                    </geometry>
+                    <material>
+                        <ambient>0.8 0.2 0.2 1</ambient>
+                        <diffuse>0.8 0.2 0.2 1</diffuse>
+                        <specular>0.3 0.3 0.3 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        <!-- 
       Simple Cylinder Model
       Demonstrates cylinder geometry and positioning
     -->
-    <model name="simple_cylinder">
-      <pose>-2 0 0.5 0 0 0</pose>
-      <link name="link">
-        <inertial>
-          <mass>0.8</mass>
-          <inertia>
-            <ixx>0.15</ixx>
-            <iyy>0.15</iyy>
-            <izz>0.08</izz>
-          </inertia>
-        </inertial>
-        
-        <collision name="collision">
-          <geometry>
-            <cylinder>
-              <radius>0.5</radius>
-              <length>1.0</length>
-            </cylinder>
-          </geometry>
-        </collision>
-        
-        <visual name="visual">
-          <geometry>
-            <cylinder>
-              <radius>0.5</radius>
-              <length>1.0</length>
-            </cylinder>
-          </geometry>
-          <material>
-            <ambient>0.2 0.8 0.2 1</ambient>
-            <diffuse>0.2 0.8 0.2 1</diffuse>
-            <specular>0.2 0.2 0.2 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- 
+        <model name="simple_cylinder">
+            <pose>-2 0 0.5 0 0 0</pose>
+            <link name="link">
+                <inertial>
+                    <mass>0.8</mass>
+                    <inertia>
+                        <ixx>0.15</ixx>
+                        <iyy>0.15</iyy>
+                        <izz>0.08</izz>
+                    </inertia>
+                </inertial>
+                <collision name="collision">
+                    <geometry>
+                        <cylinder>
+                            <radius>0.5</radius>
+                            <length>1.0</length>
+                        </cylinder>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <cylinder>
+                            <radius>0.5</radius>
+                            <length>1.0</length>
+                        </cylinder>
+                    </geometry>
+                    <material>
+                        <ambient>0.2 0.8 0.2 1</ambient>
+                        <diffuse>0.2 0.8 0.2 1</diffuse>
+                        <specular>0.2 0.2 0.2 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        <!-- 
       GUI Configuration
       Sets up the default GUI layout with essential plugins
     -->
-    <gui fullscreen="0">
-      
-      <!-- 3D Scene View -->
-      <plugin filename="MinimalScene" name="3D View">
-        <gz-gui>
-          <title>3D View</title>
-          <property type="bool" key="showTitleBar">false</property>
-          <property type="string" key="state">docked</property>
-        </gz-gui>
-        
-        <engine>ogre2</engine>
-        <scene>scene</scene>
-        <ambient_light>0.4 0.4 0.4</ambient_light>
-        <background_color>0.8 0.8 0.8</background_color>
-        <camera_pose>-6 0 6 0 0.5 0</camera_pose>
-        <camera_clip>
-          <near>0.25</near>
-          <far>25000</far>
-        </camera_clip>
-      </plugin>
-
-      <!-- Entity Tree -->
-      <plugin filename="EntityTree" name="Entity tree">
-        <gz-gui>
-          <property key="resizable" type="bool">false</property>
-          <property key="width" type="double">5</property>
-          <property key="height" type="double">5</property>
-          <property key="state" type="string">floating</property>
-          <property key="showTitleBar" type="bool">false</property>
-        </gz-gui>
-      </plugin>
-
-      <!-- Scene Manager -->
-      <plugin filename="GzSceneManager" name="Scene Manager">
-        <gz-gui>
-          <property key="resizable" type="bool">false</property>
-          <property key="width" type="double">5</property>
-          <property key="height" type="double">5</property>
-          <property key="state" type="string">floating</property>
-          <property key="showTitleBar" type="bool">false</property>
-        </gz-gui>
-      </plugin>
-
-      <!-- Transform Control -->
-      <plugin filename="TransformControl" name="Transform control">
-        <gz-gui>
-          <property key="resizable" type="bool">false</property>
-          <property key="width" type="double">250</property>
-          <property key="height" type="double">50</property>
-          <property key="state" type="string">floating</property>
-          <property key="showTitleBar" type="bool">false</property>
-        </gz-gui>
-      </plugin>
-
-    </gui>
-
-  </world>
+        <gui fullscreen="0">
+            <!-- 3D Scene View -->
+            <plugin filename="MinimalScene" name="3D View">
+                <gz-gui>
+                    <title>3D View</title>
+                    <property type="bool" key="showTitleBar">false</property>
+                    <property type="string" key="state">docked</property>
+                </gz-gui>
+                <engine>ogre2</engine>
+                <scene>scene</scene>
+                <ambient_light>0.4 0.4 0.4</ambient_light>
+                <background_color>0.8 0.8 0.8</background_color>
+                <camera_pose>-6 0 6 0 0.5 0</camera_pose>
+                <camera_clip>
+                    <near>0.25</near>
+                    <far>25000</far>
+                </camera_clip>
+            </plugin>
+            <!-- Entity Tree -->
+            <plugin filename="EntityTree" name="Entity tree">
+                <gz-gui>
+                    <property key="resizable" type="bool">false</property>
+                    <property key="width" type="double">5</property>
+                    <property key="height" type="double">5</property>
+                    <property key="state" type="string">floating</property>
+                    <property key="showTitleBar" type="bool">false</property>
+                </gz-gui>
+            </plugin>
+            <!-- Scene Manager -->
+            <plugin filename="GzSceneManager" name="Scene Manager">
+                <gz-gui>
+                    <property key="resizable" type="bool">false</property>
+                    <property key="width" type="double">5</property>
+                    <property key="height" type="double">5</property>
+                    <property key="state" type="string">floating</property>
+                    <property key="showTitleBar" type="bool">false</property>
+                </gz-gui>
+            </plugin>
+            <!-- Transform Control -->
+            <plugin filename="TransformControl" name="Transform control">
+                <gz-gui>
+                    <property key="resizable" type="bool">false</property>
+                    <property key="width" type="double">250</property>
+                    <property key="height" type="double">50</property>
+                    <property key="state" type="string">floating</property>
+                    <property key="showTitleBar" type="bool">false</property>
+                </gz-gui>
+            </plugin>
+        </gui>
+    </world>
 </sdf>
-
 <!--
   Key Concepts Explained:
 
   1. SDF Structure:
-     - <?xml version="1.0" ?>: Standard XML declaration
+     - 
+<?xml version="1.0" ?>: Standard XML declaration
      - <sdf version="1.10">: SDF format version
      - <world name="...">: World container with unique name
 

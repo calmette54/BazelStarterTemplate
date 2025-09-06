@@ -25,6 +25,37 @@ filegroup(
     ],
 )
 
+# Basic environment models used by tutorial examples
+filegroup(
+    name = "simple_box",
+    srcs = ["simple_box/model.sdf"],
+)
+
+filegroup(
+    name = "ground_plane",
+    srcs = ["ground_plane/model.sdf"],
+)
+
+filegroup(
+    name = "physics_box",
+    srcs = ["physics_box/model.sdf"],
+)
+
+filegroup(
+    name = "bouncing_ball",
+    srcs = ["bouncing_ball/model.sdf"],
+)
+
+filegroup(
+    name = "pendulum",
+    srcs = ["pendulum/model.sdf"],
+)
+
+filegroup(
+    name = "collision_shapes",
+    srcs = ["collision_shapes/model.sdf"],
+)
+
 # All robot models
 filegroup(
     name = "all_models",
@@ -32,5 +63,11 @@ filegroup(
         ":articulated_robot",
         ":mobile_robot",
         ":manipulation_objects",
+        ":simple_box",
+        ":ground_plane", 
+        ":physics_box",
+        ":bouncing_ball",
+        ":pendulum",
+        ":collision_shapes",
     ],
 )
