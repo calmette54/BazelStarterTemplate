@@ -28,6 +28,18 @@ bazelisk run //:format                  # Format C++ code (clang-format)
 bazelisk run //:refresh_all             # Refresh compile_commands.json for IDE
 ```
 
+### Important: Handling Build Timeouts
+When running Bazel builds through Claude Code, builds may timeout during long operations. To prevent this:
+- **DO NOT use the default timeout** - Always specify a longer timeout for build commands
+- **For complex builds**: Use `timeout=600000` (10 minutes) parameter with the Bash tool
+- **Example**: When building large targets or first-time builds that download dependencies
+  ```bash
+  # Use this approach for builds that may take time:
+  Bash tool with timeout=600000: bazelisk build //examples/...
+  ```
+- **Monitor progress**: Bazel shows progress indicators - if you see activity, let it continue
+- **Incremental builds**: After initial build, subsequent builds are much faster
+
 ### Python Development
 ```bash
 bazelisk run //python:requirements.update            # Update Python dependencies
@@ -193,6 +205,21 @@ Question/Task → MCP Documentation Lookup → Agent Consultation → Implementa
 - **"Documentation generation..."** → documentation-architect
 
 ## Development Patterns
+
+## Development Conventions
+
+### TODO Annotations
+
+We use a priority-based TODO annotation system throughout the codebase:
+
+- `TODO(0)`: Critical - never merge
+- `TODO(1)`: High - architectural flaws, major bugs
+- `TODO(2)`: Medium - minor bugs, missing features
+- `TODO(3)`: Low - polish, tests, documentation
+- `TODO(4)`: Questions/investigations needed
+- `PERF`: Performance optimization opportunities
+
+
 
 ### Essential Commands Reference
 ```bash
