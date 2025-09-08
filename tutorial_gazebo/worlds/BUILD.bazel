@@ -17,6 +17,7 @@ filegroup(
         "transport_demo.sdf",
         "robot_arena.sdf",
         "advanced_features.sdf",
+        "lidar_demo_world.sdf",
     ],
 )
 
@@ -101,6 +102,7 @@ filegroup(
     srcs = [
         "sensor_testing.sdf",
         "lidar_demo.sdf",
+        "lidar_demo_world.sdf",
         "camera_array.sdf",
     ],
 )
@@ -109,6 +111,12 @@ filegroup(
 filegroup(
     name = "sensor_testing",
     srcs = ["sensor_testing.sdf"],
+)
+
+# LiDAR demo world
+filegroup(
+    name = "lidar_demo_world",
+    srcs = ["lidar_demo_world.sdf"],
 )
 
 # Transport demo world

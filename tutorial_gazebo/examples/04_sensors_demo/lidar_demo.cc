@@ -1,13 +1,13 @@
 /*
  * Gazebo LiDAR Demonstration and Analysis
- * 
+ *
  * This example demonstrates:
  * 1. Different LiDAR configurations (2D/3D, multi-beam)
  * 2. Point cloud data processing and analysis
  * 3. Range and intensity data interpretation
  * 4. LiDAR-based obstacle detection and mapping
  * 5. Performance optimization for LiDAR systems
- * 
+ *
  * Learning objectives:
  * - Understanding LiDAR sensor principles and configurations
  * - Point cloud data structures and processing techniques
@@ -22,7 +22,6 @@
 #include <gz/sim/EventManager.hh>
 
 #include <gz/common/Console.hh>
-#include <gz/common/Time.hh>
 
 #include <gz/msgs/laserscan.pb.h>
 #include <gz/msgs/pointcloud_packed.pb.h>
@@ -40,9 +39,147 @@
 #include <mutex>
 #include <algorithm>
 #include <cmath>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <cstdlib>
 
 using namespace gz;
 using namespace sim;
+
+/// Global flag for graceful shutdown
+std::atomic<bool> g_running{true};
+
+/// Process ID of gz sim child process
+pid_t sim_process_id = -1;
+
+/**
+ * @brief Signal handler for graceful shutdown
+ */
+void signalHandler(int signal)
+{
+    gzmsg << "\n=== LiDAR DEMO: Received signal " << signal << ", shutting down ===\n";
+    g_running = false;
+
+    // Terminate gz sim process if running
+    if (sim_process_id > 0)
+    {
+        gzmsg << "LiDAR DEMO: Terminating gz sim process...\n";
+        kill(sim_process_id, SIGTERM);
+    }
+}
+
+/**
+ * @brief Launch gz sim as child process using system() for GUI support
+ */
+pid_t launchGzSim(const std::string& world_file)
+{
+    gzmsg << "LiDAR DEMO: Starting gz sim with world: " << world_file << "\n";
+
+    // Build command string - include the world file
+    std::string command = "gz sim " + world_file + " --verbose 1 &";
+
+    gzmsg << "LiDAR DEMO: Executing: " << command << "\n";
+
+    // Use system() which preserves environment better for GUI applications
+    int result = system(command.c_str());
+
+    if (result != 0)
+    {
+        gzerr << "LiDAR DEMO: Failed to launch gz sim via system(): " << result << std::endl;
+        return -1;
+    }
+
+    // Give it a moment to start
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // Try to find the PID (this is approximate)
+    FILE* pipe = popen("pgrep -f 'gz sim'", "r");
+    if (pipe)
+    {
+        char buffer[128];
+        if (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+        {
+            pid_t pid = atoi(buffer);
+            pclose(pipe);
+            gzmsg << "LiDAR DEMO: Found gz sim with approximate PID: " << pid << "\n";
+            return pid;
+        }
+        pclose(pipe);
+    }
+
+    gzmsg << "LiDAR DEMO: gz sim launched (PID detection failed but process should be running)\n";
+    return 1; // Return dummy PID since we can't track it precisely
+}
+
+/// \brief Set up proper library paths for Gazebo GUI
+void setupLibraryPaths()
+{
+    const char* current_path = getenv("LD_LIBRARY_PATH");
+    std::string existing_paths = current_path ? current_path : "";
+    std::string system_paths = "/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu";
+    std::string full_path = system_paths + ":" + existing_paths;
+    setenv("LD_LIBRARY_PATH", full_path.c_str(), 1);
+}
+
+/**
+ * @brief Wait for simulation to be ready by checking topic availability
+ */
+bool waitForSimulationReady(std::shared_ptr<transport::Node> node, int timeout_seconds = 30)
+{
+    gzmsg << "LiDAR DEMO: Waiting for gz sim to initialize...\n";
+
+    for (int i = 0; i < timeout_seconds; ++i)
+    {
+        std::vector<std::string> topics;
+        node->TopicList(topics);
+
+        // Look for world-specific topics that indicate sim is ready
+        for (const auto& topic : topics)
+        {
+            if (topic.find("/world/lidar_demo") != std::string::npos)
+            {
+                gzmsg << "LiDAR DEMO: ✓ Simulation ready! Found topic: " << topic << "\n";
+                return true;
+            }
+        }
+
+        gzmsg << "LiDAR DEMO: Waiting... (" << (i + 1) << "/" << timeout_seconds << "s)\n";
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    gzmsg << "LiDAR DEMO: ⚠️ Timeout waiting for simulation to initialize\n";
+    return false;
+}
+
+/**
+ * @brief Clean up gz sim process
+ */
+void cleanup()
+{
+    if (sim_process_id > 0)
+    {
+        gzmsg << "LiDAR DEMO: Terminating gz sim process...\n";
+        kill(sim_process_id, SIGTERM);
+
+        // Wait up to 5 seconds for graceful shutdown
+        for (int i = 0; i < 50; ++i)
+        {
+            int status;
+            if (waitpid(sim_process_id, &status, WNOHANG) != 0)
+            {
+                gzmsg << "LiDAR DEMO: gz sim terminated gracefully\n";
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        // Force kill if still running
+        gzmsg << "LiDAR DEMO: Force killing gz sim process\n";
+        kill(sim_process_id, SIGKILL);
+        waitpid(sim_process_id, nullptr, 0);
+    }
+}
 
 /**
  * Point Cloud Data Structures
@@ -83,14 +220,14 @@ public:
     {
         gzmsg << "LiDAR Demo initialized\n";
         gzmsg << "Advanced LiDAR sensor analysis and point cloud processing\n\n";
-        
+
         // Initialize data containers
         data_mutex_ = std::make_shared<std::mutex>();
         analysis_active_ = true;
-        
+
         // Setup LiDAR subscribers
         SetupLidarSubscribers();
-        
+
         // Initialize analysis parameters
         obstacle_threshold_ = 2.0;  // meters
         intensity_threshold_ = 100.0;
@@ -103,51 +240,66 @@ public:
     void RunDemo()
     {
         gzmsg << "=== Gazebo LiDAR Analysis Demo ===\n\n";
-        
-        // Create server with LiDAR demo world
-        ServerConfig config;
-        config.SetSdfString(CreateLidarWorldSdf());
-        config.SetUpdateRate(30.0);
-        
-        Server server(config);
-        
-        gzmsg << "Starting LiDAR demonstration...\n";
+
+        // Stage 1: Launch gz sim GUI process
+        gzmsg << "--- STAGE 1: Launching Gazebo GUI ---\n";
+        sim_process_id = launchGzSim("worlds/lidar_demo_world.sdf");
+        if (sim_process_id == -1)
+        {
+            gzerr << "LiDAR DEMO: Failed to launch gz sim. Make sure gz-harmonic is installed.\n";
+            return;
+        }
+
+        // Stage 2: Wait for simulation ready
+        gzmsg << "--- STAGE 2: Waiting for Initialization ---\n";
+        if (!waitForSimulationReady(node_))
+        {
+            gzerr << "LiDAR DEMO: Simulation failed to initialize\n";
+            cleanup();
+            return;
+        }
+
+        // Stage 3: Run LiDAR analysis
+        gzmsg << "--- STAGE 3: Running LiDAR Analysis ---\n";
+        gzmsg << "LiDAR DEMO: GUI is now running! You should see the 3D Gazebo window.\n";
+        gzmsg << "LiDAR DEMO: Point cloud visualization is enabled in the GUI.\n";
+        gzmsg << "LiDAR DEMO: Press Ctrl+C to stop both GUI and analysis.\n\n";
+
         PrintLidarConfiguration();
-        
+
         // Start analysis thread
         std::thread analysis_thread(&LidarDemo::AnalysisLoop, this);
-        
-        // Run simulation
-        const int simulation_steps = 9000;  // 5 minutes at 30 Hz
-        int step_count = 0;
-        
+
+        // Main analysis loop - run indefinitely until stopped
         auto start_time = std::chrono::steady_clock::now();
-        
-        while (step_count < simulation_steps && analysis_active_)
+        int cycle_count = 0;
+
+        while (g_running && analysis_active_)
         {
-            server.RunOnce(false);
-            step_count++;
-            
             // Print analysis results every 15 seconds
-            if (step_count % 450 == 0)
+            auto current_time = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+
+            if (elapsed > 0 && elapsed % 15 == 0 && elapsed > cycle_count * 15)
             {
-                auto current_time = std::chrono::steady_clock::now();
-                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
-                
                 PrintLidarAnalysis(elapsed);
                 gzmsg << "\n";
+                cycle_count++;
             }
-            
-            std::this_thread::sleep_for(std::chrono::microseconds(33333)); // ~30 FPS
+
+            // Sleep briefly to avoid busy-waiting
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        
-        // Stop analysis and cleanup
+
+        // Stage 4: Cleanup
+        gzmsg << "--- STAGE 4: Cleanup ---\n";
         analysis_active_ = false;
         if (analysis_thread.joinable())
         {
             analysis_thread.join();
         }
-        
+
+        cleanup();
         PrintLidarSummary();
     }
 
@@ -159,17 +311,17 @@ private:
     // LiDAR data storage
     LaserScanData scan_2d_;
     PointCloudData cloud_3d_;
-    
+
     // Analysis parameters
     double obstacle_threshold_;
     double intensity_threshold_;
     double map_resolution_;
-    
+
     // Analysis results
     std::vector<Point3D> detected_obstacles_;
     std::map<std::string, double> performance_metrics_;
     std::vector<std::vector<int>> occupancy_grid_;
-    
+
     // Statistics
     int scans_received_2d_ = 0;
     int scans_received_3d_ = 0;
@@ -183,15 +335,15 @@ private:
         // 2D LiDAR scanner
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_2d_link/sensor/lidar_2d/scan",
                         &LidarDemo::OnLidar2DData, this);
-        
+
         // 3D LiDAR scanner
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/points",
                         &LidarDemo::OnLidar3DData, this);
-        
+
         // Multi-beam LiDAR
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/multibeam_link/sensor/multibeam/scan",
                         &LidarDemo::OnMultibeamData, this);
-        
+
         gzmsg << "LiDAR subscribers configured:\n";
         gzmsg << "- 2D LiDAR: 270° scanning, 10Hz\n";
         gzmsg << "- 3D LiDAR: 360°x40° scanning, 5Hz\n";
@@ -207,13 +359,13 @@ private:
 <?xml version="1.0" ?>
 <sdf version="1.10">
   <world name="lidar_demo">
-    
+
     <!-- Physics -->
     <physics name="default" type="ode">
       <max_step_size>0.033333</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
-    
+
     <!-- Essential plugins -->
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
@@ -221,7 +373,7 @@ private:
     <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
     </plugin>
-    
+
     <!-- Lighting -->
     <light name="sun" type="directional">
       <pose>0 0 10 0 0 0</pose>
@@ -231,7 +383,7 @@ private:
       <specular>0.5 0.5 0.5 1</specular>
       <intensity>1.0</intensity>
     </light>
-    
+
     <!-- Ground plane -->
     <model name="ground_plane">
       <static>true</static>
@@ -258,7 +410,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Test obstacles for LiDAR -->
     <model name="wall_1">
       <pose>8 0 1 0 0 0</pose>
@@ -280,7 +432,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <model name="wall_2">
       <pose>0 8 1 0 0 1.57</pose>
       <static>true</static>
@@ -301,7 +453,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Various obstacle shapes -->
     <model name="cylinder_obstacle">
       <pose>-5 -5 1 0 0 0</pose>
@@ -329,7 +481,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <model name="sphere_obstacle">
       <pose>5 5 1.5 0 0 0</pose>
       <static>true</static>
@@ -350,12 +502,12 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- LiDAR platform -->
     <model name="lidar_platform">
       <pose>0 0 1 0 0 0</pose>
       <static>true</static>
-      
+
       <!-- Base platform -->
       <link name="base_link">
         <collision name="collision">
@@ -373,7 +525,7 @@ private:
           </material>
         </visual>
       </link>
-      
+
       <!-- 2D LiDAR -->
       <link name="lidar_2d_link">
         <pose>0.3 0 0.4 0 0 0</pose>
@@ -415,7 +567,7 @@ private:
           <visualize>true</visualize>
         </sensor>
       </link>
-      
+
       <!-- 3D LiDAR -->
       <link name="lidar_3d_link">
         <pose>-0.3 0 0.5 0 0 0</pose>
@@ -458,7 +610,7 @@ private:
           <visualize>true</visualize>
         </sensor>
       </link>
-      
+
       <!-- Multi-beam LiDAR -->
       <link name="multibeam_link">
         <pose>0 0.3 0.3 0 0 1.57</pose>
@@ -498,24 +650,24 @@ private:
           <visualize>true</visualize>
         </sensor>
       </link>
-      
+
       <!-- Joints -->
       <joint name="lidar_2d_joint" type="fixed">
         <parent>base_link</parent>
         <child>lidar_2d_link</child>
       </joint>
-      
+
       <joint name="lidar_3d_joint" type="fixed">
         <parent>base_link</parent>
         <child>lidar_3d_link</child>
       </joint>
-      
+
       <joint name="multibeam_joint" type="fixed">
         <parent>base_link</parent>
         <child>multibeam_link</child>
       </joint>
     </model>
-    
+
   </world>
 </sdf>
         )";
@@ -534,21 +686,21 @@ private:
         gzmsg << "  - Range: 0.1-25m\n";
         gzmsg << "  - Update rate: 10Hz\n";
         gzmsg << "  - Points per scan: 540\n\n";
-        
+
         gzmsg << "3D LiDAR:\n";
         gzmsg << "  - Horizontal: 360°\n";
         gzmsg << "  - Vertical: ±30°\n";
         gzmsg << "  - Range: 0.1-50m\n";
         gzmsg << "  - Update rate: 5Hz\n";
         gzmsg << "  - Points per scan: 11,520\n\n";
-        
+
         gzmsg << "Multi-beam LiDAR:\n";
         gzmsg << "  - Angular range: ±90°\n";
         gzmsg << "  - 4 vertical beams\n";
         gzmsg << "  - Range: 0.1-15m\n";
         gzmsg << "  - Update rate: 20Hz\n";
         gzmsg << "  - Points per scan: 720\n\n";
-        
+
         gzmsg << "Analysis Features:\n";
         gzmsg << "- Obstacle detection and classification\n";
         gzmsg << "- Point cloud filtering and processing\n";
@@ -561,42 +713,42 @@ private:
     void OnLidar2DData(const msgs::LaserScan& msg)
     {
         auto start_time = std::chrono::high_resolution_clock::now();
-        
+
         std::lock_guard<std::mutex> lock(*data_mutex_);
-        
+
         scan_2d_.timestamp = std::chrono::steady_clock::now();
         scan_2d_.angle_min = msg.angle_min();
         scan_2d_.angle_max = msg.angle_max();
         scan_2d_.angle_step = msg.angle_step();
         scan_2d_.range_min = msg.range_min();
         scan_2d_.range_max = msg.range_max();
-        
+
         scan_2d_.ranges.clear();
         scan_2d_.intensities.clear();
         scan_2d_.valid_points = 0;
-        
+
         for (int i = 0; i < msg.ranges_size(); ++i)
         {
             double range = msg.ranges(i);
             scan_2d_.ranges.push_back(range);
-            
+
             if (range >= scan_2d_.range_min && range <= scan_2d_.range_max)
             {
                 scan_2d_.valid_points++;
             }
-            
+
             if (i < msg.intensities_size())
             {
                 scan_2d_.intensities.push_back(msg.intensities(i));
             }
         }
-        
+
         scans_received_2d_++;
-        
+
         auto end_time = std::chrono::high_resolution_clock::now();
         auto processing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         total_processing_time_ += processing_time / 1000.0;  // Convert to milliseconds
-        
+
         // Perform real-time obstacle detection
         DetectObstacles2D();
     }
@@ -604,21 +756,21 @@ private:
     void OnLidar3DData(const msgs::PointCloudPacked& msg)
     {
         auto start_time = std::chrono::high_resolution_clock::now();
-        
+
         std::lock_guard<std::mutex> lock(*data_mutex_);
-        
+
         cloud_3d_.timestamp = std::chrono::steady_clock::now();
         cloud_3d_.points.clear();
         cloud_3d_.total_points = msg.width() * msg.height();
         cloud_3d_.valid_points = 0;
-        
+
         // Process point cloud data
         // In a full implementation, this would parse the binary point cloud data
         // For demonstration, we'll simulate some processing
         cloud_3d_.valid_points = cloud_3d_.total_points * 0.85;  // Assume 85% valid points
-        
+
         scans_received_3d_++;
-        
+
         auto end_time = std::chrono::high_resolution_clock::now();
         auto processing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         total_processing_time_ += processing_time / 1000.0;  // Convert to milliseconds
@@ -629,7 +781,7 @@ private:
         // Process multi-beam LiDAR data
         // Similar to 2D processing but with multiple beams
         std::lock_guard<std::mutex> lock(*data_mutex_);
-        
+
         // Multi-beam specific processing would go here
         // For demonstration, we'll just count the messages
     }
@@ -640,18 +792,18 @@ private:
     void DetectObstacles2D()
     {
         detected_obstacles_.clear();
-        
+
         for (size_t i = 0; i < scan_2d_.ranges.size(); ++i)
         {
             double range = scan_2d_.ranges[i];
-            
+
             // Check if this is a valid measurement within obstacle range
-            if (range >= scan_2d_.range_min && 
-                range <= obstacle_threshold_ && 
+            if (range >= scan_2d_.range_min &&
+                range <= obstacle_threshold_ &&
                 range < scan_2d_.range_max)
             {
                 double angle = scan_2d_.angle_min + i * scan_2d_.angle_step;
-                
+
                 Point3D obstacle;
                 obstacle.x = range * cos(angle);
                 obstacle.y = range * sin(angle);
@@ -659,16 +811,16 @@ private:
                 obstacle.range = range;
                 obstacle.angle_h = angle;
                 obstacle.angle_v = 0.0;
-                
+
                 if (i < scan_2d_.intensities.size())
                 {
                     obstacle.intensity = scan_2d_.intensities[i];
                 }
-                
+
                 detected_obstacles_.push_back(obstacle);
             }
         }
-        
+
         // Update performance metrics
         performance_metrics_["obstacles_detected"] = detected_obstacles_.size();
         performance_metrics_["valid_points_2d"] = scan_2d_.valid_points;
@@ -679,10 +831,10 @@ private:
      */
     void AnalysisLoop()
     {
-        while (analysis_active_)
+        while (analysis_active_ && g_running)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            
+
             // Perform advanced analysis
             AnalyzePointClouds();
             GenerateOccupancyGrid();
@@ -696,7 +848,7 @@ private:
     void AnalyzePointClouds()
     {
         std::lock_guard<std::mutex> lock(*data_mutex_);
-        
+
         // Analysis would include:
         // - Point density calculation
         // - Range distribution analysis
@@ -712,18 +864,18 @@ private:
     {
         // Simple occupancy grid generation for demonstration
         int grid_size = 100;  // 10m x 10m at 0.1m resolution
-        
+
         if (occupancy_grid_.empty())
         {
             occupancy_grid_.resize(grid_size, std::vector<int>(grid_size, 0));
         }
-        
+
         // Update grid with detected obstacles
         for (const auto& obstacle : detected_obstacles_)
         {
             int grid_x = static_cast<int>((obstacle.x + 5.0) / 0.1);  // Offset and scale
             int grid_y = static_cast<int>((obstacle.y + 5.0) / 0.1);
-            
+
             if (grid_x >= 0 && grid_x < grid_size && grid_y >= 0 && grid_y < grid_size)
             {
                 occupancy_grid_[grid_x][grid_y]++;
@@ -737,7 +889,7 @@ private:
     void CalculatePerformanceMetrics()
     {
         std::lock_guard<std::mutex> lock(*data_mutex_);
-        
+
         if (scans_received_2d_ > 0)
         {
             performance_metrics_["avg_processing_time"] = total_processing_time_ / (scans_received_2d_ + scans_received_3d_);
@@ -753,43 +905,43 @@ private:
     {
         gzmsg << "LiDAR Analysis Results (t=" << elapsed_seconds << "s):\n";
         gzmsg << "===========================================\n";
-        
+
         {
             std::lock_guard<std::mutex> lock(*data_mutex_);
-            
+
             // Data reception statistics
             gzmsg << "Data Reception:\n";
             gzmsg << "  2D LiDAR scans: " << scans_received_2d_ << "\n";
             gzmsg << "  3D LiDAR scans: " << scans_received_3d_ << "\n";
-            
+
             if (elapsed_seconds > 0)
             {
-                gzmsg << "  2D scan rate: " << std::fixed << std::setprecision(1) 
+                gzmsg << "  2D scan rate: " << std::fixed << std::setprecision(1)
                       << (double)scans_received_2d_ / elapsed_seconds << " Hz\n";
-                gzmsg << "  3D scan rate: " << std::fixed << std::setprecision(1) 
+                gzmsg << "  3D scan rate: " << std::fixed << std::setprecision(1)
                       << (double)scans_received_3d_ / elapsed_seconds << " Hz\n";
             }
-            
+
             // Latest scan analysis
             if (!scan_2d_.ranges.empty())
             {
                 gzmsg << "\nLatest 2D Scan Analysis:\n";
                 gzmsg << "  Valid points: " << scan_2d_.valid_points << "/" << scan_2d_.ranges.size() << "\n";
                 gzmsg << "  Detected obstacles: " << detected_obstacles_.size() << "\n";
-                
+
                 if (!scan_2d_.ranges.empty())
                 {
                     auto minmax_range = std::minmax_element(scan_2d_.ranges.begin(), scan_2d_.ranges.end());
-                    gzmsg << "  Range: " << std::fixed << std::setprecision(2) 
+                    gzmsg << "  Range: " << std::fixed << std::setprecision(2)
                           << *minmax_range.first << " - " << *minmax_range.second << " m\n";
                 }
             }
-            
+
             // Performance metrics
             if (performance_metrics_.find("avg_processing_time") != performance_metrics_.end())
             {
                 gzmsg << "\nPerformance Metrics:\n";
-                gzmsg << "  Avg processing time: " << std::fixed << std::setprecision(2) 
+                gzmsg << "  Avg processing time: " << std::fixed << std::setprecision(2)
                       << performance_metrics_["avg_processing_time"] << " ms\n";
             }
         }
@@ -801,7 +953,7 @@ private:
     void PrintLidarSummary()
     {
         gzmsg << "\n=== LIDAR DEMONSTRATION SUMMARY ===\n\n";
-        
+
         gzmsg << "LiDAR Sensor Types and Applications:\n";
         gzmsg << "-----------------------------------\n";
         gzmsg << "2D LiDAR (Planar Scanning):\n";
@@ -809,19 +961,19 @@ private:
         gzmsg << "• Indoor mapping and localization\n";
         gzmsg << "• Perimeter monitoring and security\n";
         gzmsg << "• Cost-effective solution for 2D applications\n\n";
-        
+
         gzmsg << "3D LiDAR (Volumetric Scanning):\n";
         gzmsg << "• Autonomous vehicle perception\n";
         gzmsg << "• 3D mapping and surveying\n";
         gzmsg << "• Environmental monitoring\n";
         gzmsg << "• Object classification and tracking\n\n";
-        
+
         gzmsg << "Multi-beam LiDAR:\n";
         gzmsg << "• Marine and underwater applications\n";
         gzmsg << "• Bathymetric mapping\n";
         gzmsg << "• Profile scanning with multiple elevations\n";
         gzmsg << "• High-speed scanning applications\n\n";
-        
+
         gzmsg << "Point Cloud Processing Concepts:\n";
         gzmsg << "-------------------------------\n";
         gzmsg << "Data Structures:\n";
@@ -829,31 +981,31 @@ private:
         gzmsg << "• Point attributes (XYZ, intensity, timestamp)\n";
         gzmsg << "• Coordinate frame transformations\n";
         gzmsg << "• Data compression and storage formats\n\n";
-        
+
         gzmsg << "Filtering Techniques:\n";
         gzmsg << "• Outlier removal (statistical, radius-based)\n";
         gzmsg << "• Noise reduction and smoothing\n";
         gzmsg << "• Downsampling and voxel filtering\n";
         gzmsg << "• Range and intensity thresholding\n\n";
-        
+
         gzmsg << "Feature Extraction:\n";
         gzmsg << "• Ground plane detection and removal\n";
         gzmsg << "• Object segmentation and clustering\n";
         gzmsg << "• Edge and corner detection\n";
         gzmsg << "• Surface normal estimation\n\n";
-        
+
         gzmsg << "Obstacle Detection Algorithms:\n";
         gzmsg << "-----------------------------\n";
         gzmsg << "Range-based Detection:\n";
         gzmsg << "• Simple threshold-based detection\n";
         gzmsg << "• Adaptive thresholding based on environment\n";
         gzmsg << "• Multi-scale analysis for different object sizes\n\n";
-        
+
         gzmsg << "Clustering Methods:\n";
         gzmsg << "• Euclidean clustering for object grouping\n";
         gzmsg << "• DBSCAN for density-based clustering\n";
         gzmsg << "• Region growing for surface-based clustering\n\n";
-        
+
         gzmsg << "Mapping Applications:\n";
         gzmsg << "-------------------\n";
         gzmsg << "Occupancy Grids:\n";
@@ -861,13 +1013,13 @@ private:
         gzmsg << "• Probability-based occupancy estimation\n";
         gzmsg << "• Dynamic updates and temporal filtering\n";
         gzmsg << "• Multi-resolution grid structures\n\n";
-        
+
         gzmsg << "SLAM Integration:\n";
         gzmsg << "• Scan matching for pose estimation\n";
         gzmsg << "• Loop closure detection using LiDAR features\n";
         gzmsg << "• Graph-based SLAM optimization\n";
         gzmsg << "• Multi-session mapping and localization\n\n";
-        
+
         gzmsg << "Performance Optimization:\n";
         gzmsg << "------------------------\n";
         gzmsg << "• Real-time processing constraints\n";
@@ -875,7 +1027,7 @@ private:
         gzmsg << "• Parallel processing and GPU acceleration\n";
         gzmsg << "• Adaptive processing based on computational resources\n";
         gzmsg << "• ROI (Region of Interest) based processing\n\n";
-        
+
         gzmsg << "Sensor Selection Guidelines:\n";
         gzmsg << "---------------------------\n";
         gzmsg << "• Range requirements vs cost considerations\n";
@@ -883,7 +1035,7 @@ private:
         gzmsg << "• Environmental conditions (weather, lighting)\n";
         gzmsg << "• Integration with other sensor modalities\n";
         gzmsg << "• Power consumption and form factor constraints\n\n";
-        
+
         gzmsg << "=== LIDAR DEMONSTRATION COMPLETE ===\n";
     }
 };
@@ -893,12 +1045,19 @@ private:
  */
 int main(int argc, char* argv[])
 {
+    // Set up library paths first
+    setupLibraryPaths();
+
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);   // Ctrl+C
+    signal(SIGTERM, signalHandler);  // Termination
+
     // Configure console output
     common::Console::SetVerbosity(4);
-    
+
     gzmsg << "=== Gazebo LiDAR Analysis Demo ===\n";
     gzmsg << "This demo showcases comprehensive LiDAR sensor analysis.\n\n";
-    
+
     gzmsg << "Features demonstrated:\n";
     gzmsg << "- 2D and 3D LiDAR sensor configurations\n";
     gzmsg << "- Point cloud data processing and analysis\n";
@@ -914,6 +1073,7 @@ int main(int argc, char* argv[])
     catch (const std::exception& e)
     {
         gzerr << "Error during LiDAR demo: " << e.what() << "\n";
+        cleanup(); // Ensure cleanup on exception
         return -1;
     }
 
@@ -924,6 +1084,6 @@ int main(int argc, char* argv[])
     gzmsg << "- Point cloud processing is essential for practical applications\n";
     gzmsg << "- Real-time performance requires optimization strategies\n";
     gzmsg << "- LiDAR is fundamental for autonomous navigation and mapping\n";
-    
+
     return 0;
 }
