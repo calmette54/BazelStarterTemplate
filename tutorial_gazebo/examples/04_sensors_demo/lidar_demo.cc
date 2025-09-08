@@ -20,13 +20,17 @@
 
 #include <gz/msgs/laserscan.pb.h>
 #include <gz/msgs/pointcloud_packed.pb.h>
+#include <gz/msgs/detail/PointCloudPackedUtils.hh>
 
 #include <gz/transport/Node.hh>
+
+#include <Eigen/Dense>
 
 #include <gz/math/Vector3.hh>
 #include <gz/math/Angle.hh>
 
 #include <iostream>
+#include <iomanip>
 #include <thread>
 #include <chrono>
 #include <vector>
@@ -200,6 +204,7 @@ struct PointCloudData
 {
     std::chrono::steady_clock::time_point timestamp;
     std::vector<Point3D> points;
+    Eigen::MatrixXd points_matrix;  // Points stored as N×3 matrix (X, Y, Z)
     int total_points = 0;
     int valid_points = 0;
 };
@@ -252,6 +257,19 @@ public:
             cleanup();
             return;
         }
+
+        // Debug: List all available topics after simulation is ready
+        gzmsg << "=== DEBUG: Available topics after simulation ready ===\n";
+        std::vector<std::string> topics;
+        node_->TopicList(topics);
+        for (const auto& topic : topics)
+        {
+            if (topic.find("lidar") != std::string::npos || topic.find("scan") != std::string::npos || topic.find("point") != std::string::npos)
+            {
+                gzmsg << "Available topic: " << topic << "\n";
+            }
+        }
+        gzmsg << "==================================================\n\n";
 
         // Stage 3: Run LiDAR analysis
         gzmsg << "--- STAGE 3: Running LiDAR Analysis ---\n";
@@ -336,19 +354,35 @@ private:
      */
     void SetupLidarSubscribers()
     {
+        // Debug: List all available topics
+        gzmsg << "=== DEBUG: Available topics ===\n";
+        std::vector<std::string> topics;
+        node_->TopicList(topics);
+        for (const auto& topic : topics)
+        {
+            if (topic.find("lidar") != std::string::npos || topic.find("scan") != std::string::npos || topic.find("point") != std::string::npos)
+            {
+                gzmsg << "Topic: " << topic << "\n";
+            }
+        }
+        gzmsg << "===============================\n\n";
+
         // 2D LiDAR scanner
+        gzmsg << "Subscribing to 2D LiDAR: /world/lidar_demo/model/lidar_platform/link/lidar_2d_link/sensor/lidar_2d/scan\n";
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_2d_link/sensor/lidar_2d/scan",
                         &LidarDemo::OnLidar2DData, this);
 
         // 3D LiDAR scanner
-        node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/points",
+        gzmsg << "Subscribing to 3D LiDAR: /world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan/points\n";
+        node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan/points",
                         &LidarDemo::OnLidar3DData, this);
 
         // Multi-beam LiDAR
+        gzmsg << "Subscribing to Multi-beam: /world/lidar_demo/model/lidar_platform/link/multibeam_link/sensor/multibeam/scan\n";
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/multibeam_link/sensor/multibeam/scan",
                         &LidarDemo::OnMultibeamData, this);
 
-        gzmsg << "LiDAR subscribers configured:\n";
+        gzmsg << "\nLiDAR subscribers configured:\n";
         gzmsg << "- 2D LiDAR: 270° scanning, 10Hz\n";
         gzmsg << "- 3D LiDAR: 360°x40° scanning, 5Hz\n";
         gzmsg << "- Multi-beam: 180° scanning, 20Hz\n\n";
@@ -446,10 +480,151 @@ private:
         cloud_3d_.total_points = msg.width() * msg.height();
         cloud_3d_.valid_points = 0;
 
-        // Process point cloud data
-        // In a full implementation, this would parse the binary point cloud data
-        // For demonstration, we'll simulate some processing
-        cloud_3d_.valid_points = cloud_3d_.total_points * 0.85;  // Assume 85% valid points
+        // Print basic message information for Step 2
+        if (scans_received_3d_ < 3)  // Print info for first few messages only
+        {
+            gzmsg << "=== 3D LiDAR Message Info (scan #" << (scans_received_3d_ + 1) << ") ===\n";
+            gzmsg << "Width: " << msg.width() << ", Height: " << msg.height() << "\n";
+            gzmsg << "Point step: " << msg.point_step() << " bytes\n";
+            gzmsg << "Row step: " << msg.row_step() << " bytes\n";
+            gzmsg << "Total points: " << cloud_3d_.total_points << "\n";
+            gzmsg << "Data size: " << msg.data().size() << " bytes\n";
+            gzmsg << "Is dense: " << (msg.is_dense() ? "true" : "false") << "\n";
+            gzmsg << "Number of fields: " << msg.field_size() << "\n";
+
+            // Print field information
+            for (int i = 0; i < msg.field_size(); ++i)
+            {
+                const auto& field = msg.field(i);
+                gzmsg << "  Field " << i << ": name='" << field.name()
+                      << "', offset=" << field.offset()
+                      << ", datatype=" << field.datatype()
+                      << ", count=" << field.count() << "\n";
+            }
+            gzmsg << "\n";
+        }
+
+        // Step 3: Extract real point cloud data by parsing binary data directly
+        try
+        {
+            cloud_3d_.points.clear();
+            cloud_3d_.valid_points = 0;
+
+            // Step 4: Initialize Eigen matrix for point storage (reserve space for all points)
+            cloud_3d_.points_matrix.resize(cloud_3d_.total_points, 3);  // N×3 matrix for XYZ
+
+            // Print first 10 points for verification
+            if (scans_received_3d_ < 2)  // Only for first scan to avoid spam
+            {
+                gzmsg << "=== First 10 Point Coordinates ===\n";
+            }
+
+            // Get the binary data
+            const std::string& data = msg.data();
+            const uint8_t* data_ptr = reinterpret_cast<const uint8_t*>(data.c_str());
+
+            // Based on message info: point_step=32, fields: x(offset=0), y(offset=4), z(offset=8), intensity(offset=16)
+            const size_t point_step = msg.point_step();
+
+            // Extract all points
+            size_t valid_point_index = 0;  // Track valid points for Eigen matrix
+
+            for (size_t i = 0; i < static_cast<size_t>(cloud_3d_.total_points); ++i)
+            {
+                // Calculate offset for this point
+                size_t point_offset = i * point_step;
+
+                if (point_offset + 20 <= data.size())  // Ensure we don't read beyond data
+                {
+                    // Extract FLOAT32 values from binary data
+                    const float* float_data = reinterpret_cast<const float*>(data_ptr + point_offset);
+                    float x = float_data[0];        // offset 0
+                    float y = float_data[1];        // offset 4
+                    float z = float_data[2];        // offset 8
+                    float intensity = float_data[4]; // offset 16 (16/4 = index 4)
+
+                    // Check if point is valid (not NaN/infinite)
+                    if (std::isfinite(x) && std::isfinite(y) && std::isfinite(z))
+                    {
+                        Point3D point;
+                        point.x = x;
+                        point.y = y;
+                        point.z = z;
+                        point.intensity = intensity;
+                        point.range = std::sqrt(x*x + y*y + z*z);
+                        point.angle_h = std::atan2(y, x);
+                        point.angle_v = std::atan2(z, std::sqrt(x*x + y*y));
+
+                        cloud_3d_.points.push_back(point);
+
+                        // Step 4: Store valid points in Eigen matrix
+                        if (valid_point_index < static_cast<size_t>(cloud_3d_.points_matrix.rows()))
+                        {
+                            cloud_3d_.points_matrix(valid_point_index, 0) = x;
+                            cloud_3d_.points_matrix(valid_point_index, 1) = y;
+                            cloud_3d_.points_matrix(valid_point_index, 2) = z;
+                            valid_point_index++;
+                        }
+
+                        cloud_3d_.valid_points++;
+
+                        // Print first 10 points
+                        if (scans_received_3d_ < 2 && i < 10)
+                        {
+                            gzmsg << "Point " << i << ": x=" << std::fixed << std::setprecision(3) << x
+                                  << ", y=" << y << ", z=" << z << ", intensity=" << intensity
+                                  << ", range=" << point.range << "m\n";
+                        }
+                    }
+                }
+            }
+
+            // Step 4: Resize matrix to actual valid points and verify
+            cloud_3d_.points_matrix.conservativeResize(cloud_3d_.valid_points, 3);
+
+            if (scans_received_3d_ < 2)
+            {
+                gzmsg << "Valid points extracted: " << cloud_3d_.valid_points << "/" << cloud_3d_.total_points << "\n";
+
+                // Step 4: Print Eigen matrix verification
+                gzmsg << "=== Eigen Matrix Verification ===\n";
+                gzmsg << "Matrix dimensions: " << cloud_3d_.points_matrix.rows() << " × " << cloud_3d_.points_matrix.cols() << "\n";
+                gzmsg << "Matrix size: " << cloud_3d_.points_matrix.size() << " elements\n";
+
+                // Print first few matrix entries for verification
+                if (cloud_3d_.points_matrix.rows() > 0)
+                {
+                    gzmsg << "First 5 matrix rows:\n";
+                    for (int i = 0; i < std::min(5, static_cast<int>(cloud_3d_.points_matrix.rows())); ++i)
+                    {
+                        gzmsg << "Row " << i << ": [" << std::fixed << std::setprecision(3)
+                              << cloud_3d_.points_matrix(i, 0) << ", "
+                              << cloud_3d_.points_matrix(i, 1) << ", "
+                              << cloud_3d_.points_matrix(i, 2) << "]\n";
+                    }
+
+                    // Verify matrix matches vector data
+                    bool matrix_matches = true;
+                    for (size_t i = 0; i < std::min(static_cast<size_t>(5), cloud_3d_.points.size()); ++i)
+                    {
+                        if (std::abs(cloud_3d_.points_matrix(i, 0) - cloud_3d_.points[i].x) > 1e-6 ||
+                            std::abs(cloud_3d_.points_matrix(i, 1) - cloud_3d_.points[i].y) > 1e-6 ||
+                            std::abs(cloud_3d_.points_matrix(i, 2) - cloud_3d_.points[i].z) > 1e-6)
+                        {
+                            matrix_matches = false;
+                            break;
+                        }
+                    }
+                    gzmsg << "Matrix data matches vector: " << (matrix_matches ? "✓ YES" : "✗ NO") << "\n";
+                }
+                gzmsg << "================================\n\n";
+            }
+        }
+        catch (const std::exception& e)
+        {
+            gzerr << "Error parsing point cloud: " << e.what() << "\n";
+            cloud_3d_.valid_points = 0;  // Mark as failed
+        }
 
         scans_received_3d_++;
 

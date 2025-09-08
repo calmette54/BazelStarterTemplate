@@ -9,6 +9,9 @@ module(
 # Core simulation engine - latest available version for Harmonic
 bazel_dep(name = "gz-sim", version = "9.3.0")
 
+# Eigen linear algebra library for point cloud processing
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+
 # Sensor simulation capabilities
 bazel_dep(name = "gz-sensors", version = "9.2.0.bcr.1")
 

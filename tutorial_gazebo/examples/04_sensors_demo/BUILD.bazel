@@ -39,6 +39,7 @@ cc_binary(
         "@gz-msgs//:gz-msgs",
         "@gz-transport//:gz-transport",
         "@gz-math//:gz-math",
+        "@eigen//:eigen",
     ],
     data = [
         "//worlds:lidar_demo_world",
