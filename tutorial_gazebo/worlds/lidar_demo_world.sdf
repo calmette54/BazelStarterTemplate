@@ -90,6 +90,14 @@
         </gz-gui>
       </plugin>
 
+      <!-- Keyboard Input Plugin for movement controls -->
+      <plugin filename="KeyPublisher" name="Key Publisher">
+        <gz-gui>
+          <title>Key Publisher</title>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+      </plugin>
+
       <!-- Topic Echo Plugin for debugging topics -->
       <plugin filename="TopicEcho" name="Topic Echo">
         <gz-gui>
@@ -253,10 +261,12 @@
     <!-- LiDAR platform -->
     <model name="lidar_platform">
       <pose>0 0 1 0 0 0</pose>
-      <static>true</static>
+      <static>false</static>
 
       <!-- Base platform -->
       <link name="base_link">
+        <!-- Disable gravity for this link -->
+        <gravity>false</gravity>
         <collision name="collision">
           <geometry>
             <box><size>1 1 0.2</size></box>
@@ -275,6 +285,8 @@
 
       <!-- 2D LiDAR -->
       <link name="lidar_2d_link">
+        <!-- Disable gravity for this link -->
+        <gravity>false</gravity>
         <pose>0.3 0 0.4 0 0 0</pose>
         <visual name="visual">
           <geometry>
@@ -317,6 +329,8 @@
 
       <!-- 3D LiDAR -->
       <link name="lidar_3d_link">
+        <!-- Disable gravity for this link -->
+        <gravity>false</gravity>
         <pose>-0.3 0 0.5 0 0 0</pose>
         <visual name="visual">
           <geometry>
@@ -361,6 +375,8 @@
 
       <!-- Multi-beam LiDAR -->
       <link name="multibeam_link">
+        <!-- Disable gravity for this link -->
+        <gravity>false</gravity>
         <pose>0 0.3 0.3 0 0 1.57</pose>
         <visual name="visual">
           <geometry>

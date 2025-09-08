@@ -22,6 +22,10 @@
 #include <gz/msgs/pointcloud_packed.pb.h>
 #include <gz/msgs/detail/PointCloudPackedUtils.hh>
 #include <gz/msgs/marker_v.pb.h>
+#include <gz/msgs/int32.pb.h>
+#include <gz/msgs/pose.pb.h>
+#include <gz/msgs/entity.pb.h>
+#include <gz/msgs/boolean.pb.h>
 
 #include <gz/transport/Node.hh>
 
@@ -29,6 +33,8 @@
 
 #include <gz/math/Vector3.hh>
 #include <gz/math/Angle.hh>
+#include <gz/math/Pose3.hh>
+#include <gz/math/Quaternion.hh>
 
 #include <iostream>
 #include <iomanip>
@@ -357,6 +363,11 @@ private:
     std::shared_ptr<std::mutex> data_mutex_;
     std::atomic<bool> analysis_active_;
 
+    // Movement control variables
+    gz::math::Pose3d current_pose_;
+    const double movement_step_ = 0.1;  // meters per key press
+    const double rotation_step_ = 0.087;  // ~5 degrees in radians
+
     // LiDAR data storage
     LaserScanData scan_2d_;
     PointCloudData cloud_3d_;
@@ -406,6 +417,9 @@ private:
 
         // Publisher for visual markers to guarantee point cloud visibility
         marker_pub_ = node_->Advertise<msgs::Marker_V>("/marker_array");
+
+        // Setup movement controls
+        SetupMovementControls();
 
         // Multi-beam LiDAR
         gzmsg << "Subscribing to Multi-beam: /world/lidar_demo/model/lidar_platform/link/multibeam_link/sensor/multibeam/scan\n";
@@ -1027,6 +1041,176 @@ private:
         gzmsg << "• Power consumption and form factor constraints\n\n";
 
         gzmsg << "=== LIDAR DEMONSTRATION COMPLETE ===\n";
+    }
+
+    /**
+     * Setup movement controls - keyboard input and pose publishing
+     */
+    void SetupMovementControls()
+    {
+        // Initialize current pose (starting position)
+        current_pose_ = gz::math::Pose3d(0, 0, 1, 0, 0, 0);
+
+        // Subscribe to keyboard input from KeyPublisher plugin
+        gzmsg << "Setting up keyboard controls...\n";
+        node_->Subscribe("/keyboard/keypress", &LidarDemo::OnKeyPress, this);
+
+        // Note: Will use service calls for pose updates rather than publishers
+
+        gzmsg << "Keyboard controls ready:\n";
+        gzmsg << "  WASD: Move platform (W=forward, S=back, A=left, D=right)\n";
+        gzmsg << "  Arrow keys: Rotate platform (Up/Down=pitch, Left/Right=yaw)\n\n";
+    }
+
+    /**
+     * Handle keyboard input for movement controls
+     */
+    void OnKeyPress(const msgs::Int32 &msg)
+    {
+        int key = msg.data();
+
+        // Movement with WASD keys
+        switch (key)
+        {
+            case 87:  // W - Forward
+                MoveForward();
+                break;
+            case 83:  // S - Backward
+                MoveBackward();
+                break;
+            case 65:  // A - Left
+                MoveLeft();
+                break;
+            case 68:  // D - Right
+                MoveRight();
+                break;
+            case 16777235:  // Up Arrow - Pitch up
+                PitchUp();
+                break;
+            case 16777237:  // Down Arrow - Pitch down
+                PitchDown();
+                break;
+            case 16777234:  // Left Arrow - Yaw left
+                YawLeft();
+                break;
+            case 16777236:  // Right Arrow - Yaw right
+                YawRight();
+                break;
+            default:
+                // Ignore other keys
+                break;
+        }
+    }
+
+    // Movement methods
+    void MoveForward() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Vector3d forward = rot.RotateVector(gz::math::Vector3d(movement_step_, 0, 0));
+        current_pose_.Set(pos + forward, rot);
+        UpdatePlatformPose();
+        gzmsg << "Moving forward to: " << current_pose_.Pos() << "\n";
+    }
+
+    void MoveBackward() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Vector3d backward = rot.RotateVector(gz::math::Vector3d(-movement_step_, 0, 0));
+        current_pose_.Set(pos + backward, rot);
+        UpdatePlatformPose();
+        gzmsg << "Moving backward to: " << current_pose_.Pos() << "\n";
+    }
+
+    void MoveLeft() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Vector3d left = rot.RotateVector(gz::math::Vector3d(0, movement_step_, 0));
+        current_pose_.Set(pos + left, rot);
+        UpdatePlatformPose();
+        gzmsg << "Moving left to: " << current_pose_.Pos() << "\n";
+    }
+
+    void MoveRight() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Vector3d right = rot.RotateVector(gz::math::Vector3d(0, -movement_step_, 0));
+        current_pose_.Set(pos + right, rot);
+        UpdatePlatformPose();
+        gzmsg << "Moving right to: " << current_pose_.Pos() << "\n";
+    }
+
+    // Rotation methods
+    void PitchUp() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Quaterniond pitch_rotation(gz::math::Vector3d(rotation_step_, 0, 0));
+        current_pose_.Set(pos, rot * pitch_rotation);
+        UpdatePlatformPose();
+        gzmsg << "Pitching up\n";
+    }
+
+    void PitchDown() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Quaterniond pitch_rotation(gz::math::Vector3d(-rotation_step_, 0, 0));
+        current_pose_.Set(pos, rot * pitch_rotation);
+        UpdatePlatformPose();
+        gzmsg << "Pitching down\n";
+    }
+
+    void YawLeft() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Quaterniond yaw_rotation(gz::math::Vector3d(0, 0, rotation_step_));
+        current_pose_.Set(pos, rot * yaw_rotation);
+        UpdatePlatformPose();
+        gzmsg << "Yawing left\n";
+    }
+
+    void YawRight() {
+        auto pos = current_pose_.Pos();
+        auto rot = current_pose_.Rot();
+        gz::math::Quaterniond yaw_rotation(gz::math::Vector3d(0, 0, -rotation_step_));
+        current_pose_.Set(pos, rot * yaw_rotation);
+        UpdatePlatformPose();
+        gzmsg << "Yawing right\n";
+    }
+
+    /**
+     * Update the platform pose in the simulation
+     */
+    void UpdatePlatformPose()
+    {
+        // Create simple pose message for the standard Gazebo set_pose service
+        msgs::Pose pose_msg;
+
+        // Set entity name
+        pose_msg.set_name("lidar_platform");
+
+        // Set position
+        pose_msg.mutable_position()->set_x(current_pose_.Pos().X());
+        pose_msg.mutable_position()->set_y(current_pose_.Pos().Y());
+        pose_msg.mutable_position()->set_z(current_pose_.Pos().Z());
+
+        // Set orientation
+        pose_msg.mutable_orientation()->set_x(current_pose_.Rot().X());
+        pose_msg.mutable_orientation()->set_y(current_pose_.Rot().Y());
+        pose_msg.mutable_orientation()->set_z(current_pose_.Rot().Z());
+        pose_msg.mutable_orientation()->set_w(current_pose_.Rot().W());
+
+        // Use the standard Gazebo pose service
+        msgs::Boolean result;
+        bool success = false;
+        unsigned int timeout = 1000; // 1 second
+
+        std::string service_name = "/world/lidar_demo/set_pose";
+        bool executed = node_->Request(service_name, pose_msg, timeout, result, success);
+
+        if (!executed || !success || !result.data()) {
+            gzdbg << "Pose service failed - movement may not be visible\n";
+        } else {
+            gzmsg << "Platform moved to: " << current_pose_.Pos() << "\n";
+        }
     }
 };
 
