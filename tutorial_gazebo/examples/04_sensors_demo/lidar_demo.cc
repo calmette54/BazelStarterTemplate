@@ -21,6 +21,7 @@
 #include <gz/msgs/laserscan.pb.h>
 #include <gz/msgs/pointcloud_packed.pb.h>
 #include <gz/msgs/detail/PointCloudPackedUtils.hh>
+#include <gz/msgs/marker_v.pb.h>
 
 #include <gz/transport/Node.hh>
 
@@ -352,6 +353,7 @@ public:
 
 private:
     std::shared_ptr<transport::Node> node_;
+    transport::Node::Publisher marker_pub_;
     std::shared_ptr<std::mutex> data_mutex_;
     std::atomic<bool> analysis_active_;
 
@@ -397,10 +399,13 @@ private:
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_2d_link/sensor/lidar_2d/scan",
                         &LidarDemo::OnLidar2DData, this);
 
-        // 3D LiDAR scanner
+        // 3D LiDAR scanner - Subscribe to the /scan/points topic for gz::msgs::PointCloudPacked
         gzmsg << "Subscribing to 3D LiDAR: /world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan/points\n";
         node_->Subscribe("/world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan/points",
                         &LidarDemo::OnLidar3DData, this);
+
+        // Publisher for visual markers to guarantee point cloud visibility
+        marker_pub_ = node_->Advertise<msgs::Marker_V>("/marker_array");
 
         // Multi-beam LiDAR
         gzmsg << "Subscribing to Multi-beam: /world/lidar_demo/model/lidar_platform/link/multibeam_link/sensor/multibeam/scan\n";

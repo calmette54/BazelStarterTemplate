@@ -82,10 +82,18 @@
         <iterations>true</iterations>
       </plugin>
 
-      <!-- Point Cloud Visualization Plugin - Critical for point cloud display -->
-      <plugin filename="PointCloud" name="Point Cloud">
+      <!-- 3D LiDAR Visualization Plugin -->
+      <plugin filename="VisualizeLidar" name="Visualize Lidar">
         <gz-gui>
-          <title>Point Cloud</title>
+          <title>Visualize Lidar</title>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Topic Echo Plugin for debugging topics -->
+      <plugin filename="TopicEcho" name="Topic Echo">
+        <gz-gui>
+          <title>Topic Echo</title>
           <property type="string" key="state">docked</property>
         </gz-gui>
       </plugin>
@@ -95,6 +103,7 @@
         <gz-gui>
           <property type="string" key="state">docked</property>
         </gz-gui>
+        <world_name>lidar_demo</world_name>
       </plugin>
 
       <!-- Entity tree -->
@@ -322,6 +331,7 @@
           </material>
         </visual>
         <sensor name="lidar_3d" type="gpu_lidar">
+          <topic>/world/lidar_demo/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan</topic>
           <lidar>
             <scan>
               <horizontal>
@@ -343,7 +353,7 @@
               <resolution>0.01</resolution>
             </range>
           </lidar>
-          <always_on>true</always_on>
+          <always_on>1</always_on>
           <update_rate>5</update_rate>
           <visualize>true</visualize>
         </sensor>
