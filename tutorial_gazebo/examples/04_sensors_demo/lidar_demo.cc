@@ -32,6 +32,7 @@
 #include <Eigen/Dense>
 
 #include <functional>
+#include <chrono>
 
 #include <gz/math/Vector3.hh>
 #include <gz/math/Angle.hh>
@@ -332,6 +333,9 @@ public:
 
         while (g_running && analysis_active_)
         {
+            // Check for batched pose updates (30Hz timer)
+            UpdatePlatformPose();
+
             // Print analysis results every 15 seconds
             auto current_time = std::chrono::steady_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
@@ -367,8 +371,14 @@ private:
 
     // Movement control variables
     gz::math::Pose3d current_pose_;
+    gz::math::Pose3d pending_pose_;  // Batched pose updates
+    std::atomic<bool> pose_dirty_{false};  // Flag for pending updates
     const double movement_step_ = 0.3;  // meters per key press
     const double rotation_step_ = 0.087;  // ~5 degrees in radians
+
+    // Timer for batched pose updates (30Hz)
+    std::chrono::steady_clock::time_point last_pose_update_;
+    const std::chrono::milliseconds pose_update_interval_{33};  // ~30Hz
 
     // LiDAR data storage
     LaserScanData scan_2d_;
@@ -1052,6 +1062,8 @@ private:
     {
         // Initialize current pose (starting position)
         current_pose_ = gz::math::Pose3d(0, 0, 1, 0, 0, 0);
+        pending_pose_ = current_pose_;
+        last_pose_update_ = std::chrono::steady_clock::now();
 
         // Subscribe to keyboard input from KeyPublisher plugin
         gzmsg << "Setting up keyboard controls...\n";
@@ -1106,82 +1118,102 @@ private:
 
     // Movement methods
     void MoveForward() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Vector3d forward = rot.RotateVector(gz::math::Vector3d(movement_step_, 0, 0));
-        current_pose_.Set(pos + forward, rot);
-        UpdatePlatformPose();
-        gzmsg << "Moving forward to: " << current_pose_.Pos() << "\n";
+        pending_pose_.Set(pos + forward, rot);
+        pose_dirty_.store(true);
+        gzmsg << "Moving forward to: " << pending_pose_.Pos() << "\n";
     }
 
     void MoveBackward() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Vector3d backward = rot.RotateVector(gz::math::Vector3d(-movement_step_, 0, 0));
-        current_pose_.Set(pos + backward, rot);
-        UpdatePlatformPose();
-        gzmsg << "Moving backward to: " << current_pose_.Pos() << "\n";
+        pending_pose_.Set(pos + backward, rot);
+        pose_dirty_.store(true);
+        gzmsg << "Moving backward to: " << pending_pose_.Pos() << "\n";
     }
 
     void MoveLeft() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Vector3d left = rot.RotateVector(gz::math::Vector3d(0, movement_step_, 0));
-        current_pose_.Set(pos + left, rot);
-        UpdatePlatformPose();
-        gzmsg << "Moving left to: " << current_pose_.Pos() << "\n";
+        pending_pose_.Set(pos + left, rot);
+        pose_dirty_.store(true);
+        gzmsg << "Moving left to: " << pending_pose_.Pos() << "\n";
     }
 
     void MoveRight() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Vector3d right = rot.RotateVector(gz::math::Vector3d(0, -movement_step_, 0));
-        current_pose_.Set(pos + right, rot);
-        UpdatePlatformPose();
-        gzmsg << "Moving right to: " << current_pose_.Pos() << "\n";
+        pending_pose_.Set(pos + right, rot);
+        pose_dirty_.store(true);
+        gzmsg << "Moving right to: " << pending_pose_.Pos() << "\n";
     }
 
     // Rotation methods
     void PitchUp() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Quaterniond pitch_rotation(gz::math::Vector3d(rotation_step_, 0, 0));
-        current_pose_.Set(pos, rot * pitch_rotation);
-        UpdatePlatformPose();
+        pending_pose_.Set(pos, rot * pitch_rotation);
+        pose_dirty_.store(true);
         gzmsg << "Pitching up\n";
     }
 
     void PitchDown() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Quaterniond pitch_rotation(gz::math::Vector3d(-rotation_step_, 0, 0));
-        current_pose_.Set(pos, rot * pitch_rotation);
-        UpdatePlatformPose();
+        pending_pose_.Set(pos, rot * pitch_rotation);
+        pose_dirty_.store(true);
         gzmsg << "Pitching down\n";
     }
 
     void YawLeft() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Quaterniond yaw_rotation(gz::math::Vector3d(0, 0, rotation_step_));
-        current_pose_.Set(pos, rot * yaw_rotation);
-        UpdatePlatformPose();
+        pending_pose_.Set(pos, rot * yaw_rotation);
+        pose_dirty_.store(true);
         gzmsg << "Yawing left\n";
     }
 
     void YawRight() {
-        auto pos = current_pose_.Pos();
-        auto rot = current_pose_.Rot();
+        auto pos = pending_pose_.Pos();
+        auto rot = pending_pose_.Rot();
         gz::math::Quaterniond yaw_rotation(gz::math::Vector3d(0, 0, -rotation_step_));
-        current_pose_.Set(pos, rot * yaw_rotation);
-        UpdatePlatformPose();
+        pending_pose_.Set(pos, rot * yaw_rotation);
+        pose_dirty_.store(true);
         gzmsg << "Yawing right\n";
     }
 
     /**
-     * Update the platform pose in the simulation (async)
+     * Check and send batched pose updates (30Hz timer)
      */
     void UpdatePlatformPose()
+    {
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_pose_update_);
+
+        // Check if it's time for a pose update AND we have pending changes
+        if (elapsed >= pose_update_interval_ && pose_dirty_.load()) {
+            // Update current pose with batched changes
+            current_pose_ = pending_pose_;
+            pose_dirty_.store(false);
+            last_pose_update_ = now;
+
+            // Send pose update to Gazebo
+            SendPoseUpdate();
+        }
+    }
+
+    /**
+     * Send pose update to Gazebo simulation (async)
+     */
+    void SendPoseUpdate()
     {
         // Create simple pose message for the standard Gazebo set_pose service
         msgs::Pose pose_msg;
