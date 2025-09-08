@@ -4,13 +4,15 @@ package(default_visibility = ["//visibility:public"])
 # Each world demonstrates specific concepts and features
 
 filegroup(
-    name = "all_worlds", 
+    name = "all_worlds",
     srcs = [
         "basic_world.sdf",
         "basic_world_tutorial.sdf",
         "lighting_demo.sdf",
-        "physics_playground.sdf",
-        "rendering_showcase.sdf",
+        "lighting_demo_visual.sdf",
+        "material_showcase_visual.sdf",
+        "material_showcase_static.sdf",
+        "simple_transport_demo.sdf",
         "sensor_testing.sdf",
         "transport_demo.sdf",
         "robot_arena.sdf",
@@ -40,6 +42,21 @@ filegroup(
 )
 
 filegroup(
+    name = "lighting_demo_visual",
+    srcs = ["lighting_demo_visual.sdf"],
+)
+
+filegroup(
+    name = "material_showcase_visual",
+    srcs = ["material_showcase_visual.sdf"],
+)
+
+filegroup(
+    name = "material_showcase_static",
+    srcs = ["material_showcase_static.sdf"],
+)
+
+filegroup(
     name = "physics_worlds",
     srcs = [
         "physics_comparison_world.sdf",
@@ -56,7 +73,7 @@ filegroup(
 )
 
 filegroup(
-    name = "collision_demo_world", 
+    name = "collision_demo_world",
     srcs = ["collision_demo_world.sdf"],
 )
 
@@ -72,16 +89,10 @@ filegroup(
 
 # Individual rendering world targets
 filegroup(
-    name = "rendering_showcase",
-    srcs = ["rendering_showcase.sdf"],
-)
-
-filegroup(
     name = "rendering_worlds",
     srcs = [
-        "rendering_showcase.sdf",
-        "materials_demo.sdf",
-        "camera_demo.sdf",
+        "material_showcase_visual.sdf",
+        "lighting_demo_visual.sdf",
     ],
 )
 
@@ -106,9 +117,15 @@ filegroup(
     srcs = ["transport_demo.sdf"],
 )
 
+# Simple transport demo world
+filegroup(
+    name = "simple_transport_demo",
+    srcs = ["simple_transport_demo.sdf"],
+)
+
 # Plugin demo world
 filegroup(
-    name = "plugin_demo", 
+    name = "plugin_demo",
     srcs = ["plugin_demo.sdf"],
 )
 

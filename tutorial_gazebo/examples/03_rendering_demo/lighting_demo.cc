@@ -1,13 +1,13 @@
 /*
  * Gazebo Tutorial Example 03: Lighting Systems Demonstration with Static Plugin Integration
- * 
+ *
  * This comprehensive tutorial demonstrates:
  * 1. Advanced lighting systems (directional, point, spot) with real-time property visualization
  * 2. Light-material interaction analysis and shadow optimization using hermetic builds
  * 3. Dynamic lighting scenarios and color temperature effects with educational progression
  * 4. Shadow mapping quality settings and performance optimization strategies
  * 5. Multi-light setup workflows and lighting performance analysis with structured insights
- * 
+ *
  * Learning objectives:
  * - Master lighting system design and optimization strategies for production rendering
  * - Understand hermetic builds with static plugin linking for consistent lighting behavior
@@ -16,6 +16,12 @@
  * - Explore rendering performance analysis and GPU lighting utilization insights
  * - Signal-based application control and graceful resource management
  * - Why we use static plugins for reliable, reproducible lighting system testing
+ *
+ * Usage modes:
+ * - Default (GUI): ./lighting_demo
+ *   Interactive 3D visualization with professional lighting studio and cinematic controls
+ * - Headless: ./lighting_demo --headless
+ *   Console-only mode for automated testing and CI environments
  */
 
 #include <gz/sim/Server.hh>
@@ -27,6 +33,7 @@
 #include <gz/sim/components/Pose.hh>
 
 #include <gz/common/Console.hh>
+#include <gz/common/Filesystem.hh>
 
 #include <gz/msgs/light.pb.h>
 
@@ -60,9 +67,53 @@ void signalHandler(int signal)
     // Use write() instead of gzmsg for signal safety
     const char* msg = "\n=== TUTORIAL: Received signal, shutting down lighting demo... ===\n";
     write(STDOUT_FILENO, msg, strlen(msg));
-    
+
     // Set shutdown flag atomically
     g_running = 0;
+}
+
+/// \brief Find SDF file in runfiles or relative paths
+std::string FindSdfFile(const std::string &filename)
+{
+    // Try common locations for SDF files
+    std::vector<std::string> paths = {
+        filename,                                    // Direct path
+        "worlds/" + filename,                        // Relative to current directory
+        "../worlds/" + filename,                     // Parent directory
+        "tutorial_gazebo/worlds/" + filename,        // Bazel runfiles path
+        "external/tutorial_gazebo/worlds/" + filename, // External workspace path
+    };
+
+    for (const auto &path : paths)
+    {
+        if (gz::common::exists(path))
+        {
+            gzmsg << "Found SDF file at: " << path << std::endl;
+            return path;
+        }
+    }
+
+    gzerr << "Could not find SDF file: " << filename << std::endl;
+    gzmsg << "Searched paths:" << std::endl;
+    for (const auto &path : paths)
+    {
+        gzmsg << "  - " << path << std::endl;
+    }
+
+    return filename; // Return original if not found
+}
+
+/// \brief Check if a flag is present in command line arguments
+bool HasFlag(const std::string& flag, int argc, char* argv[])
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::string(argv[i]) == flag)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -88,13 +139,22 @@ public:
         std::string description;
     };
 
-    LightingDemo() : node_(std::make_shared<transport::Node>())
+    LightingDemo(bool enable_gui = true) : node_(std::make_shared<transport::Node>()), enable_gui_(enable_gui)
     {
-        gzmsg << "Lighting Demo initialized\n";
-        gzmsg << "Demonstrating various light types and their effects\n\n";
-        
+        gzmsg << "Lighting Demo initialized";
+        if (enable_gui_)
+        {
+            gzmsg << " (3D GUI Mode)\n";
+            gzmsg << "Demonstrating various light types with interactive 3D lighting studio\n\n";
+        }
+        else
+        {
+            gzmsg << " (Headless Console Mode)\n";
+            gzmsg << "Demonstrating various light types and their effects\n\n";
+        }
+
         SetupLightConfigurations();
-        
+
         // Setup transport for dynamic light control
         light_pub_ = node_->Advertise<msgs::Light>("/world/lighting_demo/light/modify");
     }
@@ -105,30 +165,63 @@ public:
     void RunDemo()
     {
         gzmsg << "=== Gazebo Lighting and Shadow Showcase ===\n\n";
-        
+
         // Create server with lighting demo world
         ServerConfig config;
-        config.SetSdfString(CreateLightingWorldSdf());
+
+        if (enable_gui_)
+        {
+            // Use visual SDF world with embedded GUI
+            std::string sdf_file = FindSdfFile("lighting_demo_visual.sdf");
+
+            // Get absolute path for the SDF file
+            char abs_path[4096];
+            if (realpath(sdf_file.c_str(), abs_path) != nullptr)
+            {
+                sdf_file = std::string(abs_path);
+            }
+
+            config.SetSdfFile(sdf_file);
+            gzmsg << "\n" << std::string(80, '=') << "\n";
+            gzmsg << "TUTORIAL: Hermetic 3D Visualization Solution\n";
+            gzmsg << std::string(80, '=') << "\n\n";
+            gzmsg << "Currently, gz-gui is not available in the Bazel Central Registry (BCR).\n";
+            gzmsg << "This means we cannot include GUI components in our hermetic build.\n\n";
+            gzmsg << "Workaround options:\n";
+            gzmsg << "1. Run this demo to see console output of lighting properties\n";
+            gzmsg << "2. Install Gazebo system-wide and connect with: gz gui\n";
+            gzmsg << "3. Use the embedded render window approach (coming soon)\n\n";
+            gzmsg << "The simulation is running with the visual world loaded.\n";
+            gzmsg << "Lighting changes and effects will be logged below...\n";
+            gzmsg << std::string(80, '=') << "\n\n";
+        }
+        else
+        {
+            // Use headless inline world
+            config.SetSdfString(CreateLightingWorldSdf());
+            gzmsg << "TUTORIAL: Running in headless console mode for automated/CI environments\n\n";
+        }
+
         config.SetUpdateRate(1000.0);  // High update rate for accurate light transitions
-        
+
         Server server(config);
-        
+
         gzmsg << "Starting lighting demonstration with signal handling...\n";
         gzmsg << "Demonstrating light types:\n";
         PrintLightTypes();
-        
+
         // Run simulation with lighting changes and signal handling
         const int simulation_steps = 15000;  // 15 seconds at 1000 Hz for demonstration
         int step_count = 0;
         int light_cycle = 0;
-        
+
         auto start_time = std::chrono::steady_clock::now();
-        
+
         while (step_count < simulation_steps && g_running)
         {
             server.RunOnce(false);
             step_count++;
-            
+
             // Change lighting every 3 seconds (3000 steps at 1000 Hz)
             if (step_count % 3000 == 0)
             {
@@ -136,13 +229,13 @@ public:
                 PrintCurrentLighting(light_cycle);
                 // In a full implementation, we would send light update messages here
             }
-            
+
             // Animate certain lights for dynamic effects
             if (step_count % 500 == 0)  // Every 0.5 seconds
             {
                 AnimateLights(step_count);
             }
-            
+
             // Print enhanced periodic updates with tutorial style
             if (step_count % 2000 == 0)
             {
@@ -150,24 +243,24 @@ public:
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
                 double sim_time = step_count * 0.001;
                 double rtf = sim_time / (elapsed > 0 ? elapsed : 1);
-                
+
                 gzmsg << "TUTORIAL: Lighting Demo progress: " << (step_count * 100 / simulation_steps) << "% - ";
                 gzmsg << "Sim time: " << std::fixed << std::setprecision(1) << sim_time << "s ";
                 gzmsg << "(real: " << elapsed << "s) | RTF: " << std::fixed << std::setprecision(2) << rtf << "x\n";
                 gzmsg << "TUTORIAL: Currently demonstrating: " << light_configs_[light_cycle].name << "\n\n";
             }
-            
+
             // Brief pause to prevent overwhelming the system and allow signal processing
             std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
-        
+
         // Check if shutdown was triggered by signal
         if (g_running == 0)
         {
             gzmsg << "\nTUTORIAL: ✓ Signal received during lighting demo - stopping gracefully..." << std::endl;
             gzmsg << "TUTORIAL: Final simulation time: " << std::fixed << std::setprecision(1) << (step_count * 0.001) << " seconds" << std::endl;
         }
-        
+
         PrintLightingSummary();
     }
 
@@ -175,6 +268,7 @@ private:
     std::shared_ptr<transport::Node> node_;
     transport::Node::Publisher light_pub_;
     std::vector<LightConfig> light_configs_;
+    bool enable_gui_;
 
     /**
      * Setup different lighting configurations for demonstration
@@ -192,7 +286,7 @@ private:
             1.0, true, 0.0, 0.0, 0.0,
             "Outdoor daylight with warm color temperature and strong shadows"
         });
-        
+
         // Studio lighting setup
         light_configs_.push_back({
             "Studio Lighting",
@@ -204,7 +298,7 @@ private:
             1.2, false, 15.0, 0.0, 0.0,
             "Studio-style point lighting with cool temperature and soft shadows"
         });
-        
+
         // Dramatic spotlight
         light_configs_.push_back({
             "Dramatic Spotlight",
@@ -216,7 +310,7 @@ private:
             2.0, true, 12.0, 0.3, 0.8,
             "Theatrical spotlight with focused beam and hard shadows"
         });
-        
+
         // Ambient only (overcast)
         light_configs_.push_back({
             "Overcast Day",
@@ -228,11 +322,11 @@ private:
             0.8, false, 0.0, 0.0, 0.0,
             "Overcast lighting with minimal shadows and cool color"
         });
-        
+
         // Golden hour
         light_configs_.push_back({
             "Golden Hour",
-            "directional", 
+            "directional",
             math::Vector3d(15, 5, 3),
             math::Vector3d(-1, -0.3, -0.1),
             math::Color(1.0, 0.7, 0.4, 1.0),   // Orange golden light
@@ -240,7 +334,7 @@ private:
             0.7, true, 0.0, 0.0, 0.0,
             "Low-angle warm lighting simulating golden hour photography"
         });
-        
+
         // Night scene with artificial lights
         light_configs_.push_back({
             "Night Scene",
@@ -263,25 +357,25 @@ private:
 <?xml version="1.0" ?>
 <sdf version="1.10">
   <world name="lighting_demo">
-    
+
     <!-- Physics -->
     <physics name="default" type="ode">
       <max_step_size>0.016667</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
-    
+
     <!-- Essential plugins -->
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
-    
+
     <!-- Atmospheric settings for realistic lighting -->
     <atmosphere type="adiabatic">
       <temperature>288.15</temperature>
       <pressure>101325</pressure>
       <temperature_gradient>-0.0065</temperature_gradient>
     </atmosphere>
-    
+
     <!-- Initial lighting setup (will be modified during demo) -->
     <light name="main_light" type="directional">
       <pose>10 10 10 0 0 0</pose>
@@ -291,7 +385,7 @@ private:
       <specular>1.0 1.0 0.8 1</specular>
       <intensity>1.0</intensity>
     </light>
-    
+
     <light name="fill_light" type="directional">
       <pose>-5 5 8 0 0 0</pose>
       <cast_shadows>false</cast_shadows>
@@ -300,7 +394,7 @@ private:
       <specular>0.1 0.1 0.1 1</specular>
       <intensity>0.5</intensity>
     </light>
-    
+
     <!-- Ground plane with material that shows lighting well -->
     <model name="ground_plane">
       <static>true</static>
@@ -334,9 +428,9 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Test objects with different materials to show lighting effects -->
-    
+
     <!-- Metallic sphere -->
     <model name="metallic_sphere">
       <pose>0 0 1.5 0 0 0</pose>
@@ -376,7 +470,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Matte cube -->
     <model name="matte_cube">
       <pose>-3 0 1 0 0 0</pose>
@@ -409,7 +503,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Glossy cylinder -->
     <model name="glossy_cylinder">
       <pose>3 0 1.5 0 0 0</pose>
@@ -444,7 +538,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Complex shaped object for shadow testing -->
     <model name="complex_shape">
       <pose>0 -4 1 0 0 0</pose>
@@ -480,7 +574,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Background wall for shadow display -->
     <model name="shadow_wall">
       <pose>0 -8 3 0 0 0</pose>
@@ -513,7 +607,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
   </world>
 </sdf>
         )";
@@ -569,13 +663,13 @@ private:
         // Simple animation - in a full implementation this would
         // send actual light update messages via transport
         double time_factor = step * 0.016667;  // Convert steps to seconds
-        
+
         // Could implement animations like:
         // - Rotating spotlight
         // - Pulsing light intensity
         // - Moving point lights
         // - Color temperature changes
-        
+
         // For demo purposes, just log occasional animation updates
         if (step % 300 == 0)  // Every 5 seconds
         {
@@ -589,7 +683,7 @@ private:
     void PrintLightingSummary()
     {
         gzmsg << "\n=== LIGHTING DEMONSTRATION SUMMARY ===\n\n";
-        
+
         gzmsg << "Light Types and Characteristics:\n";
         gzmsg << "-------------------------------\n";
         gzmsg << "Directional Lights:\n";
@@ -597,19 +691,19 @@ private:
         gzmsg << "• Parallel rays, infinite range\n";
         gzmsg << "• Position doesn't matter, only direction\n";
         gzmsg << "• Most efficient for large scenes\n\n";
-        
+
         gzmsg << "Point Lights:\n";
         gzmsg << "• Omnidirectional light from a single point\n";
         gzmsg << "• Light falloff with distance\n";
         gzmsg << "• Good for bulbs, fires, magical effects\n";
         gzmsg << "• More expensive due to range calculations\n\n";
-        
+
         gzmsg << "Spot Lights:\n";
         gzmsg << "• Cone-shaped light beam\n";
         gzmsg << "• Direction, range, and cone angle control\n";
         gzmsg << "• Perfect for flashlights, car headlights\n";
         gzmsg << "• Most expensive due to cone calculations\n\n";
-        
+
         gzmsg << "Shadow Quality Considerations:\n";
         gzmsg << "-----------------------------\n";
         gzmsg << "• Hard shadows: Single light source, sharp edges\n";
@@ -617,7 +711,7 @@ private:
         gzmsg << "• Shadow resolution affects performance\n";
         gzmsg << "• Self-shadowing can cause artifacts\n";
         gzmsg << "• Distance-based shadow LOD improves performance\n\n";
-        
+
         gzmsg << "Material-Light Interactions:\n";
         gzmsg << "---------------------------\n";
         gzmsg << "• Diffuse: Surface color under direct lighting\n";
@@ -625,7 +719,7 @@ private:
         gzmsg << "• Ambient: Base illumination in shadowed areas\n";
         gzmsg << "• Normal maps affect how light interacts with surface\n";
         gzmsg << "• Metalness determines specular behavior\n\n";
-        
+
         gzmsg << "Performance Optimization Tips:\n";
         gzmsg << "-----------------------------\n";
         gzmsg << "• Use directional lights for primary illumination\n";
@@ -633,7 +727,7 @@ private:
         gzmsg << "• Use light culling for off-screen lights\n";
         gzmsg << "• Consider baked lighting for static scenes\n";
         gzmsg << "• Adjust shadow map resolution based on importance\n\n";
-        
+
         gzmsg << "=== LIGHTING DEMONSTRATION COMPLETE ===\n";
     }
 };
@@ -641,31 +735,47 @@ private:
 class TutorialLightingDemo
 {
 public:
-    TutorialLightingDemo() {}
+    TutorialLightingDemo(int argc, char* argv[]) : enable_gui_(!HasFlag("--headless", argc, argv)) {}
 
     int Run()
     {
         std::cout << "\n" << std::string(70, '=') << std::endl;
         std::cout << "    GAZEBO TUTORIAL: Lighting Systems and Shadow Optimization Demo" << std::endl;
+        if (enable_gui_)
+        {
+            std::cout << "                         [3D Interactive Mode]" << std::endl;
+        }
+        else
+        {
+            std::cout << "                         [Headless Console Mode]" << std::endl;
+        }
         std::cout << std::string(70, '=') << std::endl;
-        
+
         gzmsg << "TUTORIAL: Setting up hermetic lighting system environment..." << std::endl;
         gzmsg << "TUTORIAL: This demo uses static plugin approach for reliable lighting testing" << std::endl;
+        if (enable_gui_)
+        {
+            gzmsg << "TUTORIAL: GUI mode enabled - launching interactive 3D lighting studio" << std::endl;
+        }
+        else
+        {
+            gzmsg << "TUTORIAL: Headless mode enabled - console output only (use for CI/automated testing)" << std::endl;
+        }
 
         // === STAGE 1: Environment Configuration ===
         std::cout << "\n--- STAGE 1: Environment Configuration ---" << std::endl;
-        
+
         // Set console verbosity and disable config file loading
         gz::common::Console::SetVerbosity(4);
         gzmsg << "TUTORIAL: Console verbosity set to level 4 for detailed lighting analysis output" << std::endl;
-        
+
         setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
         setenv("GZ_CONFIG_PATH", "", 1);
         gzmsg << "TUTORIAL: Disabled system config files for consistent lighting system testing" << std::endl;
 
         // === STAGE 2: Lighting System Setup ===
         std::cout << "\n--- STAGE 2: Lighting System Setup ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: Lighting configurations prepared for comprehensive testing:" << std::endl;
         gzmsg << "TUTORIAL:   - Daylight Scene (directional sunlight with warm color temperature)" << std::endl;
         gzmsg << "TUTORIAL:   - Studio Lighting (cool point light with soft shadows)" << std::endl;
@@ -677,7 +787,7 @@ public:
 
         // === STAGE 3: Lighting Analysis Configuration ===
         std::cout << "\n--- STAGE 3: Lighting Analysis Configuration ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: Initializing lighting showcase with performance monitoring..." << std::endl;
         gzmsg << "TUTORIAL: Static plugins (Physics, UserCommands, SceneBroadcaster) are active" << std::endl;
         gzmsg << "TUTORIAL: High-frequency updates ensure smooth lighting transitions" << std::endl;
@@ -685,13 +795,13 @@ public:
 
         // === STAGE 4: Lighting System Execution ===
         std::cout << "\n--- STAGE 4: Lighting System Execution ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: Starting comprehensive lighting system demonstration..." << std::endl;
         gzmsg << "TUTORIAL: Press Ctrl+C to stop the lighting analysis at any time" << std::endl;
-        
+
         try
         {
-            LightingDemo demo;
+            LightingDemo demo(enable_gui_);
             demo.RunDemo();
         }
         catch (const std::exception& e)
@@ -702,16 +812,16 @@ public:
 
         // === STAGE 5: Results Analysis and Educational Conclusions ===
         std::cout << "\n--- STAGE 5: Results Analysis and Educational Conclusions ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: ✓ Lighting system demonstration completed successfully!" << std::endl;
-        
+
         gzmsg << "\nTUTORIAL: Key Learning Points:" << std::endl;
         gzmsg << "TUTORIAL: - Directional lights simulate infinite light sources like sun with parallel rays" << std::endl;
         gzmsg << "TUTORIAL: - Point lights provide omnidirectional illumination with distance-based falloff" << std::endl;
         gzmsg << "TUTORIAL: - Spot lights create focused beams with cone-shaped coverage areas" << std::endl;
         gzmsg << "TUTORIAL: - Shadow quality depends on light type, resolution, and rendering settings" << std::endl;
         gzmsg << "TUTORIAL: - Color temperature affects mood and realism in lighting design" << std::endl;
-        
+
         gzmsg << "\nTUTORIAL: Lighting Design Best Practices:" << std::endl;
         gzmsg << "TUTORIAL: - Use directional lights for primary illumination (sun, moon) for efficiency" << std::endl;
         gzmsg << "TUTORIAL: - Balance shadow quality with performance requirements" << std::endl;
@@ -719,13 +829,16 @@ public:
         gzmsg << "TUTORIAL: - Match color temperature to environmental context and mood" << std::endl;
         gzmsg << "TUTORIAL: - Limit dynamic lights for optimal performance in complex scenes" << std::endl;
         gzmsg << "TUTORIAL: - Test lighting across different material types for consistency" << std::endl;
-        
+
         std::cout << "\n" << std::string(70, '=') << std::endl;
         std::cout << "   TUTORIAL COMPLETED - Lighting System Analysis Success!" << std::endl;
         std::cout << std::string(70, '=') << std::endl;
-        
+
         return 0;
     }
+
+private:
+    bool enable_gui_;
 };
 
 /**
@@ -739,7 +852,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        TutorialLightingDemo tutorial;
+        TutorialLightingDemo tutorial(argc, argv);
         return tutorial.Run();
     }
     catch (const std::exception &e)
@@ -756,36 +869,36 @@ int main(int argc, char* argv[])
 
 /*
  * Key Concepts Demonstrated:
- * 
+ *
  * 1. **Advanced Lighting Systems**: How to systematically design and configure
  *    different light types (directional, point, spot) for comprehensive scene illumination.
- * 
+ *
  * 2. **Hermetic Static Plugins**: Understanding why we use static linking for reliable,
  *    reproducible lighting system testing across different environments and graphics hardware.
- * 
+ *
  * 3. **Light-Material Interactions**: Comprehensive analysis of how different lighting
  *    configurations affect material appearance, shadow quality, and visual realism.
- * 
+ *
  * 4. **Signal Handling**: Proper application lifecycle management with graceful shutdown
  *    during long-running lighting demonstrations and performance analysis procedures.
- * 
+ *
  * 5. **Educational Progression**: Step-by-step tutorial structure that teaches lighting
  *    design principles and optimization strategies for production rendering workflows.
- * 
+ *
  * 6. **Shadow Optimization**: Real-time analysis of shadow quality settings, performance
  *    impact, and optimization techniques for different lighting scenarios.
- * 
+ *
  * Usage Examples:
  * - ./lighting_demo                              # Run complete lighting demo
  * - timeout 60s ./lighting_demo                  # Run with 60-second timeout
  * - ./lighting_demo 2>&1 | grep "TUTORIAL"      # Extract only tutorial messages
- * 
+ *
  * Next Steps:
  * - Experiment with different light configurations and their effects on materials
  * - Analyze how shadow settings affect performance and visual quality
  * - Integrate lighting design insights into production scene creation workflows
  * - Use lighting demo results for graphics performance optimization in complex scenes
- * 
+ *
  * Educational Notes:
  * - Static plugin messages are expected and demonstrate hermetic build reliability
  * - Lighting performance depends on light count, shadow quality, and material complexity

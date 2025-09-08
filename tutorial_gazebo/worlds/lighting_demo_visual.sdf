@@ -1,0 +1,577 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo Tutorial - Lighting Demo Visual World
+
+  This world demonstrates advanced lighting techniques with interactive 3D visualization:
+
+  1. Professional Lighting Types:
+     - Key light (directional - primary illumination)
+     - Fill lights (point - shadow softening)
+     - Rim lights (spot - edge definition)
+     - Colored accent lighting for artistic effects
+
+  2. Lighting Concepts:
+     - 3-point lighting setup for cinematic quality
+     - Color temperature and mood lighting
+     - Shadow quality and performance optimization
+     - Light attenuation and falloff patterns
+
+  3. Material Interaction:
+     - Different materials responding to various light types
+     - Specular highlights and reflection patterns
+     - PBR material behavior under complex lighting
+     - Shadow casting and receiving surfaces
+
+  4. Educational Layout:
+     - Test objects with varied material properties
+     - Demonstration of light-material interactions
+     - Performance comparison between light types
+     - Real-time lighting adjustment capabilities
+
+  5. Usage:
+     Launch with gz-sim for interactive lighting exploration
+     Perfect for understanding cinematic lighting and performance optimization
+-->
+
+<sdf version="1.10">
+  <world name="lighting_demo">
+
+    <!-- Physics with stable timestep for smooth light interaction ---->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <!-- Essential system plugins for interactive GUI -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" />
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
+
+    <!--
+      Professional Cinematic Lighting Setup
+      Demonstrates advanced lighting techniques used in film and game production
+    -->
+
+    <!-- Key Light - Primary directional illumination (warm daylight) -->
+    <light type="directional" name="key_light_primary">
+      <cast_shadows>true</cast_shadows>
+      <pose>8 8 15 0 0 0</pose>
+      <diffuse>1.0 0.95 0.85 1</diffuse>  <!-- Warm daylight -->
+      <specular>0.9 0.9 0.8 1</specular>
+      <direction>-0.4 -0.4 -1.0</direction>
+    </light>
+
+    <!-- Fill Light - Soft blue to balance harsh shadows -->
+    <light type="directional" name="fill_light">
+      <cast_shadows>false</cast_shadows>
+      <pose>-5 5 10 0 0 0</pose>
+      <diffuse>0.4 0.4 0.6 1</diffuse>  <!-- Cool blue fill -->
+      <specular>0.2 0.2 0.3 1</specular>
+      <direction>0.3 -0.3 -1.0</direction>
+    </light>
+
+    <!-- Rim Light - Back lighting for edge definition -->
+    <light type="directional" name="rim_light">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 -10 8 0 0 0</pose>
+      <diffuse>0.6 0.5 0.4 1</diffuse>  <!-- Warm rim light -->
+      <specular>0.8 0.7 0.6 1</specular>
+      <direction>0 1 -0.5</direction>
+    </light>
+
+    <!-- Point Light Demonstrations -->
+
+    <!-- Warm Point Light - Simulates incandescent bulb -->
+    <light type="point" name="warm_point">
+      <cast_shadows>true</cast_shadows>
+      <pose>4 4 3 0 0 0</pose>
+      <diffuse>1.0 0.7 0.4 1</diffuse>  <!-- Warm incandescent -->
+      <specular>0.8 0.6 0.3 1</specular>
+      <attenuation>
+        <range>12</range>
+        <constant>0.05</constant>
+        <linear>0.05</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- Cool Point Light - Simulates LED or fluorescent -->
+    <light type="point" name="cool_point">
+      <cast_shadows>true</cast_shadows>
+      <pose>-4 4 3 0 0 0</pose>
+      <diffuse>0.4 0.7 1.0 1</diffuse>  <!-- Cool LED -->
+      <specular>0.3 0.6 0.8 1</specular>
+      <attenuation>
+        <range>10</range>
+        <constant>0.1</constant>
+        <linear>0.08</linear>
+        <quadratic>0.02</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- Colored Accent Lights -->
+
+    <!-- Red Accent Light -->
+    <light type="point" name="red_accent">
+      <cast_shadows>false</cast_shadows>
+      <pose>6 0 2 0 0 0</pose>
+      <diffuse>1.0 0.1 0.1 1</diffuse>
+      <specular>0.8 0.0 0.0 1</specular>
+      <attenuation>
+        <range>8</range>
+        <constant>0.2</constant>
+        <linear>0.1</linear>
+        <quadratic>0.05</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- Green Accent Light -->
+    <light type="point" name="green_accent">
+      <cast_shadows>false</cast_shadows>
+      <pose>-6 0 2 0 0 0</pose>
+      <diffuse>0.1 1.0 0.1 1</diffuse>
+      <specular>0.0 0.8 0.0 1</specular>
+      <attenuation>
+        <range>8</range>
+        <constant>0.2</constant>
+        <linear>0.1</linear>
+        <quadratic>0.05</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- Spot Light Demonstrations -->
+
+    <!-- Focused Spot Light - Dramatic lighting -->
+    <light type="spot" name="dramatic_spot">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 8 6 0 0.8 -1.57</pose>  <!-- Angled downward -->
+      <diffuse>1.0 0.9 0.7 1</diffuse>
+      <specular>0.9 0.8 0.6 1</specular>
+      <attenuation>
+        <range>15</range>
+        <constant>0.05</constant>
+        <linear>0.02</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <direction>0 -1 -1</direction>
+      <spot>
+        <inner_angle>0.2</inner_angle>  <!-- 11 degrees inner cone -->
+        <outer_angle>0.6</outer_angle>  <!-- 34 degrees outer cone -->
+        <falloff>1.2</falloff>  <!-- Sharp falloff -->
+      </spot>
+    </light>
+
+    <!-- Wide Spot Light - Area illumination -->
+    <light type="spot" name="wide_spot">
+      <cast_shadows>true</cast_shadows>
+      <pose>-3 6 4 0 0.5 -0.5</pose>
+      <diffuse>0.7 0.8 1.0 1</diffuse>  <!-- Cool white -->
+      <specular>0.6 0.7 0.8 1</specular>
+      <attenuation>
+        <range>12</range>
+        <constant>0.1</constant>
+        <linear>0.03</linear>
+        <quadratic>0.008</quadratic>
+      </attenuation>
+      <direction>0.3 -0.8 -0.8</direction>
+      <spot>
+        <inner_angle>0.5</inner_angle>  <!-- 29 degrees inner cone -->
+        <outer_angle>1.2</outer_angle>  <!-- 69 degrees outer cone -->
+        <falloff>0.8</falloff>  <!-- Gentle falloff -->
+      </spot>
+    </light>
+
+    <!-- Ground plane with semi-reflective material for light interaction -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>25 25</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>25 25</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <specular>0.4 0.4 0.4 1</specular>
+            <!-- Semi-reflective surface -->
+            <pbr>
+              <metal>
+                <metalness>0.2</metalness>
+                <roughness>0.4</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Central Display Objects - Different Materials for Light Response -->
+
+    <!-- Highly Reflective Chrome Sphere -->
+    <model name="chrome_sphere">
+      <pose>0 0 1.5 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>2.0</mass>
+          <inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+          </inertia>
+        </inertial>
+
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>1.0</radius>
+            </sphere>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>1.0</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+            <specular>1.0 1.0 1.0 1</specular>
+            <!-- Mirror-like chrome -->
+            <pbr>
+              <metal>
+                <metalness>1.0</metalness>
+                <roughness>0.02</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Material Test Array - Row 1: Metals -->
+
+    <!-- Polished Gold -->
+    <model name="gold_cube">
+      <pose>3 3 0.5 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1 1 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1 1 1</size></box></geometry>
+          <material>
+            <ambient>1.0 0.8 0.2 1</ambient>
+            <diffuse>1.0 0.9 0.3 1</diffuse>
+            <specular>1.0 1.0 0.8 1</specular>
+            <pbr>
+              <metal>
+                <metalness>1.0</metalness>
+                <roughness>0.1</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Brushed Steel -->
+    <model name="steel_cube">
+      <pose>-3 3 0.5 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1 1 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1 1 1</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.7 1</ambient>
+            <diffuse>0.7 0.7 0.8 1</diffuse>
+            <specular>0.8 0.8 0.9 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.9</metalness>
+                <roughness>0.3</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Material Test Array - Row 2: Dielectrics -->
+
+    <!-- Glossy Red Plastic -->
+    <model name="red_plastic">
+      <pose>3 0 0.5 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.5</radius><length>1</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.5</radius><length>1</length></cylinder></geometry>
+          <material>
+            <ambient>0.3 0.1 0.1 1</ambient>
+            <diffuse>0.9 0.2 0.2 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.2</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Matte Blue Ceramic -->
+    <model name="blue_ceramic">
+      <pose>-3 0 0.5 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.5</radius><length>1</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.5</radius><length>1</length></cylinder></geometry>
+          <material>
+            <ambient>0.1 0.1 0.4 1</ambient>
+            <diffuse>0.2 0.2 0.8 1</diffuse>
+            <specular>0.3 0.3 0.6 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.6</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Material Test Array - Row 3: Special Materials -->
+
+    <!-- Translucent Glass -->
+    <model name="glass_panel">
+      <pose>0 3 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.1 2 2</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.1 2 2</size></box></geometry>
+          <material>
+            <ambient>0.9 0.95 1.0 0.2</ambient>
+            <diffuse>0.95 0.98 1.0 0.2</diffuse>
+            <specular>1.0 1.0 1.0 0.2</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.01</roughness>
+              </metal>
+            </pbr>
+          </material>
+          <transparency>0.8</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Emissive Neon Tube -->
+    <model name="neon_tube">
+      <pose>0 -3 1 1.57 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.05</radius><length>3</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.05</radius><length>3</length></cylinder></geometry>
+          <material>
+            <ambient>0.2 0.1 0.8 1</ambient>
+            <diffuse>0.4 0.2 1.0 1</diffuse>
+            <specular>0.1 0.1 0.3 1</specular>
+            <emissive>0.8 0.4 1.0 1</emissive>  <!-- Bright purple glow -->
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.8</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Shadow Casters for Depth Perception -->
+
+    <!-- Tall Shadow Pillar -->
+    <model name="shadow_pillar">
+      <pose>5 -5 1.5 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.5 0.5 3</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.5 0.5 3</size></box></geometry>
+          <material>
+            <ambient>0.4 0.4 0.4 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.7</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Background Wall for Shadow Reception -->
+    <model name="background_wall">
+      <pose>0 -8 2 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>20 0.2 4</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>20 0.2 4</size></box></geometry>
+          <material>
+            <ambient>0.7 0.7 0.7 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <!-- Matte surface for clear shadow reception -->
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.9</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Interactive GUI Configuration for Lighting Exploration -->
+    <gui fullscreen="0">
+
+      <!-- Main 3D Scene with Advanced Lighting Visualization -->
+      <plugin filename="MinimalScene" name="3D Lighting Studio">
+        <gz-gui>
+          <title>Lighting Demo - 3D Studio View</title>
+          <property type="bool" key="showTitleBar">true</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <!-- Low ambient to emphasize direct lighting effects -->
+        <ambient_light>0.1 0.1 0.15</ambient_light>
+        <background_color>0.05 0.05 0.1</background_color>
+        <!-- Camera positioned for optimal lighting view -->
+        <camera_pose>-10 10 8 0 0.4 -0.785</camera_pose>
+        <!-- Enable all advanced rendering features -->
+        <shadows>true</shadows>
+        <sky>false</sky>  <!-- Dark background to emphasize lighting -->
+      </plugin>
+
+      <!-- Simulation Control -->
+      <plugin filename="WorldControl" name="Studio Control">
+        <gz-gui>
+          <title>Studio Controls</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">250</property>
+          <property key="height" type="double">120</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">10</property>
+          <property key="y" type="double">10</property>
+        </gz-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+      </plugin>
+
+      <!-- Scene Tree for Light Management -->
+      <plugin filename="EntityTree" name="Lighting Setup">
+        <gz-gui>
+          <title>Lights & Objects</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">300</property>
+          <property key="height" type="double">400</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">10</property>
+          <property key="y" type="double">150</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Transform Control for Light Positioning -->
+      <plugin filename="TransformControl" name="Light Control">
+        <gz-gui>
+          <title>Light Positioning</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">280</property>
+          <property key="height" type="double">150</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">10</property>
+          <property key="y" type="double">570</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Camera View Controls -->
+      <plugin filename="ViewAngle" name="Camera Views">
+        <gz-gui>
+          <title>Studio Angles</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">220</property>
+          <property key="height" type="double">100</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">280</property>
+          <property key="y" type="double">10</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Scene Manager -->
+      <plugin filename="GzSceneManager" name="Scene Manager">
+        <gz-gui>
+          <title>Scene Manager</title>
+          <property key="resizable" type="bool">false</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
+          <property key="state" type="string">floating</property>
+          <property key="showTitleBar" type="bool">false</property>
+        </gz-gui>
+      </plugin>
+
+    </gui>
+
+  </world>
+</sdf>

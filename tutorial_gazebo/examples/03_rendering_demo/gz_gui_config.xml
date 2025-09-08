@@ -1,0 +1,114 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo GUI Configuration for Material Showcase 3D Visualization
+
+  This configuration sets up the essential plugins for connecting to a separate
+  gz::sim::Server process and displaying 3D scene content with interaction controls.
+
+  Key plugins:
+  - MinimalScene: Core 3D visualization with Ogre2 rendering engine
+  - GzSceneManager: Manages scene objects and transformations
+  - WorldControl: Simulation play/pause/step controls
+  - InteractiveViewControl: Camera navigation controls
+
+  Usage: gz gui --config gz_gui_config.xml
+-->
+
+<gui fullscreen="0">
+
+  <!-- Primary 3D Scene Visualization -->
+  <plugin filename="MinimalScene" name="Material Showcase - 3D View">
+    <gz-gui>
+      <title>Material Showcase - 3D View</title>
+      <property type="bool" key="showTitleBar">false</property>
+      <property type="string" key="state">docked</property>
+      <property type="int" key="width">800</property>
+      <property type="int" key="height">600</property>
+    </gz-gui>
+
+    <!-- Rendering Configuration -->
+    <engine>ogre2</engine>
+    <scene>scene</scene>
+    <ambient_light>0.4 0.4 0.4</ambient_light>
+    <background_color>0.8 0.8 0.8</background_color>
+
+    <!-- Optimal camera position for material showcase -->
+    <camera_pose>-6 0 6 0 0.5 0</camera_pose>
+
+    <!-- Camera controls -->
+    <camera_follow>
+      <p_gain>0.01</p_gain>
+      <target>showcase_sphere</target>
+    </camera_follow>
+  </plugin>
+
+  <!-- Scene Manager for Object Handling -->
+  <plugin filename="GzSceneManager" name="Scene Manager">
+    <gz-gui>
+      <property key="state" type="string">floating</property>
+      <property key="showTitleBar" type="bool">false</property>
+      <property key="resizable" type="bool">false</property>
+      <property key="width" type="double">200</property>
+      <property key="height" type="double">50</property>
+      <property key="x" type="double">10</property>
+      <property key="y" type="double">10</property>
+    </gz-gui>
+  </plugin>
+
+  <!-- Interactive Camera Controls -->
+  <plugin filename="InteractiveViewControl" name="Interactive View Control">
+    <gz-gui>
+      <property key="state" type="string">floating</property>
+      <property key="showTitleBar" type="bool">false</property>
+      <property key="resizable" type="bool">false</property>
+      <property key="width" type="double">200</property>
+      <property key="height" type="double">100</property>
+      <property key="x" type="double">10</property>
+      <property key="y" type="double">70</property>
+    </gz-gui>
+
+    <!-- View control settings -->
+    <sensitivity>0.4</sensitivity>
+  </plugin>
+
+  <!-- World/Simulation Control Panel -->
+  <plugin filename="WorldControl" name="World Control">
+    <gz-gui>
+      <title>Simulation Control</title>
+      <property type="bool" key="showTitleBar">true</property>
+      <property type="string" key="state">floating</property>
+      <property key="resizable" type="bool">false</property>
+      <property key="width" type="double">250</property>
+      <property key="height" type="double">120</property>
+      <property key="x" type="double">10</property>
+      <property key="y" type="double">180</property>
+    </gz-gui>
+
+    <!-- Control configuration -->
+    <play_pause>true</play_pause>
+    <step>true</step>
+    <start_paused>false</start_paused>
+    <use_event>true</use_event>
+  </plugin>
+
+  <!-- World Statistics Display -->
+  <plugin filename="WorldStats" name="World Statistics">
+    <gz-gui>
+      <title>Statistics</title>
+      <property type="bool" key="showTitleBar">true</property>
+      <property type="string" key="state">floating</property>
+      <property key="resizable" type="bool">false</property>
+      <property key="width" type="double">250</property>
+      <property key="height" type="double">100</property>
+      <property key="x" type="double">10</property>
+      <property key="y" type="double">310</property>
+    </gz-gui>
+
+    <!-- Statistics configuration -->
+    <sim_time>true</sim_time>
+    <real_time>true</real_time>
+    <real_time_factor>true</real_time_factor>
+    <iterations>true</iterations>
+  </plugin>
+
+</gui>

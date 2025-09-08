@@ -1,13 +1,13 @@
 /*
  * Gazebo Tutorial Example 03: Material Showcase with Static Plugin Integration
- * 
+ *
  * This comprehensive tutorial demonstrates:
  * 1. Physically Based Rendering (PBR) material workflows with real-time property visualization
  * 2. Advanced material types (metals, dielectrics, glass, emissive) using hermetic builds
  * 3. Material parameter relationships and their impact on visual appearance
  * 4. Multi-light setup optimization for material visualization with educational progression
  * 5. Real-time material cycling and performance analysis with structured insights
- * 
+ *
  * Learning objectives:
  * - Master PBR material workflows and parameter relationships for production assets
  * - Understand hermetic builds with static plugin linking for consistent rendering behavior
@@ -16,6 +16,12 @@
  * - Explore rendering performance analysis and GPU utilization insights
  * - Signal-based application control and graceful resource management
  * - Why we use static plugins for reliable, reproducible material rendering testing
+ *
+ * Usage modes:
+ * - Default (GUI): ./material_showcase
+ *   Interactive 3D visualization with professional lighting and material gallery
+ * - Headless: ./material_showcase --headless
+ *   Console-only mode for automated testing and CI environments
  */
 
 #include <gz/sim/Server.hh>
@@ -28,6 +34,7 @@
 #include <gz/sim/components/Pose.hh>
 
 #include <gz/common/Console.hh>
+#include <gz/common/Filesystem.hh>
 
 #include <gz/msgs/material.pb.h>
 #include <gz/msgs/visual.pb.h>
@@ -36,6 +43,7 @@
 
 #include <gz/math/Vector3.hh>
 #include <gz/math/Color.hh>
+
 
 #include <iostream>
 #include <thread>
@@ -52,6 +60,31 @@
 using namespace gz;
 using namespace sim;
 
+namespace gz
+{
+namespace tutorial
+{
+
+/// Configuration structure for material properties
+struct MaterialConfig
+{
+    std::string name;
+    gz::math::Color ambient;
+    gz::math::Color diffuse;
+    gz::math::Color specular;
+    gz::math::Color emissive;
+    double shininess;
+    double transparency;
+    double metalness;
+    double roughness;
+    std::string description;
+};
+
+} // namespace tutorial
+} // namespace gz
+
+using namespace gz::tutorial;
+
 // Global flags for signal-safe shutdown
 volatile sig_atomic_t g_running = 1;
 
@@ -61,9 +94,53 @@ void signalHandler(int signal)
     // Use write() instead of gzmsg for signal safety
     const char* msg = "\n=== TUTORIAL: Received signal, shutting down material showcase... ===\n";
     write(STDOUT_FILENO, msg, strlen(msg));
-    
+
     // Set shutdown flag atomically
     g_running = 0;
+}
+
+/// \brief Find SDF file in runfiles or relative paths
+std::string FindSdfFile(const std::string &filename)
+{
+    // Try common locations for SDF files
+    std::vector<std::string> paths = {
+        filename,                                    // Direct path
+        "worlds/" + filename,                        // Relative to current directory
+        "../worlds/" + filename,                     // Parent directory
+        "tutorial_gazebo/worlds/" + filename,        // Bazel runfiles path
+        "external/tutorial_gazebo/worlds/" + filename, // External workspace path
+    };
+
+    for (const auto &path : paths)
+    {
+        if (gz::common::exists(path))
+        {
+            gzmsg << "Found SDF file at: " << path << std::endl;
+            return path;
+        }
+    }
+
+    gzerr << "Could not find SDF file: " << filename << std::endl;
+    gzmsg << "Searched paths:" << std::endl;
+    for (const auto &path : paths)
+    {
+        gzmsg << "  - " << path << std::endl;
+    }
+
+    return filename; // Return original if not found
+}
+
+/// \brief Check if a flag is present in command line arguments
+bool HasFlag(const std::string& flag, int argc, char* argv[])
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::string(argv[i]) == flag)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -73,25 +150,21 @@ void signalHandler(int signal)
 class MaterialShowcase
 {
 public:
-    struct MaterialConfig
-    {
-        std::string name;
-        math::Color ambient;
-        math::Color diffuse;
-        math::Color specular;
-        math::Color emissive;
-        double shininess = 1.0;
-        double transparency = 0.0;
-        double metalness = 0.0;
-        double roughness = 0.5;
-        std::string description;
-    };
 
-    MaterialShowcase() : node_(std::make_shared<transport::Node>())
+    MaterialShowcase(bool enable_gui = true) : node_(std::make_shared<transport::Node>()), enable_gui_(enable_gui)
     {
-        gzmsg << "Material Showcase initialized\n";
-        gzmsg << "Demonstrating various material properties and PBR rendering\n\n";
-        
+        gzmsg << "Material Showcase initialized";
+        if (enable_gui_)
+        {
+            gzmsg << " (3D GUI Mode)\n";
+            gzmsg << "Demonstrating various material properties with interactive 3D visualization\n\n";
+        }
+        else
+        {
+            gzmsg << " (Headless Console Mode)\n";
+            gzmsg << "Demonstrating various material properties and PBR rendering\n\n";
+        }
+
         SetupMaterialConfigurations();
     }
 
@@ -101,37 +174,69 @@ public:
     void RunDemo()
     {
         gzmsg << "=== Material Showcase and PBR Rendering Demo ===\n\n";
-        
+
         // Create server with material showcase world
         ServerConfig config;
-        config.SetSdfString(CreateMaterialWorldSdf());
+
+        if (enable_gui_)
+        {
+            // Use visual SDF world for 3D content
+            std::string sdf_file = FindSdfFile("material_showcase_visual.sdf");
+            config.SetSdfFile(sdf_file);
+
+            gzmsg << "\n" << std::string(80, '=') << "\n";
+            gzmsg << "TUTORIAL: Hermetic 3D Visualization with SceneViewer\n";
+            gzmsg << std::string(80, '=') << "\n\n";
+            gzmsg << "Launching custom 3D visualization using gz-rendering + GLFW!\n";
+            gzmsg << "This bypasses the need for gz-gui while providing full 3D interaction.\n\n";
+        }
+        else
+        {
+            // Use headless inline world
+            config.SetSdfString(CreateMaterialWorldSdf());
+            gzmsg << "TUTORIAL: Running in headless console mode for automated/CI environments\n\n";
+        }
+
         config.SetUpdateRate(1000.0);  // High update rate for smooth material transitions
-        
+
         Server server(config);
-        
+
+        // NOTE: gz::sim::Server is headless by design - no GUI windows
+        // 3D visualization requires external tools or custom rendering integration
+
         gzmsg << "Starting material showcase simulation with signal handling...\n";
         gzmsg << "Demonstrating various material types:\n";
         PrintMaterialCategories();
-        
+
         // Run simulation with material cycling and signal handling
         const int simulation_steps = 15000;  // 15 seconds at 1000 Hz for demonstration
         int step_count = 0;
         int material_cycle = 0;
-        
+
         auto start_time = std::chrono::steady_clock::now();
-        
+
         while (step_count < simulation_steps && g_running)
         {
             server.RunOnce(false);
             step_count++;
-            
+
             // Change materials every 2 seconds (2000 steps at 1000 Hz)
             if (step_count % 2000 == 0)
             {
                 material_cycle = (material_cycle + 1) % material_configs_.size();
                 PrintCurrentMaterial(material_cycle);
+
+                // Material properties analysis (console output)
+                if (enable_gui_)
+                {
+                    const auto& current_material = material_configs_[material_cycle];
+                    gzmsg << "TUTORIAL: Current material properties:" << std::endl;
+                    gzmsg << "  Metalness: " << current_material.metalness << std::endl;
+                    gzmsg << "  Roughness: " << current_material.roughness << std::endl;
+                    gzmsg << "  Material type: " << current_material.description << std::endl;
+                }
             }
-            
+
             // Print enhanced periodic updates with tutorial style
             if (step_count % 2000 == 0)
             {
@@ -139,30 +244,41 @@ public:
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
                 double sim_time = step_count * 0.001;
                 double rtf = sim_time / (elapsed > 0 ? elapsed : 1);
-                
+
                 gzmsg << "TUTORIAL: Material Demo progress: " << (step_count * 100 / simulation_steps) << "% - ";
                 gzmsg << "Sim time: " << std::fixed << std::setprecision(1) << sim_time << "s ";
                 gzmsg << "(real: " << elapsed << "s) | RTF: " << std::fixed << std::setprecision(2) << rtf << "x\n";
                 gzmsg << "TUTORIAL: Currently showcasing: " << material_configs_[material_cycle].name << "\n\n";
             }
-            
+
             // Brief pause to prevent overwhelming the system and allow signal processing
             std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
-        
+
         // Check if shutdown was triggered by signal
         if (g_running == 0)
         {
             gzmsg << "\nTUTORIAL: ✓ Signal received during material showcase - stopping gracefully..." << std::endl;
             gzmsg << "TUTORIAL: Final simulation time: " << std::fixed << std::setprecision(1) << (step_count * 0.001) << " seconds" << std::endl;
         }
-        
+
+        // Generate material summary report
+        if (enable_gui_)
+        {
+            gzmsg << "\n=== MATERIAL ANALYSIS SUMMARY ===" << std::endl;
+            for (const auto& mat : material_configs_)
+            {
+                gzmsg << "Material: " << mat.name << " - " << mat.description << std::endl;
+            }
+        }
+
         PrintMaterialSummary();
     }
 
 private:
     std::shared_ptr<transport::Node> node_;
     std::vector<MaterialConfig> material_configs_;
+    bool enable_gui_;
 
     /**
      * Setup different material configurations for demonstration
@@ -173,13 +289,13 @@ private:
         material_configs_.push_back({
             "Matte Plastic",
             math::Color(0.2, 0.2, 0.2, 1.0),  // Dark ambient
-            math::Color(0.8, 0.2, 0.2, 1.0),  // Red diffuse  
+            math::Color(0.8, 0.2, 0.2, 1.0),  // Red diffuse
             math::Color(0.1, 0.1, 0.1, 1.0),  // Low specular
             math::Color(0.0, 0.0, 0.0, 1.0),  // No emission
             1.0, 0.0, 0.0, 0.9,                // Low metalness, high roughness
             "Non-reflective plastic with high roughness"
         });
-        
+
         material_configs_.push_back({
             "Shiny Metal",
             math::Color(0.3, 0.3, 0.3, 1.0),  // Medium ambient
@@ -189,7 +305,7 @@ private:
             50.0, 0.0, 0.9, 0.1,               // High metalness, low roughness
             "Polished metallic surface with strong reflections"
         });
-        
+
         material_configs_.push_back({
             "Rough Metal",
             math::Color(0.4, 0.3, 0.2, 1.0),  // Warm ambient
@@ -199,7 +315,7 @@ private:
             10.0, 0.0, 0.7, 0.8,               // Medium metalness, high roughness
             "Oxidized metal with rough, weathered appearance"
         });
-        
+
         material_configs_.push_back({
             "Glossy Paint",
             math::Color(0.1, 0.1, 0.3, 1.0),  // Dark blue ambient
@@ -209,7 +325,7 @@ private:
             30.0, 0.0, 0.1, 0.2,               // Low metalness, low roughness
             "Automotive-style glossy paint with clear coat"
         });
-        
+
         material_configs_.push_back({
             "Translucent Glass",
             math::Color(0.8, 0.9, 1.0, 0.3),  // Light blue tinted
@@ -219,7 +335,7 @@ private:
             100.0, 0.7, 0.0, 0.05,             // No metalness, very smooth
             "Glass-like material with transparency and refraction"
         });
-        
+
         material_configs_.push_back({
             "Emissive Glow",
             math::Color(0.2, 0.1, 0.4, 1.0),  // Purple ambient
@@ -229,7 +345,7 @@ private:
             1.0, 0.0, 0.0, 0.7,                // Non-metallic, medium roughness
             "Self-illuminating material simulating LED or neon"
         });
-        
+
         material_configs_.push_back({
             "Rubber Surface",
             math::Color(0.1, 0.1, 0.1, 1.0),  // Dark ambient
@@ -239,7 +355,7 @@ private:
             1.0, 0.0, 0.0, 0.95,               // Non-metallic, very rough
             "Matte rubber with high roughness and no reflections"
         });
-        
+
         material_configs_.push_back({
             "Ceramic Finish",
             math::Color(0.9, 0.9, 0.85, 1.0), // Off-white ambient
@@ -260,18 +376,18 @@ private:
 <?xml version="1.0" ?>
 <sdf version="1.10">
   <world name="material_showcase">
-    
+
     <!-- Physics -->
     <physics name="default" type="ode">
       <max_step_size>0.016667</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
-    
+
     <!-- Essential plugins -->
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
-    
+
     <!-- Enhanced lighting for material visualization -->
     <light name="key_light" type="directional">
       <pose>5 5 10 0 0 0</pose>
@@ -280,7 +396,7 @@ private:
       <diffuse>0.8 0.8 0.8 1</diffuse>
       <specular>0.6 0.6 0.6 1</specular>
     </light>
-    
+
     <light name="fill_light" type="directional">
       <pose>-5 5 8 0 0 0</pose>
       <cast_shadows>false</cast_shadows>
@@ -288,7 +404,7 @@ private:
       <diffuse>0.4 0.4 0.5 1</diffuse>
       <specular>0.2 0.2 0.2 1</specular>
     </light>
-    
+
     <light name="rim_light" type="directional">
       <pose>0 -8 6 0 0 0</pose>
       <cast_shadows>false</cast_shadows>
@@ -296,7 +412,7 @@ private:
       <diffuse>0.3 0.3 0.4 1</diffuse>
       <specular>0.4 0.4 0.4 1</specular>
     </light>
-    
+
     <!-- Ground plane with neutral material -->
     <model name="ground_plane">
       <static>true</static>
@@ -330,9 +446,9 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Material showcase objects arranged in a grid -->
-    
+
     <!-- Center sphere for main material display -->
     <model name="showcase_sphere">
       <pose>0 0 2 0 0 0</pose>
@@ -373,7 +489,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Comparison objects with different shapes -->
     <model name="cube_comparison">
       <pose>-3 0 1 0 0 0</pose>
@@ -406,7 +522,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <model name="cylinder_comparison">
       <pose>3 0 1 0 0 0</pose>
       <static>true</static>
@@ -440,7 +556,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
     <!-- Background objects for depth -->
     <model name="back_wall">
       <pose>0 -8 3 0 0 0</pose>
@@ -473,7 +589,7 @@ private:
         </visual>
       </link>
     </model>
-    
+
   </world>
 </sdf>
         )";
@@ -518,24 +634,24 @@ private:
     void PrintMaterialSummary()
     {
         gzmsg << "\n=== MATERIAL SHOWCASE SUMMARY ===\n\n";
-        
+
         gzmsg << "Key Material Properties Demonstrated:\n";
         gzmsg << "------------------------------------\n";
         gzmsg << "Ambient Color: Base color in shadowed areas\n";
         gzmsg << "Diffuse Color: Main surface color under direct lighting\n";
         gzmsg << "Specular Color: Color and intensity of reflective highlights\n";
         gzmsg << "Emissive Color: Self-illumination for glowing effects\n\n";
-        
+
         gzmsg << "PBR (Physically Based Rendering) Parameters:\n";
         gzmsg << "--------------------------------------------\n";
         gzmsg << "Metalness (0-1): Controls whether surface behaves like metal or dielectric\n";
         gzmsg << "  • 0.0 = Non-metal (plastic, wood, ceramic)\n";
         gzmsg << "  • 1.0 = Pure metal (steel, gold, aluminum)\n\n";
-        
+
         gzmsg << "Roughness (0-1): Surface microsurface detail affecting reflections\n";
         gzmsg << "  • 0.0 = Perfect mirror (polished metal, glass)\n";
         gzmsg << "  • 1.0 = Completely rough (rubber, unfinished wood)\n\n";
-        
+
         gzmsg << "Material Selection Guidelines:\n";
         gzmsg << "-----------------------------\n";
         gzmsg << "Realistic Materials:\n";
@@ -543,14 +659,14 @@ private:
         gzmsg << "• Plastics: Low metalness (0.0-0.1), medium to high roughness\n";
         gzmsg << "• Glass: Low metalness, very low roughness, high transparency\n";
         gzmsg << "• Rubber: Low metalness, very high roughness\n\n";
-        
+
         gzmsg << "Performance Considerations:\n";
         gzmsg << "-------------------------\n";
         gzmsg << "• Complex materials increase rendering cost\n";
         gzmsg << "• Transparency requires additional rendering passes\n";
         gzmsg << "• Emissive materials can affect lighting performance\n";
         gzmsg << "• Use texture maps for detail instead of complex geometry\n\n";
-        
+
         gzmsg << "=== MATERIAL SHOWCASE COMPLETE ===\n";
     }
 };
@@ -558,31 +674,47 @@ private:
 class TutorialMaterialShowcase
 {
 public:
-    TutorialMaterialShowcase() {}
+    TutorialMaterialShowcase(int argc, char* argv[]) : enable_gui_(!HasFlag("--headless", argc, argv)) {}
 
     int Run()
     {
         std::cout << "\n" << std::string(70, '=') << std::endl;
         std::cout << "    GAZEBO TUTORIAL: Material Showcase and PBR Rendering Demo" << std::endl;
+        if (enable_gui_)
+        {
+            std::cout << "                         [3D Interactive Mode]" << std::endl;
+        }
+        else
+        {
+            std::cout << "                         [Headless Console Mode]" << std::endl;
+        }
         std::cout << std::string(70, '=') << std::endl;
-        
+
         gzmsg << "TUTORIAL: Setting up hermetic material rendering environment..." << std::endl;
         gzmsg << "TUTORIAL: This demo uses static plugin approach for reliable rendering testing" << std::endl;
+        if (enable_gui_)
+        {
+            gzmsg << "TUTORIAL: GUI mode enabled - launching interactive 3D visualization" << std::endl;
+        }
+        else
+        {
+            gzmsg << "TUTORIAL: Headless mode enabled - console output only (use for CI/automated testing)" << std::endl;
+        }
 
         // === STAGE 1: Environment Configuration ===
         std::cout << "\n--- STAGE 1: Environment Configuration ---" << std::endl;
-        
+
         // Set console verbosity and disable config file loading
         gz::common::Console::SetVerbosity(4);
         gzmsg << "TUTORIAL: Console verbosity set to level 4 for detailed material analysis output" << std::endl;
-        
+
         setenv("GZ_SIM_SERVER_CONFIG_PATH", "", 1);
         setenv("GZ_CONFIG_PATH", "", 1);
         gzmsg << "TUTORIAL: Disabled system config files for consistent material rendering testing" << std::endl;
 
         // === STAGE 2: Material and Lighting Setup ===
         std::cout << "\n--- STAGE 2: Material and Lighting Setup ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: Material showcase configured for comprehensive PBR testing:" << std::endl;
         gzmsg << "TUTORIAL:   - 8 material types (metals, dielectrics, glass, emissive, ceramics)" << std::endl;
         gzmsg << "TUTORIAL:   - 3-point lighting system (key, fill, rim) for optimal material visualization" << std::endl;
@@ -592,7 +724,7 @@ public:
 
         // === STAGE 3: Rendering Analysis Configuration ===
         std::cout << "\n--- STAGE 3: Rendering Analysis Configuration ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: Initializing material showcase with rendering performance monitoring..." << std::endl;
         gzmsg << "TUTORIAL: Static plugins (Physics, UserCommands, SceneBroadcaster) are active" << std::endl;
         gzmsg << "TUTORIAL: High-frequency updates ensure smooth material transitions" << std::endl;
@@ -600,13 +732,13 @@ public:
 
         // === STAGE 4: Material Rendering Execution ===
         std::cout << "\n--- STAGE 4: Material Rendering Execution ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: Starting comprehensive material showcase demonstration..." << std::endl;
         gzmsg << "TUTORIAL: Press Ctrl+C to stop the material analysis at any time" << std::endl;
-        
+
         try
         {
-            MaterialShowcase showcase;
+            MaterialShowcase showcase(enable_gui_);
             showcase.RunDemo();
         }
         catch (const std::exception& e)
@@ -617,16 +749,16 @@ public:
 
         // === STAGE 5: Results Analysis and Educational Conclusions ===
         std::cout << "\n--- STAGE 5: Results Analysis and Educational Conclusions ---" << std::endl;
-        
+
         gzmsg << "TUTORIAL: ✓ Material showcase demonstration completed successfully!" << std::endl;
-        
+
         gzmsg << "\nTUTORIAL: Key Learning Points:" << std::endl;
         gzmsg << "TUTORIAL: - PBR materials use metalness and roughness for physically accurate rendering" << std::endl;
         gzmsg << "TUTORIAL: - Metalness controls material conductivity: 0.0 (dielectric) to 1.0 (conductor)" << std::endl;
         gzmsg << "TUTORIAL: - Roughness affects surface microsurface detail and reflection sharpness" << std::endl;
         gzmsg << "TUTORIAL: - Proper lighting setup is essential for material property visualization" << std::endl;
         gzmsg << "TUTORIAL: - Different material types require specific parameter combinations" << std::endl;
-        
+
         gzmsg << "\nTUTORIAL: Material Design Best Practices:" << std::endl;
         gzmsg << "TUTORIAL: - Use reference values: metals (metalness 0.8-1.0), plastics (metalness 0.0-0.1)" << std::endl;
         gzmsg << "TUTORIAL: - Balance roughness with intended surface finish and lighting conditions" << std::endl;
@@ -634,13 +766,16 @@ public:
         gzmsg << "TUTORIAL: - Test materials under different lighting conditions for consistency" << std::endl;
         gzmsg << "TUTORIAL: - Use emissive materials sparingly to avoid lighting performance issues" << std::endl;
         gzmsg << "TUTORIAL: - Validate material appearance across different viewing angles and distances" << std::endl;
-        
+
         std::cout << "\n" << std::string(70, '=') << std::endl;
         std::cout << "   TUTORIAL COMPLETED - Material Rendering Analysis Success!" << std::endl;
         std::cout << std::string(70, '=') << std::endl;
-        
+
         return 0;
     }
+
+private:
+    bool enable_gui_;
 };
 
 /**
@@ -654,7 +789,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        TutorialMaterialShowcase tutorial;
+        TutorialMaterialShowcase tutorial(argc, argv);
         return tutorial.Run();
     }
     catch (const std::exception &e)
@@ -671,36 +806,36 @@ int main(int argc, char* argv[])
 
 /*
  * Key Concepts Demonstrated:
- * 
+ *
  * 1. **Physically Based Rendering (PBR) Materials**: How to systematically design and configure
  *    PBR materials using metalness and roughness parameters for photorealistic rendering results.
- * 
+ *
  * 2. **Hermetic Static Plugins**: Understanding why we use static linking for reliable,
  *    reproducible material rendering testing across different environments and graphics hardware.
- * 
+ *
  * 3. **Material Parameter Relationships**: Comprehensive analysis of how metalness, roughness,
  *    albedo, and transparency interact to create different material appearances and behaviors.
- * 
+ *
  * 4. **Signal Handling**: Proper application lifecycle management with graceful shutdown
  *    during long-running material showcases and rendering performance analysis procedures.
- * 
+ *
  * 5. **Educational Progression**: Step-by-step tutorial structure that teaches material
  *    design principles and optimization strategies for production rendering workflows.
- * 
+ *
  * 6. **Lighting Setup Optimization**: Real-time analysis of how different lighting configurations
  *    affect material appearance and the importance of proper lighting for material visualization.
- * 
+ *
  * Usage Examples:
  * - ./material_showcase                           # Run complete material showcase demo
  * - timeout 60s ./material_showcase               # Run with 60-second timeout
  * - ./material_showcase 2>&1 | grep "TUTORIAL"   # Extract only tutorial messages
- * 
+ *
  * Next Steps:
  * - Experiment with different metalness and roughness combinations for specific materials
  * - Analyze how lighting conditions affect material appearance and parameter requirements
  * - Integrate material design insights into production asset creation workflows
  * - Use material showcase results for rendering performance optimization in complex scenes
- * 
+ *
  * Educational Notes:
  * - Static plugin messages are expected and demonstrate hermetic build reliability
  * - Material appearance depends on lighting conditions, viewing angle, and parameter values
