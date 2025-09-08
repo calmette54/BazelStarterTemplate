@@ -34,7 +34,6 @@ cc_binary(
     name = "lidar_demo",
     srcs = ["lidar_demo.cc"],
     deps = [
-        "@gz-sim//:gz-sim",
         "@gz-sensors//:gz-sensors",
         "@gz-common//:gz-common",
         "@gz-msgs//:gz-msgs",
