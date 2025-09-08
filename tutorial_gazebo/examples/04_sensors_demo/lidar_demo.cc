@@ -31,6 +31,8 @@
 
 #include <Eigen/Dense>
 
+#include <functional>
+
 #include <gz/math/Vector3.hh>
 #include <gz/math/Angle.hh>
 #include <gz/math/Pose3.hh>
@@ -365,7 +367,7 @@ private:
 
     // Movement control variables
     gz::math::Pose3d current_pose_;
-    const double movement_step_ = 0.1;  // meters per key press
+    const double movement_step_ = 0.3;  // meters per key press
     const double rotation_step_ = 0.087;  // ~5 degrees in radians
 
     // LiDAR data storage
@@ -1177,7 +1179,7 @@ private:
     }
 
     /**
-     * Update the platform pose in the simulation
+     * Update the platform pose in the simulation (async)
      */
     void UpdatePlatformPose()
     {
@@ -1198,19 +1200,21 @@ private:
         pose_msg.mutable_orientation()->set_z(current_pose_.Rot().Z());
         pose_msg.mutable_orientation()->set_w(current_pose_.Rot().W());
 
-        // Use the standard Gazebo pose service
-        msgs::Boolean result;
-        bool success = false;
-        unsigned int timeout = 1000; // 1 second
-
+        // Use asynchronous service call for non-blocking movement
         std::string service_name = "/world/lidar_demo/set_pose";
-        bool executed = node_->Request(service_name, pose_msg, timeout, result, success);
 
-        if (!executed || !success || !result.data()) {
-            gzdbg << "Pose service failed - movement may not be visible\n";
-        } else {
-            gzmsg << "Platform moved to: " << current_pose_.Pos() << "\n";
-        }
+        // Asynchronous callback for service response
+        std::function<void(const msgs::Boolean &, bool)> callback =
+            [this](const msgs::Boolean &response, bool result) {
+                if (result && response.data()) {
+                    gzmsg << "Platform moved to: " << current_pose_.Pos() << "\n";
+                } else {
+                    gzdbg << "Pose service failed - movement may not be visible\n";
+                }
+            };
+
+        // Make non-blocking service call
+        node_->Request(service_name, pose_msg, callback);
     }
 };
 
