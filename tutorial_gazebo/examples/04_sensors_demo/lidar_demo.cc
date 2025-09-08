@@ -38,6 +38,7 @@
 #include <mutex>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -207,6 +208,22 @@ struct PointCloudData
     Eigen::MatrixXd points_matrix;  // Points stored as N×3 matrix (X, Y, Z)
     int total_points = 0;
     int valid_points = 0;
+
+    // Step 5: Enhanced analysis data
+    struct Statistics {
+        Eigen::Vector3d centroid{0, 0, 0};
+        Eigen::Vector3d min_bounds{0, 0, 0};
+        Eigen::Vector3d max_bounds{0, 0, 0};
+        double min_range = 0.0;
+        double max_range = 0.0;
+        double avg_range = 0.0;
+        double min_intensity = 0.0;
+        double max_intensity = 0.0;
+        double avg_intensity = 0.0;
+        int points_within_2m = 0;
+        int points_within_5m = 0;
+        int points_beyond_10m = 0;
+    } stats;
 };
 
 /**
@@ -626,6 +643,52 @@ private:
             cloud_3d_.valid_points = 0;  // Mark as failed
         }
 
+        // Step 5: Perform enhanced point cloud analysis
+        if (cloud_3d_.valid_points > 0)
+        {
+            // Temporarily release mutex to perform analysis
+            data_mutex_->unlock();
+            AnalyzePointClouds();
+            data_mutex_->lock();
+
+            // Print detailed analysis for first few scans
+            if (scans_received_3d_ < 3)
+            {
+                gzmsg << "=== Step 5: Enhanced Point Cloud Analysis ===\n";
+                gzmsg << "Centroid (mean): [" << std::fixed << std::setprecision(3)
+                      << cloud_3d_.stats.centroid.x() << ", "
+                      << cloud_3d_.stats.centroid.y() << ", "
+                      << cloud_3d_.stats.centroid.z() << "]\n";
+
+                gzmsg << "Bounding box:\n";
+                gzmsg << "  Min: [" << cloud_3d_.stats.min_bounds.x() << ", "
+                      << cloud_3d_.stats.min_bounds.y() << ", "
+                      << cloud_3d_.stats.min_bounds.z() << "]\n";
+                gzmsg << "  Max: [" << cloud_3d_.stats.max_bounds.x() << ", "
+                      << cloud_3d_.stats.max_bounds.y() << ", "
+                      << cloud_3d_.stats.max_bounds.z() << "]\n";
+
+                gzmsg << "Range statistics:\n";
+                gzmsg << "  Min: " << cloud_3d_.stats.min_range << "m\n";
+                gzmsg << "  Max: " << cloud_3d_.stats.max_range << "m\n";
+                gzmsg << "  Avg: " << cloud_3d_.stats.avg_range << "m\n";
+
+                gzmsg << "Intensity statistics:\n";
+                gzmsg << "  Min: " << cloud_3d_.stats.min_intensity << "\n";
+                gzmsg << "  Max: " << cloud_3d_.stats.max_intensity << "\n";
+                gzmsg << "  Avg: " << std::setprecision(2) << cloud_3d_.stats.avg_intensity << "\n";
+
+                gzmsg << "Range-based filtering:\n";
+                gzmsg << "  Points ≤ 2m: " << cloud_3d_.stats.points_within_2m << " ("
+                      << std::setprecision(1) << (100.0 * cloud_3d_.stats.points_within_2m / cloud_3d_.valid_points) << "%)\n";
+                gzmsg << "  Points ≤ 5m: " << cloud_3d_.stats.points_within_5m << " ("
+                      << (100.0 * cloud_3d_.stats.points_within_5m / cloud_3d_.valid_points) << "%)\n";
+                gzmsg << "  Points > 10m: " << cloud_3d_.stats.points_beyond_10m << " ("
+                      << (100.0 * cloud_3d_.stats.points_beyond_10m / cloud_3d_.valid_points) << "%)\n";
+                gzmsg << "===============================================\n\n";
+            }
+        }
+
         scans_received_3d_++;
 
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -700,18 +763,62 @@ private:
     }
 
     /**
-     * Analyze point cloud characteristics
+     * Step 5: Comprehensive point cloud analysis with statistics and filtering
      */
     void AnalyzePointClouds()
     {
         std::lock_guard<std::mutex> lock(*data_mutex_);
 
-        // Analysis would include:
-        // - Point density calculation
-        // - Range distribution analysis
-        // - Intensity histogram generation
-        // - Noise characterization
-        // - Data quality assessment
+        if (cloud_3d_.points.empty() || cloud_3d_.points_matrix.rows() == 0)
+            return;
+
+        // Reset statistics
+        cloud_3d_.stats = PointCloudData::Statistics{};
+
+        // Calculate centroid using Eigen matrix operations
+        cloud_3d_.stats.centroid = cloud_3d_.points_matrix.colwise().mean();
+
+        // Calculate bounding box
+        cloud_3d_.stats.min_bounds = cloud_3d_.points_matrix.colwise().minCoeff();
+        cloud_3d_.stats.max_bounds = cloud_3d_.points_matrix.colwise().maxCoeff();
+
+        // Range and intensity statistics
+        double total_range = 0.0;
+        double total_intensity = 0.0;
+        cloud_3d_.stats.min_range = std::numeric_limits<double>::max();
+        cloud_3d_.stats.max_range = 0.0;
+        cloud_3d_.stats.min_intensity = std::numeric_limits<double>::max();
+        cloud_3d_.stats.max_intensity = 0.0;
+
+        // Range-based filtering counters
+        cloud_3d_.stats.points_within_2m = 0;
+        cloud_3d_.stats.points_within_5m = 0;
+        cloud_3d_.stats.points_beyond_10m = 0;
+
+        for (const auto& point : cloud_3d_.points)
+        {
+            // Range statistics
+            total_range += point.range;
+            cloud_3d_.stats.min_range = std::min(cloud_3d_.stats.min_range, point.range);
+            cloud_3d_.stats.max_range = std::max(cloud_3d_.stats.max_range, point.range);
+
+            // Intensity statistics
+            total_intensity += point.intensity;
+            cloud_3d_.stats.min_intensity = std::min(cloud_3d_.stats.min_intensity, point.intensity);
+            cloud_3d_.stats.max_intensity = std::max(cloud_3d_.stats.max_intensity, point.intensity);
+
+            // Range-based filtering
+            if (point.range <= 2.0) cloud_3d_.stats.points_within_2m++;
+            if (point.range <= 5.0) cloud_3d_.stats.points_within_5m++;
+            if (point.range > 10.0) cloud_3d_.stats.points_beyond_10m++;
+        }
+
+        // Calculate averages
+        if (cloud_3d_.valid_points > 0)
+        {
+            cloud_3d_.stats.avg_range = total_range / cloud_3d_.valid_points;
+            cloud_3d_.stats.avg_intensity = total_intensity / cloud_3d_.valid_points;
+        }
     }
 
     /**
@@ -792,6 +899,19 @@ private:
                     gzmsg << "  Range: " << std::fixed << std::setprecision(2)
                           << *minmax_range.first << " - " << *minmax_range.second << " m\n";
                 }
+            }
+
+            // Step 5: Enhanced 3D point cloud analysis
+            if (cloud_3d_.valid_points > 0)
+            {
+                gzmsg << "\nLatest 3D Point Cloud Analysis:\n";
+                gzmsg << "  Valid points: " << cloud_3d_.valid_points << "/" << cloud_3d_.total_points << "\n";
+                gzmsg << "  Avg range: " << std::fixed << std::setprecision(2) << cloud_3d_.stats.avg_range << "m\n";
+                gzmsg << "  Avg intensity: " << std::setprecision(1) << cloud_3d_.stats.avg_intensity << "\n";
+                gzmsg << "  Close points (≤2m): " << cloud_3d_.stats.points_within_2m << " ("
+                      << std::setprecision(1) << (100.0 * cloud_3d_.stats.points_within_2m / cloud_3d_.valid_points) << "%)\n";
+                gzmsg << "  Distant points (>10m): " << cloud_3d_.stats.points_beyond_10m << " ("
+                      << (100.0 * cloud_3d_.stats.points_beyond_10m / cloud_3d_.valid_points) << "%)\n";
             }
 
             // Performance metrics
