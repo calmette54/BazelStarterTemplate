@@ -295,12 +295,20 @@ public:
         gzmsg << "GUI USAGE INSTRUCTIONS:\n";
         gzmsg << "=======================\n";
         gzmsg << "✓ 3D Gazebo window should be visible with the LiDAR demo world\n";
-        gzmsg << "✓ LiDAR point clouds are visualized as colored rays in real-time:\n";
-        gzmsg << "  - Red cylinder: 2D LiDAR (270° horizontal scan, 10Hz)\n";
-        gzmsg << "  - Blue cylinder: 3D LiDAR (360°x60° volumetric scan, 5Hz)\n";
-        gzmsg << "  - Green box: Multi-beam LiDAR (180° with 4 beams, 20Hz)\n";
+        gzmsg << "✓ IMPORTANT: Press the PLAY button ▶️  to start simulation!\n";
+        gzmsg << "✓ If main view is grey, try the following:\n";
+        gzmsg << "  1. Right-click in the 3D View area → Reset camera\n";
+        gzmsg << "  2. Use mouse wheel to zoom out and see the world\n";
+        gzmsg << "  3. Check Entity Tree panel → Expand lidar_demo → lidar_platform\n";
+        gzmsg << "✓ LiDAR point clouds should appear as colored rays/points:\n";
+        gzmsg << "  - Red cylinder: 2D LiDAR (270° horizontal scan)\n";
+        gzmsg << "  - Blue cylinder: 3D LiDAR (360°x32° volumetric scan)\n";
+        gzmsg << "  - Green box: Multi-beam LiDAR (180° with 4 beams)\n";
+        gzmsg << "✓ To enable point cloud visualization:\n";
+        gzmsg << "  1. Open Point Cloud panel (should be visible on right)\n";
+        gzmsg << "  2. Select point cloud topic: /world/lidar_demo/model/.../scan/points\n";
+        gzmsg << "  3. Adjust point size if needed (try 2-5 pixels)\n";
         gzmsg << "✓ Use mouse to rotate, zoom, and navigate the 3D view\n";
-        gzmsg << "✓ LiDAR beams will scan obstacles (walls, cylinder, sphere) continuously\n";
         gzmsg << "✓ Analysis results are printed every 15 seconds below\n";
         gzmsg << "✓ Press Ctrl+C to stop both GUI and analysis\n\n";
 
