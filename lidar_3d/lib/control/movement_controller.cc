@@ -24,9 +24,15 @@ bool MovementController::Initialize(const std::string& world_name,
     // Build the pose service topic
     pose_topic_ = "/world/" + world_name_ + "/set_pose";
 
+    // Initialize enhanced pose system
+    current_pose_ = gz::math::Pose3d(0, 0, 1, 0, 0, 0);  // Starting position
+    pending_pose_ = current_pose_;
+    last_pose_update_ = std::chrono::steady_clock::now();
+
     std::cout << "Initialized movement controller for model: " << model_name_
               << " in world: " << world_name_ << std::endl;
     std::cout << "Pose service topic: " << pose_topic_ << std::endl;
+    std::cout << "Enhanced controls: WASD=move, QE=strafe, RF=up/down, arrows=pitch/yaw" << std::endl;
 
     return true;
 }
@@ -54,39 +60,70 @@ void MovementController::StopKeyboardControl() {
 }
 
 void MovementController::Move(Direction direction) {
+    auto pos = pending_pose_.Pos();
+    auto rot = pending_pose_.Rot();
+    
     switch (direction) {
-        case Direction::FORWARD:
-            current_pose_.Pos().X() += linear_step_;
+        case Direction::FORWARD: {
+            // Orientation-aware forward movement
+            gz::math::Vector3d forward = rot.RotateVector(gz::math::Vector3d(linear_step_, 0, 0));
+            pending_pose_.Set(pos + forward, rot);
             break;
-        case Direction::BACKWARD:
-            current_pose_.Pos().X() -= linear_step_;
+        }
+        case Direction::BACKWARD: {
+            // Orientation-aware backward movement
+            gz::math::Vector3d backward = rot.RotateVector(gz::math::Vector3d(-linear_step_, 0, 0));
+            pending_pose_.Set(pos + backward, rot);
             break;
-        case Direction::LEFT:
-            current_pose_.Pos().Y() += linear_step_;
+        }
+        case Direction::LEFT: {
+            // Orientation-aware left movement
+            gz::math::Vector3d left = rot.RotateVector(gz::math::Vector3d(0, linear_step_, 0));
+            pending_pose_.Set(pos + left, rot);
             break;
-        case Direction::RIGHT:
-            current_pose_.Pos().Y() -= linear_step_;
+        }
+        case Direction::RIGHT: {
+            // Orientation-aware right movement
+            gz::math::Vector3d right = rot.RotateVector(gz::math::Vector3d(0, -linear_step_, 0));
+            pending_pose_.Set(pos + right, rot);
             break;
+        }
         case Direction::UP:
-            current_pose_.Pos().Z() += linear_step_;
+            // World-space up movement
+            pending_pose_.Set(pos + gz::math::Vector3d(0, 0, linear_step_), rot);
             break;
         case Direction::DOWN:
-            current_pose_.Pos().Z() -= linear_step_;
+            // World-space down movement
+            pending_pose_.Set(pos + gz::math::Vector3d(0, 0, -linear_step_), rot);
             break;
         case Direction::TURN_LEFT: {
-            gz::math::Quaterniond rotation;
-            rotation.SetFromAxisAngle(gz::math::Vector3d(0, 0, 1), angular_step_);
-            current_pose_.Rot() = rotation * current_pose_.Rot();
+            // Yaw rotation (Z-axis)
+            gz::math::Quaterniond yaw_rotation(gz::math::Vector3d(0, 0, angular_step_));
+            pending_pose_.Set(pos, rot * yaw_rotation);
             break;
         }
         case Direction::TURN_RIGHT: {
-            gz::math::Quaterniond rotation;
-            rotation.SetFromAxisAngle(gz::math::Vector3d(0, 0, 1), -angular_step_);
-            current_pose_.Rot() = rotation * current_pose_.Rot();
+            // Yaw rotation (Z-axis)
+            gz::math::Quaterniond yaw_rotation(gz::math::Vector3d(0, 0, -angular_step_));
+            pending_pose_.Set(pos, rot * yaw_rotation);
+            break;
+        }
+        case Direction::PITCH_UP: {
+            // Pitch rotation (X-axis)
+            gz::math::Quaterniond pitch_rotation(gz::math::Vector3d(angular_step_, 0, 0));
+            pending_pose_.Set(pos, rot * pitch_rotation);
+            break;
+        }
+        case Direction::PITCH_DOWN: {
+            // Pitch rotation (X-axis)
+            gz::math::Quaterniond pitch_rotation(gz::math::Vector3d(-angular_step_, 0, 0));
+            pending_pose_.Set(pos, rot * pitch_rotation);
             break;
         }
     }
-    UpdatePose();
+    
+    // Mark pose as dirty for batched update
+    pose_dirty_.store(true);
 }
 
 void MovementController::OnKeyPress(const gz::msgs::Int32& key) {
@@ -122,13 +159,41 @@ void MovementController::OnKeyPress(const gz::msgs::Int32& key) {
         case 102: case 70:  // 'f'/'F' - Move down
             Move(Direction::DOWN);
             break;
+        case 16777235:  // Up Arrow - Pitch up
+            Move(Direction::PITCH_UP);
+            break;
+        case 16777237:  // Down Arrow - Pitch down
+            Move(Direction::PITCH_DOWN);
+            break;
+        case 16777234:  // Left Arrow - Yaw left (same as A)
+            Move(Direction::TURN_LEFT);
+            break;
+        case 16777236:  // Right Arrow - Yaw right (same as D)
+            Move(Direction::TURN_RIGHT);
+            break;
         default:
             // Ignore other keys
             break;
     }
 }
 
-void MovementController::UpdatePose() {
+void MovementController::UpdatePlatformPose() {
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_pose_update_);
+
+    // Check if it's time for a pose update AND we have pending changes
+    if (elapsed >= pose_update_interval_ && pose_dirty_.load()) {
+        // Update current pose with batched changes
+        current_pose_ = pending_pose_;
+        pose_dirty_.store(false);
+        last_pose_update_ = now;
+
+        // Send pose update to Gazebo
+        SendPoseUpdate();
+    }
+}
+
+void MovementController::SendPoseUpdate() {
     // Create pose message
     gz::msgs::Pose pose_msg;
     pose_msg.set_name(model_name_);
@@ -146,14 +211,25 @@ void MovementController::UpdatePose() {
     rot->set_z(current_pose_.Rot().Z());
     rot->set_w(current_pose_.Rot().W());
 
-    // Publish pose update using synchronous request
-    gz::msgs::Boolean response;
-    bool result = false;
-    bool executed = node_->Request(pose_topic_, pose_msg, 1000, response, result);
+    // Use asynchronous service call for non-blocking movement
+    std::function<void(const gz::msgs::Boolean &, bool)> callback =
+        [this](const gz::msgs::Boolean &response, bool result) {
+            if (result && response.data()) {
+                // Success - could add debug logging here
+            } else {
+                std::cerr << "Pose service failed for model: " << model_name_ << std::endl;
+            }
+        };
 
-    if (!executed || !result) {
-        std::cerr << "Failed to update pose for model: " << model_name_ << std::endl;
-    }
+    // Make non-blocking service call
+    node_->Request(pose_topic_, pose_msg, callback);
+}
+
+// Legacy method for compatibility - now just delegates to new system
+void MovementController::UpdatePose() {
+    // Force immediate update by setting pose_dirty and calling UpdatePlatformPose
+    pose_dirty_.store(true);
+    UpdatePlatformPose();
 }
 
 } // namespace lidar3d

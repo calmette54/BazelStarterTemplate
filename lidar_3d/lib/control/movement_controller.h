@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <atomic>
+#include <chrono>
 #include <gz/math/Pose3.hh>
 #include <gz/transport/Node.hh>
 #include <gz/msgs/int32.pb.h>
@@ -19,7 +20,9 @@ public:
         UP,
         DOWN,
         TURN_LEFT,
-        TURN_RIGHT
+        TURN_RIGHT,
+        PITCH_UP,
+        PITCH_DOWN
     };
 
     MovementController();
@@ -41,9 +44,13 @@ public:
     void StopKeyboardControl();
     bool IsListening() const { return listening_; }
 
+    // Batched pose update system (call from main loop)
+    void UpdatePlatformPose();
+
 private:
     void OnKeyPress(const gz::msgs::Int32& key);
     void UpdatePose();
+    void SendPoseUpdate();
 
     std::unique_ptr<gz::transport::Node> node_;
 
@@ -51,9 +58,18 @@ private:
     std::string model_name_;
     std::string pose_topic_;
 
+    // Enhanced pose system with batching
     gz::math::Pose3d current_pose_;
-    double linear_step_ = 0.5;   // meters
-    double angular_step_ = 0.1;  // radians
+    gz::math::Pose3d pending_pose_;  // Batched pose updates
+    std::atomic<bool> pose_dirty_{false};  // Flag for pending updates
+    
+    // Movement parameters
+    double linear_step_ = 0.3;   // meters per key press
+    double angular_step_ = 0.087;  // ~5 degrees in radians
+
+    // Timer for batched pose updates (30Hz)
+    std::chrono::steady_clock::time_point last_pose_update_;
+    const std::chrono::milliseconds pose_update_interval_{33};  // ~30Hz
 
     std::atomic<bool> listening_{false};
 };

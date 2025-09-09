@@ -56,10 +56,12 @@ public:
         std::cout << "\n=== 3D LiDAR Demo ===" << std::endl;
         std::cout << "======================" << std::endl;
         std::cout << "\nKeyboard controls:" << std::endl;
-        std::cout << "  W/S: Forward/Backward" << std::endl;
-        std::cout << "  A/D: Turn Left/Right" << std::endl;
-        std::cout << "  Q/E: Move Left/Right" << std::endl;
-        std::cout << "  R/F: Move Up/Down" << std::endl;
+        std::cout << "  W/S: Forward/Backward (orientation-aware)" << std::endl;
+        std::cout << "  A/D: Turn Left/Right (yaw rotation)" << std::endl;
+        std::cout << "  Q/E: Strafe Left/Right (orientation-aware)" << std::endl;
+        std::cout << "  R/F: Move Up/Down (world space)" << std::endl;
+        std::cout << "  ↑/↓: Pitch Up/Down" << std::endl;
+        std::cout << "  ←/→: Yaw Left/Right (same as A/D)" << std::endl;
         std::cout << "  Ctrl+C: Exit\n" << std::endl;
 
         std::cout << "GUI Instructions:" << std::endl;
@@ -74,6 +76,9 @@ public:
         // Main loop
         auto last_report = std::chrono::steady_clock::now();
         while (g_running) {
+            // Check for batched pose updates (30Hz timer)
+            movement_.UpdatePlatformPose();
+
             auto now = std::chrono::steady_clock::now();
             if (std::chrono::duration_cast<std::chrono::seconds>(
                     now - last_report).count() >= 5) {
