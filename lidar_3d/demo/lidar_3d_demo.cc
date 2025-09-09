@@ -36,8 +36,9 @@ public:
             return false;
         }
 
-        // Initialize sensor
-        if (!sensor_.Initialize("/world/lidar_world/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan")) {
+        // Initialize sensor with callback
+        if (!sensor_.Initialize("/world/lidar_world/model/lidar_platform/link/lidar_3d_link/sensor/lidar_3d/scan",
+                               [this](const PointCloud& cloud) { ProcessPointCloud(cloud); })) {
             std::cerr << "Failed to initialize sensor" << std::endl;
             return false;
         }
@@ -47,11 +48,6 @@ public:
             std::cerr << "Failed to initialize movement" << std::endl;
             return false;
         }
-
-        // Set up sensor callback
-        sensor_.SetCallback([this](const PointCloud& cloud) {
-            ProcessPointCloud(cloud);
-        });
 
         return true;
     }
@@ -73,7 +69,6 @@ public:
         std::cout << "- Analysis results are printed every 5 seconds\n" << std::endl;
 
         // Start systems
-        sensor_.Start();
         movement_.StartKeyboardControl();
 
         // Main loop
@@ -91,7 +86,7 @@ public:
 
         // Cleanup
         movement_.StopKeyboardControl();
-        sensor_.Stop();
+        sensor_.Shutdown();
         launcher_.Shutdown();
     }
 

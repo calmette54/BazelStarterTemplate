@@ -10,11 +10,10 @@ PointCloud::PointCloud(size_t reserve_size) {
     Reserve(reserve_size);
 }
 
-void PointCloud::ParseFromGazeboMsg(const gz::msgs::PointCloudPacked& msg,
-                                   const std::string& field_name) {
-    timestamp_ = Clock::now();
+void PointCloud::ParseFromGazeboMsg(const gz::msgs::PointCloudPacked& msg) {
+    timestamp_ = std::chrono::steady_clock::now();
 
-    // Find the XYZ field in the point cloud
+    // Parse the XYZ field from the point cloud
     ParseXYZField(msg);
 }
 
@@ -81,41 +80,13 @@ void PointCloud::Clear() {
 }
 
 void PointCloud::Reserve(size_t size) {
-    // Eigen doesn't have reserve, but we can pre-allocate
-    if (size > points_.rows()) {
-        points_.conservativeResize(size, 3);
-        points_.bottomRows(size - points_.rows()).setZero();
+    // Pre-allocate space if needed
+    if (size > static_cast<size_t>(points_.rows())) {
+        points_.resize(size, 3);
+        points_.setZero(); // Initialize to zero
     }
 }
 
-void PointCloud::Transform(const Eigen::Matrix4f& transform) {
-    if (Empty()) {
-        return;
-    }
-
-    // Convert to homogeneous coordinates for transformation
-    Eigen::Matrix<float, Eigen::Dynamic, 4> homogeneous_points(points_.rows(), 4);
-    homogeneous_points.leftCols<3>() = points_;
-    homogeneous_points.col(3).setOnes();
-
-    // Apply transformation
-    Eigen::Matrix<float, Eigen::Dynamic, 4> transformed =
-        (transform * homogeneous_points.transpose()).transpose();
-
-    // Extract transformed 3D points
-    points_ = transformed.leftCols<3>();
-}
-
-void PointCloud::AddPoint(float x, float y, float z) {
-    // Resize matrix to accommodate new point
-    size_t current_rows = points_.rows();
-    points_.conservativeResize(current_rows + 1, 3);
-
-    // Add the new point
-    points_(current_rows, 0) = x;
-    points_(current_rows, 1) = y;
-    points_(current_rows, 2) = z;
-}
 
 Eigen::Vector3f PointCloud::ComputeCentroid() const {
     if (Empty()) {

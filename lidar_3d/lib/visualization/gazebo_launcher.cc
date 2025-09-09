@@ -3,21 +3,11 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <signal.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <cstdlib>
 #include <vector>
+#include <gz/transport/Node.hh>
 
 namespace lidar3d {
-
-void setupLibraryPaths() {
-    const char* current_path = getenv("LD_LIBRARY_PATH");
-    std::string existing_paths = current_path ? current_path : "";
-    std::string system_paths = "/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu";
-    std::string full_path = system_paths + ":" + existing_paths;
-    setenv("LD_LIBRARY_PATH", full_path.c_str(), 1);
-}
 
 GazeboLauncher::GazeboLauncher() = default;
 
@@ -32,7 +22,11 @@ bool GazeboLauncher::Launch(const std::string& world_file) {
     }
 
     // Set up library paths to fix GUI plugin loading issues
-    setupLibraryPaths();
+    const char* current_path = getenv("LD_LIBRARY_PATH");
+    std::string existing_paths = current_path ? current_path : "";
+    std::string system_paths = "/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu";
+    std::string full_path = system_paths + ":" + existing_paths;
+    setenv("LD_LIBRARY_PATH", full_path.c_str(), 1);
 
     std::cout << "Launching Gazebo with world: " << world_file << std::endl;
 

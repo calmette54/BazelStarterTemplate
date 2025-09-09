@@ -53,47 +53,39 @@ void MovementController::StopKeyboardControl() {
     }
 }
 
-void MovementController::MoveForward() {
-    current_pose_.Pos().X() += linear_step_;
-    UpdatePose();
-}
-
-void MovementController::MoveBackward() {
-    current_pose_.Pos().X() -= linear_step_;
-    UpdatePose();
-}
-
-void MovementController::MoveLeft() {
-    current_pose_.Pos().Y() += linear_step_;
-    UpdatePose();
-}
-
-void MovementController::MoveRight() {
-    current_pose_.Pos().Y() -= linear_step_;
-    UpdatePose();
-}
-
-void MovementController::MoveUp() {
-    current_pose_.Pos().Z() += linear_step_;
-    UpdatePose();
-}
-
-void MovementController::MoveDown() {
-    current_pose_.Pos().Z() -= linear_step_;
-    UpdatePose();
-}
-
-void MovementController::TurnLeft() {
-    gz::math::Quaterniond rotation;
-    rotation.SetFromAxisAngle(gz::math::Vector3d(0, 0, 1), angular_step_);
-    current_pose_.Rot() = rotation * current_pose_.Rot();
-    UpdatePose();
-}
-
-void MovementController::TurnRight() {
-    gz::math::Quaterniond rotation;
-    rotation.SetFromAxisAngle(gz::math::Vector3d(0, 0, 1), -angular_step_);
-    current_pose_.Rot() = rotation * current_pose_.Rot();
+void MovementController::Move(Direction direction) {
+    switch (direction) {
+        case Direction::FORWARD:
+            current_pose_.Pos().X() += linear_step_;
+            break;
+        case Direction::BACKWARD:
+            current_pose_.Pos().X() -= linear_step_;
+            break;
+        case Direction::LEFT:
+            current_pose_.Pos().Y() += linear_step_;
+            break;
+        case Direction::RIGHT:
+            current_pose_.Pos().Y() -= linear_step_;
+            break;
+        case Direction::UP:
+            current_pose_.Pos().Z() += linear_step_;
+            break;
+        case Direction::DOWN:
+            current_pose_.Pos().Z() -= linear_step_;
+            break;
+        case Direction::TURN_LEFT: {
+            gz::math::Quaterniond rotation;
+            rotation.SetFromAxisAngle(gz::math::Vector3d(0, 0, 1), angular_step_);
+            current_pose_.Rot() = rotation * current_pose_.Rot();
+            break;
+        }
+        case Direction::TURN_RIGHT: {
+            gz::math::Quaterniond rotation;
+            rotation.SetFromAxisAngle(gz::math::Vector3d(0, 0, 1), -angular_step_);
+            current_pose_.Rot() = rotation * current_pose_.Rot();
+            break;
+        }
+    }
     UpdatePose();
 }
 
@@ -104,39 +96,31 @@ void MovementController::OnKeyPress(const gz::msgs::Int32& key) {
 
     int key_val = key.data();
 
-    // Handle key mappings (ASCII values)
+    // Handle key mappings (ASCII values) - supporting both lowercase and uppercase
     switch (key_val) {
-        case 119: // 'w'
-        case 87:  // 'W'
-            MoveForward();
+        case 119: case 87:  // 'w'/'W' - Forward
+            Move(Direction::FORWARD);
             break;
-        case 115: // 's'
-        case 83:  // 'S'
-            MoveBackward();
+        case 115: case 83:  // 's'/'S' - Backward
+            Move(Direction::BACKWARD);
             break;
-        case 97:  // 'a'
-        case 65:  // 'A'
-            TurnLeft();
+        case 97: case 65:   // 'a'/'A' - Turn left
+            Move(Direction::TURN_LEFT);
             break;
-        case 100: // 'd'
-        case 68:  // 'D'
-            TurnRight();
+        case 100: case 68:  // 'd'/'D' - Turn right
+            Move(Direction::TURN_RIGHT);
             break;
-        case 113: // 'q'
-        case 81:  // 'Q'
-            MoveLeft();
+        case 113: case 81:  // 'q'/'Q' - Move left
+            Move(Direction::LEFT);
             break;
-        case 101: // 'e'
-        case 69:  // 'E'
-            MoveRight();
+        case 101: case 69:  // 'e'/'E' - Move right
+            Move(Direction::RIGHT);
             break;
-        case 114: // 'r'
-        case 82:  // 'R'
-            MoveUp();
+        case 114: case 82:  // 'r'/'R' - Move up
+            Move(Direction::UP);
             break;
-        case 102: // 'f'
-        case 70:  // 'F'
-            MoveDown();
+        case 102: case 70:  // 'f'/'F' - Move down
+            Move(Direction::DOWN);
             break;
         default:
             // Ignore other keys

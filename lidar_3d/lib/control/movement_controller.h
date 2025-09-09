@@ -11,6 +11,17 @@ namespace lidar3d {
 
 class MovementController {
 public:
+    enum class Direction {
+        FORWARD,
+        BACKWARD,
+        LEFT,
+        RIGHT,
+        UP,
+        DOWN,
+        TURN_LEFT,
+        TURN_RIGHT
+    };
+
     MovementController();
     ~MovementController();
 
@@ -18,15 +29,8 @@ public:
     bool Initialize(const std::string& world_name,
                    const std::string& model_name);
 
-    // Movement commands (called by keyboard handler)
-    void MoveForward();
-    void MoveBackward();
-    void MoveLeft();
-    void MoveRight();
-    void MoveUp();
-    void MoveDown();
-    void TurnLeft();
-    void TurnRight();
+    // Consolidated movement command
+    void Move(Direction direction);
 
     // Configuration
     void SetLinearStep(double step) { linear_step_ = step; }

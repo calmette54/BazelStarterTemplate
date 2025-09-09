@@ -68,14 +68,14 @@ TEST_F(MovementControllerTest, MovementCommandsWithoutCrash) {
     // Test that movement commands don't crash
     // Note: These will fail to actually move anything in test environment,
     // but we're testing that the methods can be called safely
-    EXPECT_NO_THROW(controller_->MoveForward());
-    EXPECT_NO_THROW(controller_->MoveBackward());
-    EXPECT_NO_THROW(controller_->MoveLeft());
-    EXPECT_NO_THROW(controller_->MoveRight());
-    EXPECT_NO_THROW(controller_->MoveUp());
-    EXPECT_NO_THROW(controller_->MoveDown());
-    EXPECT_NO_THROW(controller_->TurnLeft());
-    EXPECT_NO_THROW(controller_->TurnRight());
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::FORWARD));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::BACKWARD));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::LEFT));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::RIGHT));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::UP));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::DOWN));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::TURN_LEFT));
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::TURN_RIGHT));
 }
 
 TEST_F(MovementControllerTest, InitializationVariations) {
@@ -151,13 +151,13 @@ TEST_F(MovementControllerTest, ConfigurationEdgeCases) {
     // Test with extreme values
     controller_->SetLinearStep(0.0);  // Zero step
     controller_->SetAngularStep(0.0); // Zero step
-    EXPECT_NO_THROW(controller_->MoveForward());
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::FORWARD));
 
     controller_->SetLinearStep(1000.0);  // Large step
     controller_->SetAngularStep(10.0);   // Large angular step
-    EXPECT_NO_THROW(controller_->TurnLeft());
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::TURN_LEFT));
 
     controller_->SetLinearStep(-1.0);  // Negative step
     controller_->SetAngularStep(-1.0); // Negative angular step
-    EXPECT_NO_THROW(controller_->MoveUp());
+    EXPECT_NO_THROW(controller_->Move(MovementController::Direction::UP));
 }

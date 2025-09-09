@@ -16,7 +16,7 @@ protected:
 
     void TearDown() override {
         if (sensor_) {
-            sensor_->Stop();
+            sensor_->Shutdown();
         }
     }
 
@@ -33,91 +33,83 @@ protected:
 
 TEST_F(Lidar3DSensorTest, DefaultConstruction) {
     EXPECT_EQ(sensor_->GetMessagesReceived(), 0);
+    EXPECT_FALSE(sensor_->IsInitialized());
 }
 
 TEST_F(Lidar3DSensorTest, InitializeWithValidTopic) {
-    bool result = sensor_->Initialize("/test_lidar");
+    bool result = sensor_->Initialize("/test_lidar", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    });
     EXPECT_TRUE(result);
+    EXPECT_TRUE(sensor_->IsInitialized());
 }
 
 TEST_F(Lidar3DSensorTest, InitializeWithEmptyTopic) {
-    bool result = sensor_->Initialize("");
-    EXPECT_FALSE(result);  // Should fail with empty topic
-}
-
-TEST_F(Lidar3DSensorTest, CallbackSetting) {
-    // Set callback before initialization
-    sensor_->SetCallback([this](const PointCloud& cloud) {
+    bool result = sensor_->Initialize("", [this](const PointCloud& cloud) {
         TestCallback(cloud);
     });
+    EXPECT_FALSE(result);  // Should fail with empty topic
+    EXPECT_FALSE(sensor_->IsInitialized());
+}
 
-    EXPECT_TRUE(sensor_->Initialize("/test_topic"));
-
-    // Change callback after initialization
-    sensor_->SetCallback([this](const PointCloud& cloud) {
-        callback_count_.fetch_add(2);  // Different behavior
-    });
+TEST_F(Lidar3DSensorTest, CallbackInitialization) {
+    // Initialize with callback
+    EXPECT_TRUE(sensor_->Initialize("/test_topic", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
+    EXPECT_TRUE(sensor_->IsInitialized());
 
     SUCCEED(); // No exceptions expected
 }
 
-TEST_F(Lidar3DSensorTest, StartStopLifecycle) {
-    ASSERT_TRUE(sensor_->Initialize("/test_topic"));
+TEST_F(Lidar3DSensorTest, InitializeShutdownLifecycle) {
+    // Initialize sensor
+    ASSERT_TRUE(sensor_->Initialize("/test_topic", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
+    EXPECT_TRUE(sensor_->IsInitialized());
 
-    // Start sensor
-    sensor_->Start();
+    // Shutdown sensor
+    sensor_->Shutdown();
+    EXPECT_FALSE(sensor_->IsInitialized());
 
-    // Stop sensor
-    sensor_->Stop();
+    // Multiple shutdowns should be safe
+    sensor_->Shutdown();
+    sensor_->Shutdown();
+    EXPECT_FALSE(sensor_->IsInitialized());
 
-    // Multiple stops should be safe
-    sensor_->Stop();
-    sensor_->Stop();
-
-    // Can restart
-    sensor_->Start();
-    sensor_->Stop();
+    // Can reinitialize
+    EXPECT_TRUE(sensor_->Initialize("/test_topic2", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
+    EXPECT_TRUE(sensor_->IsInitialized());
 }
 
-TEST_F(Lidar3DSensorTest, MultipleStartCalls) {
-    ASSERT_TRUE(sensor_->Initialize("/test_topic"));
+TEST_F(Lidar3DSensorTest, DoubleInitializationPrevented) {
+    // First initialization should succeed
+    ASSERT_TRUE(sensor_->Initialize("/test_topic", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
+    EXPECT_TRUE(sensor_->IsInitialized());
 
-    // Multiple starts should be safe
-    sensor_->Start();
-    sensor_->Start();
-    sensor_->Start();
-
-    sensor_->Stop();
-}
-
-TEST_F(Lidar3DSensorTest, CallbackWithoutInitialization) {
-    // Setting callback before initialization should work
-    bool callback_set = false;
-    sensor_->SetCallback([&callback_set](const PointCloud& cloud) {
-        callback_set = true;
-    });
-
-    EXPECT_FALSE(callback_set);
+    // Second initialization should fail
+    EXPECT_FALSE(sensor_->Initialize("/another_topic", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
+    EXPECT_TRUE(sensor_->IsInitialized()); // Still initialized with first topic
 }
 
 TEST_F(Lidar3DSensorTest, MessagesReceivedCounter) {
-    ASSERT_TRUE(sensor_->Initialize("/test_topic"));
+    ASSERT_TRUE(sensor_->Initialize("/test_topic", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
 
     // Initially zero
     EXPECT_EQ(sensor_->GetMessagesReceived(), 0);
 
-    // Set callback to verify counter behavior
-    sensor_->SetCallback([this](const PointCloud& cloud) {
-        TestCallback(cloud);
-    });
-
-    sensor_->Start();
-
     // Note: In test environment, we won't receive actual messages,
     // but counter should still be accessible
     EXPECT_GE(sensor_->GetMessagesReceived(), 0);
-
-    sensor_->Stop();
 }
 
 TEST_F(Lidar3DSensorTest, MultipleInstances) {
@@ -125,46 +117,54 @@ TEST_F(Lidar3DSensorTest, MultipleInstances) {
     auto sensor3 = std::make_unique<Lidar3DSensor>();
 
     // All should initialize successfully with different topics
-    EXPECT_TRUE(sensor_->Initialize("/lidar1"));
-    EXPECT_TRUE(sensor2->Initialize("/lidar2"));
-    EXPECT_TRUE(sensor3->Initialize("/lidar3"));
+    EXPECT_TRUE(sensor_->Initialize("/lidar1", [this](const PointCloud& cloud) {
+        TestCallback(cloud);
+    }));
+    EXPECT_TRUE(sensor2->Initialize("/lidar2", [](const PointCloud& cloud) {
+        // Empty callback
+    }));
+    EXPECT_TRUE(sensor3->Initialize("/lidar3", [](const PointCloud& cloud) {
+        // Empty callback
+    }));
 
-    // All should start/stop independently
-    sensor_->Start();
-    sensor2->Start();
-    sensor3->Start();
+    // All should be initialized
+    EXPECT_TRUE(sensor_->IsInitialized());
+    EXPECT_TRUE(sensor2->IsInitialized());
+    EXPECT_TRUE(sensor3->IsInitialized());
 
-    sensor_->Stop();
-    sensor2->Stop();
-    sensor3->Stop();
+    // All should shutdown independently
+    sensor_->Shutdown();
+    sensor2->Shutdown();
+    sensor3->Shutdown();
+
+    EXPECT_FALSE(sensor_->IsInitialized());
+    EXPECT_FALSE(sensor2->IsInitialized());
+    EXPECT_FALSE(sensor3->IsInitialized());
 }
 
 TEST_F(Lidar3DSensorTest, CallbackExceptionHandling) {
-    ASSERT_TRUE(sensor_->Initialize("/test_topic"));
-
-    // Set a callback that throws
-    sensor_->SetCallback([](const PointCloud& cloud) {
+    ASSERT_TRUE(sensor_->Initialize("/test_topic", [](const PointCloud& cloud) {
         throw std::runtime_error("Test exception");
-    });
-
-    sensor_->Start();
+    }));
 
     // Sensor should still be functional after callback exception
     // (though in test environment we won't trigger actual callbacks)
-    EXPECT_NO_THROW(sensor_->Stop());
+    EXPECT_NO_THROW(sensor_->Shutdown());
 }
 
 TEST_F(Lidar3DSensorTest, ThreadSafety) {
-    ASSERT_TRUE(sensor_->Initialize("/threaded_test"));
-
-    sensor_->SetCallback([this](const PointCloud& cloud) {
+    ASSERT_TRUE(sensor_->Initialize("/threaded_test", [this](const PointCloud& cloud) {
         TestCallback(cloud);
-    });
+    }));
 
-    // Test concurrent start/stop operations
+    // Test concurrent initialize/shutdown operations
     std::thread t1([this]() {
         for (int i = 0; i < 10; ++i) {
-            sensor_->Start();
+            if (!sensor_->IsInitialized()) {
+                sensor_->Initialize("/threaded_test_" + std::to_string(i), [this](const PointCloud& cloud) {
+                    TestCallback(cloud);
+                });
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     });
@@ -172,7 +172,7 @@ TEST_F(Lidar3DSensorTest, ThreadSafety) {
     std::thread t2([this]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
         for (int i = 0; i < 10; ++i) {
-            sensor_->Stop();
+            sensor_->Shutdown();
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     });
@@ -181,43 +181,42 @@ TEST_F(Lidar3DSensorTest, ThreadSafety) {
     t2.join();
 
     // Final cleanup
-    sensor_->Stop();
+    sensor_->Shutdown();
 }
 
 TEST_F(Lidar3DSensorTest, LambdaCallbackVariations) {
-    ASSERT_TRUE(sensor_->Initialize("/callback_test"));
-
     // Test different callback types
     int local_counter = 0;
 
     // Capture by reference
-    sensor_->SetCallback([&local_counter](const PointCloud& cloud) {
+    EXPECT_TRUE(sensor_->Initialize("/callback_test1", [&local_counter](const PointCloud& cloud) {
         local_counter++;
-    });
+    }));
+    sensor_->Shutdown();
 
     // Capture by value
-    sensor_->SetCallback([local_counter](const PointCloud& cloud) mutable {
+    EXPECT_TRUE(sensor_->Initialize("/callback_test2", [local_counter](const PointCloud& cloud) mutable {
         local_counter++;
-    });
+    }));
+    sensor_->Shutdown();
 
     // No capture
-    sensor_->SetCallback([](const PointCloud& cloud) {
+    EXPECT_TRUE(sensor_->Initialize("/callback_test3", [](const PointCloud& cloud) {
         // Do nothing
-    });
-
-    SUCCEED();
+    }));
 }
 
 TEST_F(Lidar3DSensorTest, TopicVariations) {
     // Test various topic name formats
-    EXPECT_TRUE(sensor_->Initialize("/lidar"));
+    EXPECT_TRUE(sensor_->Initialize("/lidar", [](const PointCloud& cloud) {}));
+    sensor_->Shutdown();
 
     auto sensor2 = std::make_unique<Lidar3DSensor>();
-    EXPECT_TRUE(sensor2->Initialize("lidar"));  // Without leading slash
+    EXPECT_TRUE(sensor2->Initialize("lidar", [](const PointCloud& cloud) {}));  // Without leading slash
 
     auto sensor3 = std::make_unique<Lidar3DSensor>();
-    EXPECT_TRUE(sensor3->Initialize("/very/deep/topic/structure/lidar"));
+    EXPECT_TRUE(sensor3->Initialize("/very/deep/topic/structure/lidar", [](const PointCloud& cloud) {}));
 
     auto sensor4 = std::make_unique<Lidar3DSensor>();
-    EXPECT_TRUE(sensor4->Initialize("/lidar_with_underscores_and_123"));
+    EXPECT_TRUE(sensor4->Initialize("/lidar_with_underscores_and_123", [](const PointCloud& cloud) {}));
 }

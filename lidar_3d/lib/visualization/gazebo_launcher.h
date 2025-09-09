@@ -1,8 +1,6 @@
 #pragma once
 
 #include <string>
-#include <memory>
-#include <gz/transport/Node.hh>
 
 namespace lidar3d {
 

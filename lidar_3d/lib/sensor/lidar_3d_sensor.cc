@@ -10,55 +10,42 @@ Lidar3DSensor::Lidar3DSensor()
 }
 
 Lidar3DSensor::~Lidar3DSensor() {
-    Stop();
+    Shutdown();
 }
 
-bool Lidar3DSensor::Initialize(const std::string& topic_name) {
-    if (running_) {
-        std::cerr << "Sensor is already running. Stop it first." << std::endl;
+bool Lidar3DSensor::Initialize(const std::string& topic_name, Callback callback) {
+    if (initialized_) {
+        std::cerr << "Sensor is already initialized. Shutdown first." << std::endl;
         return false;
     }
 
-    topic_name_ = topic_name;
+    callback_ = callback;
 
     // Subscribe to the point cloud topic
-    if (!node_->Subscribe(topic_name_, &Lidar3DSensor::OnPointCloudMsg, this)) {
-        std::cerr << "Failed to subscribe to topic: " << topic_name_ << std::endl;
+    if (!node_->Subscribe(topic_name, &Lidar3DSensor::OnPointCloudMsg, this)) {
+        std::cerr << "Failed to subscribe to topic: " << topic_name << std::endl;
         return false;
     }
 
-    std::cout << "Initialized 3D LiDAR sensor on topic: " << topic_name_ << std::endl;
+    initialized_ = true;
+    std::cout << "Initialized 3D LiDAR sensor on topic: " << topic_name << std::endl;
     return true;
 }
 
-void Lidar3DSensor::SetCallback(Callback callback) {
-    callback_ = callback;
-}
-
-void Lidar3DSensor::Start() {
-    if (topic_name_.empty()) {
-        std::cerr << "Sensor not initialized. Call Initialize() first." << std::endl;
-        return;
-    }
-
-    running_ = true;
-    std::cout << "Started 3D LiDAR sensor" << std::endl;
-}
-
-void Lidar3DSensor::Stop() {
-    if (running_) {
-        running_ = false;
-        std::cout << "Stopped 3D LiDAR sensor" << std::endl;
+void Lidar3DSensor::Shutdown() {
+    if (initialized_) {
+        initialized_ = false;
+        std::cout << "Shut down 3D LiDAR sensor" << std::endl;
     }
 }
 
-bool Lidar3DSensor::IsRunning() const {
-    return running_;
+bool Lidar3DSensor::IsInitialized() const {
+    return initialized_;
 }
 
 void Lidar3DSensor::OnPointCloudMsg(const gz::msgs::PointCloudPacked& msg) {
-    if (!running_) {
-        return;  // Ignore messages when not running
+    if (!initialized_) {
+        return;  // Ignore messages when not initialized
     }
 
     messages_received_++;
