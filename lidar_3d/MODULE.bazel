@@ -1,0 +1,19 @@
+module(
+    name = "lidar_3d",
+    version = "1.0.0",
+)
+
+# Eigen linear algebra library for point cloud processing
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+
+# Core Gazebo dependencies
+bazel_dep(name = "gz-common", version = "6.1.0")
+bazel_dep(name = "gz-msgs", version = "11.1.0.bcr.2")
+bazel_dep(name = "gz-transport", version = "14.1.0.bcr.1")
+bazel_dep(name = "gz-math", version = "8.1.1.bcr.1")
+
+# Build toolchain requirements
+bazel_dep(name = "rules_cc", version = "0.2.0")
+
+# Testing dependencies
+bazel_dep(name = "googletest", version = "1.15.2")

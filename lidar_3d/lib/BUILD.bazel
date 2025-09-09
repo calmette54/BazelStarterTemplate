@@ -1,0 +1,44 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "core",
+    srcs = ["core/point_cloud.cc"],
+    hdrs = ["core/point_cloud.h"],
+    deps = [
+        "@eigen//:eigen",
+        "@gz-msgs//:gz-msgs",
+    ],
+)
+
+cc_library(
+    name = "visualization",
+    srcs = ["visualization/gazebo_launcher.cc"],
+    hdrs = ["visualization/gazebo_launcher.h"],
+    deps = [
+        "@gz-transport//:gz-transport",
+    ],
+)
+
+cc_library(
+    name = "sensor",
+    srcs = ["sensor/lidar_3d_sensor.cc"],
+    hdrs = ["sensor/lidar_3d_sensor.h"],
+    deps = [
+        ":core",
+        "@gz-transport//:gz-transport",
+        "@gz-msgs//:gz-msgs",
+    ],
+)
+
+cc_library(
+    name = "control",
+    srcs = ["control/movement_controller.cc"],
+    hdrs = ["control/movement_controller.h"],
+    deps = [
+        "@gz-transport//:gz-transport",
+        "@gz-msgs//:gz-msgs",
+        "@gz-math//:gz-math",
+    ],
+)
