@@ -96,6 +96,7 @@
           <title>Key Publisher</title>
           <property type="string" key="state">docked</property>
         </gz-gui>
+        <topic>/keyboard/keypress</topic>
       </plugin>
 
       <!-- Topic Echo Plugin for debugging topics -->

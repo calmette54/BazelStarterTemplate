@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<gui version="1.0">
+  <!-- Essential GUI configuration for LiDAR visualization -->
+  
+  <!-- 3D Scene -->
+  <plugin filename="GzScene3D" name="3D View">
+    <gz-gui>
+      <title>3D View</title>
+      <property type="bool" key="showTitleBar">false</property>
+      <property type="string" key="state">docked</property>
+    </gz-gui>
+    <engine>ogre2</engine>
+    <scene>scene</scene>
+    <ambient_light>1.0 1.0 1.0</ambient_light>
+    <background_color>0.4 0.4 0.4</background_color>
+    <camera_pose>-10 0 8 0 0.5 0</camera_pose>
+    <sky>false</sky>
+  </plugin>
+
+  <!-- World control -->
+  <plugin filename="WorldControl" name="World control">
+    <gz-gui>
+      <title>World control</title>
+      <property type="bool" key="showTitleBar">false</property>
+      <property type="bool" key="resizable">false</property>
+      <property type="double" key="height">72</property>
+      <property type="double" key="width">121</property>
+      <property type="double" key="z">1</property>
+      <property type="string" key="state">floating</property>
+      <anchors target="3D View">
+        <line own="left" target="left"/>
+        <line own="bottom" target="bottom"/>
+      </anchors>
+    </gz-gui>
+    <play_pause>true</play_pause>
+    <step>true</step>
+    <start_paused>false</start_paused>
+    <use_event>true</use_event>
+  </plugin>
+
+  <!-- 3D LiDAR Visualization Plugin -->
+  <plugin filename="VisualizeLidar" name="Visualize Lidar">
+    <gz-gui>
+      <title>Visualize Lidar</title>
+      <property type="string" key="state">docked</property>
+    </gz-gui>
+  </plugin>
+
+  <!-- Point Cloud Display for LiDAR data -->
+  <plugin filename="PointCloud" name="Point Cloud">
+    <gz-gui>
+      <title>Point Cloud</title>
+      <property type="string" key="state">docked</property>
+    </gz-gui>
+  </plugin>
+
+  <!-- Keyboard Input Plugin for movement controls -->
+  <plugin filename="KeyPublisher" name="Key Publisher">
+    <gz-gui>
+      <title>Key Publisher</title>
+      <property type="string" key="state">docked</property>
+    </gz-gui>
+    <topic>/keyboard/keypress</topic>
+  </plugin>
+
+  <!-- Entity Tree -->
+  <plugin filename="EntityTree" name="Entity tree">
+    <gz-gui>
+      <property type="string" key="state">docked</property>
+    </gz-gui>
+  </plugin>
+
+  <!-- Component Inspector -->
+  <plugin filename="ComponentInspector" name="Component inspector">
+    <gz-gui>
+      <property type="string" key="state">docked</property>
+    </gz-gui>
+  </plugin>
+
+</gui>
