@@ -11,5 +11,8 @@ cc_binary(
         "//lib:control",
         "//lib:visualization",
     ],
-    data = ["worlds/lidar_3d_world.sdf"],
+    data = [
+        "worlds/lidar_3d_world.sdf",
+        "worlds/tugbot_depot.sdf",
+    ],
 )

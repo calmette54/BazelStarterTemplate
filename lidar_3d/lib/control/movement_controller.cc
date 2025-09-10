@@ -42,6 +42,29 @@ void MovementController::StartKeyboardControl() {
         return;  // Already listening
     }
 
+    // Check if keyboard topic exists
+    std::vector<std::string> topics;
+    node_->TopicList(topics);
+    bool found_keyboard = false;
+    std::cout << "Checking for keyboard topic..." << std::endl;
+    for (const auto& topic : topics) {
+        if (topic == "/keyboard/keypress") {
+            found_keyboard = true;
+            std::cout << "Found /keyboard/keypress topic!" << std::endl;
+            break;
+        }
+    }
+
+    if (!found_keyboard) {
+        std::cerr << "WARNING: /keyboard/keypress topic not found! Available topics with 'key':" << std::endl;
+        for (const auto& topic : topics) {
+            if (topic.find("key") != std::string::npos) {
+                std::cerr << "  " << topic << std::endl;
+            }
+        }
+        std::cerr << "Total topics available: " << topics.size() << std::endl;
+    }
+
     // Subscribe to keyboard events
     if (!node_->Subscribe("/keyboard/keypress", &MovementController::OnKeyPress, this)) {
         std::cerr << "Failed to subscribe to keyboard events" << std::endl;
@@ -62,7 +85,7 @@ void MovementController::StopKeyboardControl() {
 void MovementController::Move(Direction direction) {
     auto pos = pending_pose_.Pos();
     auto rot = pending_pose_.Rot();
-    
+
     switch (direction) {
         case Direction::FORWARD: {
             // Orientation-aware forward movement
@@ -121,7 +144,7 @@ void MovementController::Move(Direction direction) {
             break;
         }
     }
-    
+
     // Mark pose as dirty for batched update
     pose_dirty_.store(true);
 }
@@ -132,10 +155,12 @@ void MovementController::OnKeyPress(const gz::msgs::Int32& key) {
     }
 
     int key_val = key.data();
+    std::cout << "Key pressed: " << key_val << std::endl;
 
     // Handle key mappings (ASCII values) - supporting both lowercase and uppercase
     switch (key_val) {
         case 119: case 87:  // 'w'/'W' - Forward
+            std::cout << "Moving forward!" << std::endl;
             Move(Direction::FORWARD);
             break;
         case 115: case 83:  // 's'/'S' - Backward
@@ -215,11 +240,17 @@ void MovementController::SendPoseUpdate() {
     std::function<void(const gz::msgs::Boolean &, bool)> callback =
         [this](const gz::msgs::Boolean &response, bool result) {
             if (result && response.data()) {
-                // Success - could add debug logging here
+                std::cout << "Pose update successful for model: " << model_name_ << std::endl;
             } else {
-                std::cerr << "Pose service failed for model: " << model_name_ << std::endl;
+                std::cerr << "Pose service failed for model: " << model_name_ << " - result: " << result;
+                if (result) {
+                    std::cerr << ", response: " << response.data();
+                }
+                std::cerr << std::endl;
             }
         };
+
+    std::cout << "Sending pose update to service: " << pose_topic_ << " for model: " << model_name_ << std::endl;
 
     // Make non-blocking service call
     node_->Request(pose_topic_, pose_msg, callback);
