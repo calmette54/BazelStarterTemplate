@@ -133,7 +133,7 @@
       name = "Formatting";
       description = "Formatting the source code with rules_lint (Bazel)";
       # The command to execute (mandatory):
-      entry = "bazelisk run //:format";
+      entry = "bazelisk run //bzl/format";
       # The pattern of files to run on (default: "" (all))
       # see also https://pre-commit.com/#hooks-files
       files = "";
