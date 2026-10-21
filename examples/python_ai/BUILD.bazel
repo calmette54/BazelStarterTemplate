@@ -1,0 +1,29 @@
+load("@gazelle//:def.bzl", "gazelle")
+load("@pypi//:requirements.bzl", "all_whl_requirements")
+load("@rules_python_gazelle_plugin//manifest:defs.bzl", "gazelle_python_manifest")
+load("@rules_python_gazelle_plugin//modules_mapping:def.bzl", "modules_mapping")
+
+# Imports are absolute from this directory: `from ai_example.models import ...`
+# gazelle:python_root
+# gazelle:exclude bazel-*
+
+# Maps import names (e.g. `yaml`) to the wheels that provide them
+modules_mapping(
+    name = "modules_map",
+    wheels = all_whl_requirements,
+)
+
+# gazelle_python.yaml: run `bazelisk run //:gazelle_python_manifest.update`
+# after changing requirements_lock.txt. A test checks that it is up to date.
+gazelle_python_manifest(
+    name = "gazelle_python_manifest",
+    modules_mapping = ":modules_map",
+    pip_repository_name = "pypi",
+    requirements = "//:requirements_lock.txt",
+)
+
+# Generates and updates the BUILD files: `bazelisk run //:gazelle`
+gazelle(
+    name = "gazelle",
+    gazelle = "@rules_python_gazelle_plugin//python:gazelle_binary",
+)
