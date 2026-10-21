@@ -159,3 +159,17 @@ oci_load(
         "//conditions:default": ":dirty-tags",
     }),
 )
+
+# Single-architecture image for the host platform, loaded by
+# //integration:standalone_image_test.
+oci_load(
+    name = "load_host_image",
+    image = ":image",
+    repo_tags = ["hello-world:integration-test"],
+)
+
+filegroup(
+    name = "host_image.tar",
+    srcs = [":load_host_image"],
+    output_group = "tarball",
+)
