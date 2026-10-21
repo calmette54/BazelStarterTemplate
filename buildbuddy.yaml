@@ -10,4 +10,6 @@ actions:
         branches:
           - "*"
     steps:
-      - run: "bazel test --config=ci //test/... //benchmark/... //integration/... --build_metadata=ROLE=CI"
+      # Tests tagged requires-docker need a container daemon on the runner;
+      # drop the filter once the workflow image provides one.
+      - run: "bazel test --config=ci //test/... //benchmark/... //integration/... --test_tag_filters=-requires-docker"
