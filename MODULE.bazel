@@ -122,8 +122,9 @@ llvm.toolchain(
         "linux-x86_64": "stdc++",
         "linux-aarch64": "stdc++",
     },
+    # Keyed by target OS-arch pair; "" applies to all targets.
     cxx_standard = {
-        "19.1.6": "c++23",
+        "": "c++23",
     },
 )
 llvm.sysroot(
