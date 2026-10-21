@@ -77,3 +77,30 @@ build:ci --remote_timeout=10m
 
 ## FIXME: fully migrate to bzlmod
 common --enable_workspace
+
+###############################################################################
+# Code coverage
+#
+#   bazelisk coverage //...
+#   genhtml bazel-out/_coverage/_coverage_report.dat -o coverage-html
+###############################################################################
+# The LLVM toolchain instruments with -fprofile-instr-generate, so use
+# LLVM's native coverage instead of gcov.
+coverage --experimental_use_llvm_covmap
+coverage --experimental_generate_llvm_lcov
+# Only build tests: instrumented cross-compiled targets (e.g. the aarch64
+# image) cannot link, because the x86_64 LLVM release has no aarch64
+# libclang_rt.profile.a.
+coverage --build_tests_only
+# Merge all tests into bazel-out/_coverage/_coverage_report.dat.
+coverage --combined_report=lcov
+# By default only the packages of the requested targets are instrumented
+# (e.g. //test/... would leave //lib out). Instrument the whole workspace
+# except tests and benchmarks.
+coverage --instrumentation_filter=^//,-^//test[/:],-^//benchmark[/:]
+# NOTE: --experimental_fetch_all_coverage_outputs does not work with
+# toolchains_llvm (dangling "gcov" symlink in the _coverage tree artifact).
+
+# With RBE, merge the report locally and download the coverage outputs.
+coverage:ci --strategy=CoverageReport=local
+coverage:ci --remote_download_outputs=all
