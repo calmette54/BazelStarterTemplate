@@ -1,14 +1,18 @@
-# Awesome example
+# API documentation
 
-A slightly more complex example where we choose to use the
-[Doxygen awesome](https://github.com/jothepro/doxygen-awesome-css)
-documentation theme.
+Reference documentation for the `greeter` library and the `hello-world`
+command-line tool. It is generated with [Doxygen](https://www.doxygen.nl/) and
+the [Doxygen Awesome](https://github.com/jothepro/doxygen-awesome-css) theme:
 
 ```bash
-bazel build //documentation:docs
+bazelisk build //documentation:docs   # output: bazel-bin/documentation/html
 ```
 
-## Showcase
+Start with greeter::Greeter, or see `standalone/main.cpp` for a usage example.
+
+## Writing documentation
+
+The theme supports the following in Markdown pages and comments.
 
 You can add equations:
 
