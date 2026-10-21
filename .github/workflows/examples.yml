@@ -30,6 +30,7 @@ jobs:
       matrix:
         example:
           - eigen_pybind
+          - eigen_go
     defaults:
       run:
         working-directory: examples/${{ matrix.example }}

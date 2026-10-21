@@ -1,0 +1,9 @@
+# Eigen-based C++ library shared by examples/eigen_pybind and
+# examples/eigen_go, which depend on it with local_path_override.
+#
+# It only holds the library: its tests run in examples/eigen_pybind, which
+# also provides the toolchain (include() works only in the root module).
+module(name = "example_eigen_math")
+
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
