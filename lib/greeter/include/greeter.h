@@ -37,7 +37,7 @@ namespace greeter {
    *
    * @note Currently supported languages are English, German, Spanish, and French.
    *
-   * @example
+   * @par Example
    * @code
    * greeter::Greeter g("Alice");
    * std::cout << g.greet(greeter::LanguageCode::FR) << std::endl; // Bonjour, Alice!
