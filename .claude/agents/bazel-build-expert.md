@@ -67,7 +67,7 @@ When working with external dependencies or suggesting new Bazel rules, always le
 
 Facts about this workspace, verified against the code. Check them before recommending changes:
 
-- **Toolchain**: hermetic LLVM via `toolchains_llvm` (`MODULE.bazel`), with Chromium Debian bullseye sysroots for `linux-x86_64` and `linux-aarch64`. The sysroot ships **libstdc++ 10**, so C++23 *language* features work, but library features newer than GCC 10 (e.g. `std::expected`, `std::print`) do not.
+- **Toolchain**: hermetic LLVM via `toolchains_llvm` (`bzl/toolchains.MODULE.bazel`, pulled in with `include()` by the root `MODULE.bazel` and by each `examples/*` module through a symlink), with Chromium Debian bullseye sysroots for `linux-x86_64` and `linux-aarch64`. The sysroot ships **libstdc++ 10**, so C++23 *language* features work, but library features newer than GCC 10 (e.g. `std::expected`, `std::print`) do not.
 - **`toolchains_llvm` dicts** (`sha256`, `strip_prefix`, `stdlib`, `cxx_standard`, …) are keyed by target OS-arch pair; `""` means all targets. A key like `"19.1.6"` is silently ignored. Each per-platform `sha256` must belong to that platform's archive (`toolchain/internal/llvm_distributions.bzl` lists known values).
 - **Cross-compilation**: `--config=x86_64` / `--config=aarch64`; the image uses the `multi_arch` 1:N transition in `bzl/transition.bzl` over `//bzl/platforms`.
 - **Versioning**: `revision_mode` (DIRTY/WIP/RELEASE), `release_version` and `commit_sha` flags in the root `BUILD.bazel`. Stamp keys come from `tools/workspace_status.sh`; `.bazelrc` sets `--stamp` for every build. A `{{STABLE_X}}` key that the script does not emit is left unsubstituted **without an error**, so check `bazel-out/stable-status.txt`.

@@ -1,0 +1,67 @@
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@pypi//:requirements.bzl", "requirement")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+exports_files(["requirements_lock.txt"])
+
+EIGEN_COPTS = [
+    "-O3",
+    # Disable Eigen's runtime assertions
+    "-DEIGEN_NO_DEBUG",
+]
+
+# Plain C++ library: knows nothing about Python
+cc_library(
+    name = "eigen_math",
+    srcs = ["eigen_math.cpp"],
+    hdrs = ["eigen_math.h"],
+    copts = EIGEN_COPTS,
+    deps = ["@eigen"],
+)
+
+cc_test(
+    name = "eigen_math_test",
+    size = "small",
+    srcs = ["test_eigen_math.cpp"],
+    deps = [
+        ":eigen_math",
+        "@googletest//:gtest_main",
+    ],
+)
+
+# Builds eigen_bindings.so, importable as `import eigen_bindings`
+pybind_extension(
+    name = "eigen_bindings",
+    srcs = ["python_bindings.cpp"],
+    copts = EIGEN_COPTS,
+    deps = [":eigen_math"],
+)
+
+py_library(
+    name = "eigen_bindings_py",
+    data = [":eigen_bindings"],
+    imports = ["."],
+)
+
+py_test(
+    name = "python_test",
+    size = "small",
+    srcs = ["python/test_eigen_bindings.py"],
+    main = "python/test_eigen_bindings.py",
+    deps = [
+        ":eigen_bindings_py",
+        requirement("numpy"),
+        requirement("pytest"),
+    ],
+)
+
+py_binary(
+    name = "python_example",
+    srcs = ["python/example_usage.py"],
+    main = "python/example_usage.py",
+    deps = [
+        ":eigen_bindings_py",
+        requirement("numpy"),
+    ],
+)

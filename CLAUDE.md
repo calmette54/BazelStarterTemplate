@@ -50,6 +50,7 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 | `documentation/` | Doxygen + doxygen-awesome |
 | `bzl/` | flags (`defs.bzl`), packaging names, multi-arch transition, platforms, format and lint setup, template parameters (`variables.bzl`) |
 | `tools/workspace_status.sh` | stamp keys (version, commit, image registry) |
+| `examples/<name>/` | optional demos, each a separate Bazel module (build from its directory; the root `.bazelignore` skips them) |
 
 ## Conventions
 
@@ -59,6 +60,9 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
   (`.clang-tidy`, warnings are errors). Run `bazelisk run //:format` before committing.
 - Project-wide values (name, description, repository URL, image name) belong in
   `bzl/variables.bzl`, not in BUILD files.
+- The LLVM toolchain and sysroots live in `bzl/toolchains.MODULE.bazel`,
+  included by the root `MODULE.bazel` and (through a symlink) by every example.
+  Example dependencies never go into the root `MODULE.bazel`.
 - Keep toolchain-wide settings in `MODULE.bazel` / `.bazelrc`. For details and
   known pitfalls (dict keys of `toolchains_llvm`, stamping, coverage, RBE), see
   `.claude/agents/bazel-build-expert.md`.
@@ -70,6 +74,8 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 - **GitHub Actions** (`.github/workflows/release-please.yml`) runs on `main`:
   it opens the release PR, and when that PR is merged it pushes the image,
   attaches the binaries and publishes the docs to GitHub Pages.
+- **GitHub Actions** (`.github/workflows/examples.yml`) runs `bazelisk test //...`
+  in each example when `examples/` or the shared toolchain changes.
 
 ## Tools for Claude
 
