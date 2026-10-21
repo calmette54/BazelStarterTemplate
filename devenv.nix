@@ -133,14 +133,14 @@
       name = "Formatting";
       description = "Formatting the source code with rules_lint (Bazel)";
       # The command to execute (mandatory):
-      entry = "bazel run //:format";
+      entry = "bazelisk run //bzl/format";
       # The pattern of files to run on (default: "" (all))
       # see also https://pre-commit.com/#hooks-files
       files = "";
       # List of file types to run on (default: [ "file" ] (all files))
       # see also https://pre-commit.com/#filtering-files-with-types
       # You probably only need to specify one of `files` or `types`:
-      types = ["c" "c++"];
+      types_or = ["c" "c++"];
       # Exclude files that were matched by these patterns (default: [ ] (none)):
       excludes = [];
       # The language of the hook - tells pre-commit
