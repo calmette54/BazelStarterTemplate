@@ -957,7 +957,7 @@
     "@@toolchains_llvm+//toolchain/extensions:llvm.bzl%llvm": {
       "general": {
         "bzlTransitiveDigest": "miE+G1r8txiL9GGIOFLiY+RyielXfNO9OiFlFw+NE+U=",
-        "usagesDigest": "Ws+Ucc2c/3WQ3o5mqfxHWx+XTGu0f3eEF/F1jIq5BZI=",
+        "usagesDigest": "ozY3JL/tdr8p8R3FCCfYoXXvX+Eab+CaDx5pUPim1Mc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -980,7 +980,7 @@
               "netrc": "",
               "sha256": {
                 "linux-x86_64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531",
-                "linux-aarch64": "d55dcbb309de7ade4e3073ec3ac3fac4d3ff236d54df3c4de04464fe68bec531"
+                "linux-aarch64": "f6fd8cf8bb12f507c4a55609ef6a435b3c59bc658008b712b80ec1cdc1ee9325"
               },
               "strip_prefix": {
                 "linux-x86_64": "LLVM-19.1.6-Linux-X64",
