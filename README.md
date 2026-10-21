@@ -1,4 +1,4 @@
-# Stater Template for Bazel projects
+# Starter Template for Bazel projects
 
 ## Overview
 
@@ -7,10 +7,13 @@ The current starter template uses the following programs:
 - Build system:
   - [Bazel](https://bazel.build/): Build and test software of any size, quickly
     and reliably.
-- Continouos integration (CI):
-  - [GitHub Actions](https://github.com/features/actions): automate your CI/CD
-    workflows (e.g. build, test, deploy).
-- Development enviroment
+- Continuous integration (CI):
+  - [BuildBuddy Workflows](https://www.buildbuddy.io/docs/workflows-setup/):
+    build and test every push and pull request with remote execution
+    (`buildbuddy.yaml`).
+  - [GitHub Actions](https://github.com/features/actions): release automation
+    (images, binaries and documentation) on pushes to `main`.
+- Development environment
   - [devenv](https://devenv.sh/): Declaratively define your development
     environment by toggling basic options.
   - [pre-commit](https://devenv.sh/git-hooks/): Git hook scripts are useful for
@@ -25,7 +28,7 @@ The current starter template uses the following programs:
   - [Git](https://git-scm.com/): distributed version control system (VCS) that
     tracks versions of files.
   - [Commitizen](https://commitizen-tools.github.io/commitizen/): enforces a
-    standarized set of rules to write commits
+    standardized set of rules to write commits
     ([conventional commits](https://www.conventionalcommits.org/) by default)
   - [Release-please](https://github.com/googleapis/release-please): automates
     CHANGELOG generation, the creation of GitHub releases, and version bumps
@@ -39,6 +42,14 @@ The current starter template uses the following programs:
 1. Change directory into the repository
 
 1. Enter the development environment `devenv shell`
+
+1. Install the Bazel credential helper once per clone (it authenticates
+   downloads from GitHub and Docker Hub; without it, pulling the base image
+   fails with `401 Unauthorized`):
+
+   ```shell
+   bazelisk run @tweag-credential-helper//installer
+   ```
 
 1. Develop your code and build using Bazel
 
@@ -56,9 +67,8 @@ The current starter template uses the following programs:
 1. Push your changes
 
 > [!NOTE]
-> Pushing will trigger the **GitHub Actions**:
->
-> - CI (i.e. building, testing, style conventions, linting, documentation).
+> Pushing will trigger the **BuildBuddy workflow**, which builds and tests
+> `//test/...`, `//benchmark/...` and `//integration/...`.
 
 1. After pushing your changes to the remote, an automatic pull request
   (i.e. `release PR`) will show up. Whenever you decide to merge it an
@@ -74,6 +84,17 @@ development environment.
 # In your host shell: change directory to the location of this project
 devenv shell
 ```
+
+## Using this template for a new project
+
+1. Set the project parameters in `bzl/variables.bzl` (product name,
+   description, repository URL, image name) and rename `module(name = ...)`
+   in `MODULE.bazel`.
+1. Container images are pushed to `ghcr.io/<repository owner>`; set
+   `IMAGE_REGISTRY` to push elsewhere (see `tools/workspace_status.sh`).
+1. Reset `.release-please-manifest.json`, `.cz.yaml` and `CHANGELOG.md` to
+   your first version.
+1. Replace `lib/greeter` and `standalone` with your own code.
 
 ## Acknowledgments
 

@@ -1,33 +1,56 @@
 /**
  * @file main.cpp
- * @brief Simple program that prints "Hello, world!!" to the standard output.
+ * @brief Command-line front end for the greeter library.
  *
- * This is a minimal example demonstrating basic output to the console using
- * the C++ standard library.
+ * Usage: `hello-world [name] [en|de|es|fr]`. Prints a greeting for `name`
+ * (default "world") in the given language (default English).
  *
  * @author Your Name
  * @date 2025-04-28
  */
 
 #include <iostream>
+#include <stdexcept>
+#include <string>
+
+#include "lib/greeter/include/greeter.h"
+
+namespace {
+
+  /**
+   * @brief Maps a two-letter language code to greeter::LanguageCode.
+   * @throw std::invalid_argument if the code is not supported
+   */
+  greeter::LanguageCode parse_language(const std::string& code) {
+    if (code == "en") return greeter::LanguageCode::EN;
+    if (code == "de") return greeter::LanguageCode::DE;
+    if (code == "es") return greeter::LanguageCode::ES;
+    if (code == "fr") return greeter::LanguageCode::FR;
+    throw std::invalid_argument("unsupported language: " + code);
+  }
+
+}  // namespace
 
 /**
  * @brief Entry point of the program.
  *
- * Prints the message "Hello, world!!" followed by a newline to the standard output.
+ * @return 0 on success, 1 on invalid arguments.
  *
- * @return Returns 1 to indicate the program ended with a custom status code.
- *
- * @note Returning 1 typically indicates an error or abnormal termination,
- *       but here it is used explicitly as the program's return value.
- *
- * @example
+ * @par Example
  * @code
- * $ ./hello_world
- * Hello, world!!
+ * $ ./hello-world Alice fr
+ * Bonjour, Alice!
  * @endcode
  */
-int main() {
-  std::cout << "Hello, world!!" << std::endl;
-  return 1;
+int main(int argc, char* argv[]) {
+  try {
+    const std::string name = argc > 1 ? argv[1] : "world";
+    const auto lang = argc > 2 ? parse_language(argv[2]) : greeter::LanguageCode::EN;
+    std::cout << greeter::Greeter(name).greet(lang) << std::endl;
+    return 0;
+  } catch (const std::invalid_argument& e) {
+    std::cerr << "error: " << e.what() << "\nusage: " << argv[0] << " [name] [en|de|es|fr]"
+              << std::endl;
+    return 1;
+  }
 }

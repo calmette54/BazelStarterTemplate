@@ -22,12 +22,20 @@ commit_sha=$(git rev-parse HEAD)
 commit_sha_short=$(git rev-parse --short=6 HEAD)
 echo "COMMIT_SHA $commit_sha"
 
-# version_tag=$(jq -r '.["."]' .release-please-manifest.json)
+# release-please bumps this manifest in every release PR, so it holds the
+# version of the current release.
+version_tag=$(sed -n 's/.*"\.": *"\([^"]*\)".*/\1/p' .release-please-manifest.json)
 
 # Note: the "STABLE_" suffix causes these to be part of the "stable" workspace
 # status, which may trigger rebuilds of certain targets if these values change
 # and you're building with the "--stamp" flag.
 echo "STABLE_GIT_COMMIT $commit_sha"
 echo "STABLE_GIT_COMMIT_SHORT $commit_sha_short"
-# echo "STABLE_SEMANTIC_VERSION $version_tag"
-echo "STABLE_IMAGE_REGISTRY ghcr.io/alemoreno991"
+echo "STABLE_SEMANTIC_VERSION ${version_tag:-0.0.0}"
+
+# Image registry: $IMAGE_REGISTRY if set, otherwise ghcr.io/<repository owner>
+# (from GitHub Actions, or parsed from the origin URL). ghcr.io requires
+# lowercase names.
+repo_owner=${GITHUB_REPOSITORY_OWNER:-$(echo "$repo_url" | sed -E 's#^.*[:/]([^/]+)/[^/]+$#\1#')}
+image_registry=${IMAGE_REGISTRY:-ghcr.io/$(echo "$repo_owner" | tr '[:upper:]' '[:lower:]')}
+echo "STABLE_IMAGE_REGISTRY $image_registry"
