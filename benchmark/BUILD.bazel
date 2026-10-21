@@ -1,6 +1,7 @@
 cc_test(
     name = "benchmark",
     srcs = ["benchmark_test.cpp"],
+    visibility = ["//test/lint:__pkg__"],
     deps = [
         "//lib/greeter",
         "@google_benchmark//:benchmark_main",

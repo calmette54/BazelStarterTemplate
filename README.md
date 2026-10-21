@@ -53,6 +53,10 @@ The current starter template uses the following programs:
 
 1. Develop your code and build using Bazel
 
+1. Check the code: `bazelisk test //...` (includes clang-tidy via
+   `//test/lint`), `bazelisk lint //...` for lint results with fixes, and
+   `bazelisk coverage //...` for a coverage report
+
 1. Commit your changes using `cz commit`
 
 > [!IMPORTANT]

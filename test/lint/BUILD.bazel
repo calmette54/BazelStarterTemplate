@@ -1,0 +1,12 @@
+load("//bzl/lint:linters.bzl", "clang_tidy_test")
+
+# Fails when clang-tidy reports anything (see //:.clang-tidy).
+clang_tidy_test(
+    name = "clang_tidy_test",
+    srcs = [
+        "//benchmark",
+        "//lib/greeter",
+        "//standalone:hello-world",
+        "//test/greeter:greeter_test",
+    ],
+)

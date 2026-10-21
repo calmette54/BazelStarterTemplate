@@ -2,11 +2,10 @@
 
 #include "lib/greeter/include/greeter.h"
 
-static const greeter::Greeter kGreeter("Tests");
-
 static void BM_greeter(benchmark::State& state) {
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(kGreeter.greet(greeter::LanguageCode::EN));
+  const greeter::Greeter greeter("Tests");
+  for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
+    benchmark::DoNotOptimize(greeter.greet(greeter::LanguageCode::EN));
   }
 }
 

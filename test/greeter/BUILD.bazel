@@ -1,6 +1,7 @@
 cc_test(
     name = "greeter_test",
     size = "small",
+    visibility = ["//test/lint:__pkg__"],
     srcs = [
         "src/greeter.cpp",
         "src/main.cpp",

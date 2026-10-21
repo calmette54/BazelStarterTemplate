@@ -10,6 +10,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace greeter {
@@ -20,7 +21,7 @@ namespace greeter {
    *
    * This enum defines the supported languages for greeting messages.
    */
-  enum class LanguageCode {
+  enum class LanguageCode : std::uint8_t {
     EN, /**< English */
     DE, /**< German (Deutsch) */
     ES, /**< Spanish (Español) */
@@ -74,7 +75,7 @@ namespace greeter {
      * @note The returned string includes punctuation and capitalization appropriate
      *       for the language.
      */
-    std::string greet(LanguageCode lang = LanguageCode::EN) const;
+    [[nodiscard]] std::string greet(LanguageCode lang = LanguageCode::EN) const;
   };
 
 }  // namespace greeter
