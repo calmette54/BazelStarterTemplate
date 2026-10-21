@@ -19,6 +19,7 @@ filegroup(
 cc_binary(
     name = "hello-world",
     srcs = ["main.cpp"],
+    deps = ["//lib/greeter"],
 )
 
 # Exposes the value of the project's naming convention and
@@ -47,9 +48,8 @@ pkg_tar(
 )
 
 # Making image
-# C++ programs usually need some fundamental libraries such as glibc, libstdc++, etc.
-# Correspondigly, use language-specific distroless images.
-# Here we use docker.io/library/ubuntu image for this C++ program.
+# C++ programs need some fundamental libraries such as glibc and libstdc++,
+# so we use the docker.io/library/ubuntu image as the base.
 
 # Use the value of --embed_label under --stamp, otherwise use a deterministic constant
 # value to ensure cache hits for actions that depend on this.
@@ -92,7 +92,7 @@ oci_image_index(
 )
 
 IMAGE_NAME = "my-multiarch-image"
-# NOTE: STABLE_SEMANTIC_VERSION is defined in tools/bazel_stamp_vars.sh
+# NOTE: STABLE_SEMANTIC_VERSION is defined in tools/workspace_status.sh
 expand_template(
     name = "release-tags",
     out = "release-tags.txt",
@@ -103,7 +103,7 @@ expand_template(
         "v0.0.0",
     ]
 )
-# NOTE: STABLE_GIT_COMMIT_SHORT is defined in tools/bazel_stamp_vars.sh
+# NOTE: STABLE_GIT_COMMIT_SHORT is defined in tools/workspace_status.sh
 expand_template(
     name = "wip-tags",
     out = "wip-tags.txt",
@@ -114,7 +114,7 @@ expand_template(
         "sha256",
     ]
 )
-# NOTE: STABLE_GIT_COMMIT_SHORT is defined in tools/bazel_stamp_vars.sh
+# NOTE: STABLE_GIT_COMMIT_SHORT is defined in tools/workspace_status.sh
 expand_template(
     name = "dirty-tags",
     out = "dirty-tags.txt",
@@ -126,7 +126,7 @@ expand_template(
         "latest",
     ]
 )
-# NOTE: STABLE_IMAGE_REGISTRY is defined in tools/bazel_stamp_vars.sh
+# NOTE: STABLE_IMAGE_REGISTRY is defined in tools/workspace_status.sh
 expand_template(
     name = "repositories",
     out = "repositories.txt",
