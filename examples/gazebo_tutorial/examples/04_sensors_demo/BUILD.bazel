@@ -1,0 +1,32 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 4: Sensor Simulation and Integration
+# Demonstrates comprehensive sensor systems:
+# - Camera sensors (RGB, depth, thermal, stereo)
+# - LiDAR sensors (2D/3D, multi-beam configurations)
+# - IMU sensors (accelerometer, gyroscope, magnetometer)
+# - GPS sensors and positioning systems
+# - Sensor fusion and data processing
+
+# Multi-sensor platform demonstration
+# Shows integrated sensor suite with data collection and analysis
+cc_binary(
+    name = "lidar_demo",
+    srcs = ["lidar_demo.cc"],
+    deps = [
+        "@gz-sensors//:gz-sensors",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        "@eigen//:eigen",
+    ],
+    data = [
+        "//worlds:lidar_demo_world",
+    ],
+)
+
+# IMU and inertial sensor demonstration
+# Accelerometer, gyroscope, and magnetometer integration

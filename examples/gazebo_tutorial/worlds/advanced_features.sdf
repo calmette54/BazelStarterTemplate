@@ -1,0 +1,504 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="advanced_features">
+    
+    <!-- Advanced Physics Configuration -->
+    <physics name="default" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <!-- Advanced physics settings -->
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>50</iters>
+          <sor>1.3</sor>
+          <use_dynamic_moi_rescaling>true</use_dynamic_moi_rescaling>
+        </solver>
+        <constraints>
+          <cfm>0.0000001</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+    
+    <!-- Essential Plugins -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors"/>
+    
+    <!-- Advanced System Plugins -->
+    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::systems::WindEffects">
+      <horizontal>
+        <magnitude>
+          <time_for_rise>10</time_for_rise>
+          <sin>
+            <amplitude_percent>0.05</amplitude_percent>
+            <period>60</period>
+          </sin>
+        </magnitude>
+        <direction>
+          <time_for_rise>30</time_for_rise>
+          <sin>
+            <amplitude>5</amplitude>
+            <period>20</period>
+          </sin>
+        </direction>
+      </horizontal>
+      <vertical>
+        <noise type="gaussian">
+          <mean>0</mean>
+          <stddev>0.0002</stddev>
+        </noise>
+      </vertical>
+    </plugin>
+    
+    <!-- Dynamic Model Spawning Plugin -->
+    <plugin filename="gz-sim-log-system" name="gz::sim::systems::LogRecord">
+      <path>/tmp/gazebo_tutorial_log</path>
+      <resources>
+        <resource>world/default/model/*/link/*/sensor/*/image</resource>
+        <resource>world/default/model/*/link/*/sensor/*/points</resource>
+      </resources>
+    </plugin>
+    
+    <!-- Advanced Atmospheric Lighting -->
+    <atmosphere type="adiabatic">
+      <temperature>288.15</temperature>
+      <pressure>101325</pressure>
+      <temperature_gradient>-0.0065</temperature_gradient>
+    </atmosphere>
+    
+    <!-- Scene Configuration -->
+    <scene>
+      <ambient>0.4 0.4 0.4</ambient>
+      <background>0.7 0.8 1.0</background>
+      <shadows>true</shadows>
+      <grid>false</grid>
+      <origin_visual>false</origin_visual>
+    </scene>
+    
+    <!-- Advanced Lighting Setup -->
+    <light name="sun" type="directional">
+      <pose>0 0 20 0.3 0.2 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <direction>-0.2 -0.3 -1</direction>
+      <diffuse>1.0 1.0 0.95 1</diffuse>
+      <specular>0.8 0.8 0.8 1</specular>
+      <intensity>1.2</intensity>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+    
+    <!-- Dynamic Point Lights -->
+    <light name="dynamic_light_1" type="point">
+      <pose>5 5 3 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <diffuse>0.8 0.4 0.2 1</diffuse>
+      <specular>0.8 0.4 0.2 1</specular>
+      <intensity>2.0</intensity>
+      <range>10</range>
+      <attenuation>
+        <constant>0.5</constant>
+        <linear>0.2</linear>
+        <quadratic>0.05</quadratic>
+      </attenuation>
+    </light>
+    
+    <light name="dynamic_light_2" type="spot">
+      <pose>-5 5 4 0 1.0 -0.7</pose>
+      <cast_shadows>true</cast_shadows>
+      <direction>0.2 -0.8 -0.6</direction>
+      <diffuse>0.2 0.8 0.4 1</diffuse>
+      <specular>0.2 0.8 0.4 1</specular>
+      <intensity>3.0</intensity>
+      <range>15</range>
+      <spot>
+        <inner_angle>0.3</inner_angle>
+        <outer_angle>0.8</outer_angle>
+        <falloff>2.0</falloff>
+      </spot>
+      <attenuation>
+        <constant>0.4</constant>
+        <linear>0.1</linear>
+        <quadratic>0.02</quadratic>
+      </attenuation>
+    </light>
+    
+    <!-- Ground with Advanced Materials -->
+    <model name="advanced_ground">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>50 50</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.6</mu>
+                <mu2>0.6</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1000000</kp>
+                <kd>100</kd>
+                <max_vel>1.0</max_vel>
+                <min_depth>0.002</min_depth>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+        
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>50 50</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.3 0.3 0.3 1</specular>
+            <emissive>0 0 0 1</emissive>
+            <!-- PBR Material Properties -->
+            <pbr>
+              <metal>
+                <metalness>0.1</metalness>
+                <roughness>0.8</roughness>
+                <albedo_map>materials/textures/ground_albedo.jpg</albedo_map>
+                <normal_map>materials/textures/ground_normal.jpg</normal_map>
+                <roughness_map>materials/textures/ground_roughness.jpg</roughness_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Complex Building Structure -->
+    <model name="advanced_building">
+      <pose>10 10 0 0 0 0</pose>
+      <static>true</static>
+      
+      <!-- Building Base -->
+      <link name="base">
+        <pose>0 0 1.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>8 6 3</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>8 6 3</size></box>
+          </geometry>
+          <material>
+            <ambient>0.7 0.7 0.6 1</ambient>
+            <diffuse>0.9 0.9 0.8 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.7</roughness>
+                <albedo_map>materials/textures/concrete_albedo.jpg</albedo_map>
+                <normal_map>materials/textures/concrete_normal.jpg</normal_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Glass Windows -->
+      <link name="window_1">
+        <pose>4.1 0 2 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>0.1 2 1.5</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.1 2 1.5</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.3 0.4 0.3</ambient>
+            <diffuse>0.3 0.4 0.6 0.3</diffuse>
+            <specular>0.9 0.9 0.9 0.3</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.1</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="window_2">
+        <pose>-4.1 0 2 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>0.1 2 1.5</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.1 2 1.5</size></box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.3 0.4 0.3</ambient>
+            <diffuse>0.3 0.4 0.6 0.3</diffuse>
+            <specular>0.9 0.9 0.9 0.3</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.1</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Advanced Materials Showcase -->
+    <model name="material_showcase">
+      <pose>-8 8 0 0 0 0</pose>
+      <static>true</static>
+      
+      <!-- Metallic Sphere -->
+      <link name="metal_sphere">
+        <pose>0 0 1 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <sphere><radius>0.8</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.8</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.9 0.9 0.9 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.9</metalness>
+                <roughness>0.1</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Rough Concrete Block -->
+      <link name="concrete_block">
+        <pose>3 0 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.5 1</ambient>
+            <diffuse>0.8 0.8 0.7 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.9</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Emissive Object -->
+      <link name="glowing_cylinder">
+        <pose>-3 0 1 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <cylinder><radius>0.4</radius><length>2</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder><radius>0.4</radius><length>2</length></cylinder>
+          </geometry>
+          <material>
+            <ambient>0.8 0.4 0.2 1</ambient>
+            <diffuse>0.9 0.5 0.3 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <emissive>0.6 0.3 0.1 1</emissive>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.5</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Actor Waypoints for Pathfinding -->
+    <model name="actor_waypoints">
+      <static>true</static>
+      
+      <link name="waypoint_1">
+        <pose>-5 -5 0.1 0 0 0</pose>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.1</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0 1 0 0.8</ambient>
+            <diffuse>0 1 0 0.8</diffuse>
+            <emissive>0 0.5 0 0.8</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="waypoint_2">
+        <pose>5 -5 0.1 0 0 0</pose>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.1</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0 1 0 0.8</ambient>
+            <diffuse>0 1 0 0.8</diffuse>
+            <emissive>0 0.5 0 0.8</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="waypoint_3">
+        <pose>5 5 0.1 0 0 0</pose>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.1</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0 1 0 0.8</ambient>
+            <diffuse>0 1 0 0.8</diffuse>
+            <emissive>0 0.5 0 0.8</emissive>
+          </material>
+        </visual>
+      </link>
+      
+      <link name="waypoint_4">
+        <pose>-5 5 0.1 0 0 0</pose>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.1</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0 1 0 0.8</ambient>
+            <diffuse>0 1 0 0.8</diffuse>
+            <emissive>0 0.5 0 0.8</emissive>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Dynamic Objects for Spawning Demo -->
+    <model name="spawn_zone">
+      <pose>0 -8 0.05 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>4 4</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 0 0.3</ambient>
+            <diffuse>1 1 0 0.3</diffuse>
+            <emissive>0.5 0.5 0 0.3</emissive>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Performance Test Objects -->
+    <model name="performance_test_area">
+      <pose>15 0 0 0 0 0</pose>
+      <static>true</static>
+      
+      <!-- High-detail object (close LOD) -->
+      <link name="high_detail">
+        <pose>0 0 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>model://sphere_highpoly.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://sphere_highpoly.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.8 0.2 0.2 1</ambient>
+            <diffuse>1.0 0.3 0.3 1</diffuse>
+            <specular>0.9 0.9 0.9 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.5</metalness>
+                <roughness>0.3</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Low-detail object (distant LOD) -->
+      <link name="low_detail">
+        <pose>5 5 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <sphere><radius>0.5</radius></sphere>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.5</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>0.2 0.2 0.8 1</ambient>
+            <diffuse>0.3 0.3 1.0 1</diffuse>
+            <specular>0.5 0.5 0.5 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+  </world>
+</sdf>

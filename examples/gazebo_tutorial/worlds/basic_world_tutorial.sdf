@@ -1,0 +1,244 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo Tutorial - Basic World (Static Plugin Compatible)
+  
+  This world is specifically designed for Tutorial 01 and demonstrates:
+  
+  1. World configuration that works with statically linked plugins
+  2. Physics simulation with multiple interactive objects
+  3. Educational model arrangements for learning purposes
+  4. Proper lighting and visual setup
+  
+  Key differences from basic_world.sdf:
+  - NO dynamic plugin declarations (plugins are statically linked in C++)
+  - Multiple objects positioned for physics demonstration
+  - Educational naming and positioning for tutorial purposes
+  
+  Note: System plugins (Physics, UserCommands, SceneBroadcaster) are
+  statically linked into the executable rather than loaded dynamically.
+-->
+<sdf version="1.10">
+    <world name="tutorial_basic_world">
+        <!-- 
+          Physics Configuration
+          - 1ms timestep for accurate physics simulation
+          - Real-time factor of 1.0 for realistic simulation speed
+          - 1000 Hz update rate matches our server configuration
+        -->
+        <physics name="tutorial_physics" type="ignored">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+            <real_time_update_rate>1000</real_time_update_rate>
+        </physics>
+        
+        <!-- 
+          System Plugin Declarations - Educational Example
+          
+          TUTORIAL NOTE: This SDF demonstrates standard Gazebo plugin syntax. 
+          However, for hermetic Bazel builds, the plugins are statically linked rather than
+          dynamically loaded. This approach ensures reliable, reproducible builds without
+          complex runtime plugin path management.
+          
+          In production Gazebo deployments, these plugins would typically be loaded dynamically
+          from shared library files (.so) located via plugin search paths.
+        -->
+        
+        <!-- Physics System: Handles physics simulation and dynamics -->
+        <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics">
+        </plugin>
+        
+        <!-- User Commands System: Enables user interaction (create, move, delete models) -->
+        <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands">
+        </plugin>
+        
+        <!-- Scene Broadcaster System: Publishes scene data for visualization and GUI -->
+        <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+        
+        <!-- 
+          Lighting Setup
+          Directional light simulating the sun with realistic shadows
+        -->
+        <light type="directional" name="tutorial_sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+        
+        <!-- 
+          Ground Plane Model
+          Static surface for objects to rest on and demonstrate collisions
+        -->
+        <model name="tutorial_ground">
+            <static>true</static>
+            <link name="link">
+                <collision name="collision">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                        </plane>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <plane>
+                            <normal>0 0 1</normal>
+                            <size>100 100</size>
+                        </plane>
+                    </geometry>
+                    <material>
+                        <ambient>0.8 0.8 0.8 1</ambient>
+                        <diffuse>0.8 0.8 0.8 1</diffuse>
+                        <specular>0.8 0.8 0.8 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        
+        <!-- 
+          Demonstration Box - Will fall due to gravity
+          Positioned above ground to show physics simulation
+        -->
+        <model name="tutorial_box">
+            <pose>0 0 2.0 0 0 0</pose>
+            <link name="link">
+                <inertial>
+                    <mass>1.0</mass>
+                    <inertia>
+                        <ixx>0.166</ixx>
+                        <iyy>0.166</iyy>
+                        <izz>0.166</izz>
+                    </inertia>
+                </inertial>
+                <collision name="collision">
+                    <geometry>
+                        <box>
+                            <size>1 1 1</size>
+                        </box>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <box>
+                            <size>1 1 1</size>
+                        </box>
+                    </geometry>
+                    <material>
+                        <ambient>0.2 0.5 0.8 1</ambient>
+                        <diffuse>0.2 0.5 0.8 1</diffuse>
+                        <specular>0.1 0.1 0.1 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        
+        <!-- 
+          Demonstration Sphere - Different physics properties
+          Red colored for visual distinction from box
+        -->
+        <model name="tutorial_sphere">
+            <pose>2 0 2.5 0 0 0</pose>
+            <link name="link">
+                <inertial>
+                    <mass>0.5</mass>
+                    <inertia>
+                        <ixx>0.1</ixx>
+                        <iyy>0.1</iyy>
+                        <izz>0.1</izz>
+                    </inertia>
+                </inertial>
+                <collision name="collision">
+                    <geometry>
+                        <sphere>
+                            <radius>0.5</radius>
+                        </sphere>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <sphere>
+                            <radius>0.5</radius>
+                        </sphere>
+                    </geometry>
+                    <material>
+                        <ambient>0.8 0.2 0.2 1</ambient>
+                        <diffuse>0.8 0.2 0.2 1</diffuse>
+                        <specular>0.3 0.3 0.3 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+        
+        <!-- 
+          Demonstration Cylinder - Third object type
+          Green colored, different position for varied physics interaction
+        -->
+        <model name="tutorial_cylinder">
+            <pose>-2 0 1.5 0 0 0</pose>
+            <link name="link">
+                <inertial>
+                    <mass>0.8</mass>
+                    <inertia>
+                        <ixx>0.15</ixx>
+                        <iyy>0.15</iyy>
+                        <izz>0.08</izz>
+                    </inertia>
+                </inertial>
+                <collision name="collision">
+                    <geometry>
+                        <cylinder>
+                            <radius>0.5</radius>
+                            <length>1.0</length>
+                        </cylinder>
+                    </geometry>
+                </collision>
+                <visual name="visual">
+                    <geometry>
+                        <cylinder>
+                            <radius>0.5</radius>
+                            <length>1.0</length>
+                        </cylinder>
+                    </geometry>
+                    <material>
+                        <ambient>0.2 0.8 0.2 1</ambient>
+                        <diffuse>0.2 0.8 0.2 1</diffuse>
+                        <specular>0.2 0.2 0.2 1</specular>
+                    </material>
+                </visual>
+            </link>
+        </model>
+    </world>
+</sdf>
+
+<!--
+  Educational Notes for Tutorial:
+  
+  1. Plugin Architecture - Static vs Dynamic:
+     This tutorial shows standard Gazebo SDF syntax with <plugin> tags.
+     For hermetic builds, plugins are statically linked in Bazel for reliability.
+     Production deployments typically use dynamic loading from .so files.
+  
+  2. Physics Demonstration:
+     - All objects start above ground level
+     - Gravity will cause them to fall and interact
+     - Different shapes/masses show varied physics behavior
+  
+  3. Model Placement:
+     - Box at (0,0,2): Center reference point
+     - Sphere at (2,0,2.5): Right side, higher start
+     - Cylinder at (-2,0,1.5): Left side, lower start
+  
+  4. Educational Value:
+     - Students can observe gravity effects
+     - Collision detection with ground
+     - Different inertial properties
+     - Real-time physics simulation
+-->

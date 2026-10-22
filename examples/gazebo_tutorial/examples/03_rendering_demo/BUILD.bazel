@@ -1,0 +1,299 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# ============================================================================
+# Example 3: Advanced Rendering and Visual Effects Demonstration
+# ============================================================================
+#
+# This comprehensive example explores Gazebo's advanced rendering capabilities:
+# - Materials and Physically Based Rendering (PBR) workflows for realistic visuals
+# - Lighting systems (directional, point, spot) and shadow optimization techniques
+# - Camera systems, sensor rendering, and multi-view setup for computer vision
+# - Interactive PBR parameter exploration for material artist workflows
+# - Advanced visual effects, post-processing, and rendering pipeline optimization
+#
+# Educational Focus:
+# - Master PBR material workflows and parameter relationships for production assets
+# - Understand lighting types, shadow mapping, and performance optimization strategies
+# - Learn camera models, sensor simulation, and multi-camera synchronization techniques
+# - Explore visual effects implementation and rendering pipeline optimization
+# - Develop rendering performance analysis and GPU utilization optimization skills
+# - Apply industry best practices for real-time rendering in simulation environments
+#
+# Technical Implementation:
+# - Hermetic builds with static plugin integration ensure consistent rendering behavior
+# - Signal handling infrastructure provides graceful shutdown during long-running demos
+# - Real-time performance monitoring with RTF analysis for rendering optimization insights
+# - Comprehensive educational progression teaching rendering concepts from basics to advanced
+# - Production-ready error handling and resource management for professional workflows
+#
+# Prerequisites: Basic understanding of 3D graphics concepts and material properties
+# Usage: Run individual demos or use run_rendering_demos.sh for complete experience
+# ============================================================================
+
+# ============================================================================
+# Simple gz-transport Demo
+# ============================================================================
+# Demonstrates the hybrid approach: standard gz sim launch + programmatic control
+
+# Transport-based material controller demo - single-process launcher
+cc_binary(
+    name = "transport_demo",
+    srcs = ["transport_demo.cc"],
+    deps = [
+        "@gz-transport//:gz-transport",
+        "@gz-msgs//:gz-msgs",
+        "@gz-common//:gz-common",
+    ],
+    data = [
+        "//worlds:simple_transport_demo",
+    ],
+)
+
+# ============================================================================
+# 3D Visualization Infrastructure
+# ============================================================================
+# These targets provide complete 3D visualization by building gz-gui from source
+# and integrating it with the tutorial demos via the demo launcher system.
+
+# Integrated Demo Launcher - connects gz::sim::Server with gz-gui for 3D visualization
+cc_binary(
+    name = "demo_launcher",
+    srcs = ["demo_launcher.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-transport//:gz-transport",
+        # Static plugins for reliable simulation
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:all_worlds",
+        "//models:all_models",
+        "gz_gui_config.xml",
+        "gz_gui_minimal.xml",
+    ],
+)
+
+
+# Material showcase demonstration
+# Comprehensive PBR material demonstration with real-time property visualization
+cc_binary(
+    name = "material_showcase",
+    srcs = ["material_showcase.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin dependencies for reliable material rendering
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:material_showcase_visual",
+        "//models:all_models",
+    ],
+)
+
+# Lighting comparison demonstration
+# Advanced lighting systems with dynamic control and shadow optimization
+cc_binary(
+    name = "lighting_demo",
+    srcs = ["lighting_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin dependencies for consistent lighting behavior
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:lighting_demo_visual",
+        "//worlds:lighting_demo",
+        "//models:all_models",
+    ],
+)
+
+# Camera demonstration
+# Multi-camera sensor systems with advanced rendering pipeline integration
+cc_binary(
+    name = "camera_demo",
+    srcs = ["camera_demo.cc"],
+    deps = [
+        "@gz-sim",
+        "@gz-common",
+        "@gz-msgs",
+        "@gz-transport",
+        "@gz-rendering",
+        "@gz-sensors",
+        "@gz-math",
+        # Hermetic static plugin dependencies for reliable camera sensor operation
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:lighting_demo",
+        "//models:all_models",
+    ],
+)
+
+# PBR material explorer
+# Interactive material artist workflow tool with real-time parameter visualization
+cc_binary(
+    name = "pbr_explorer",
+    srcs = ["pbr_explorer.cc"],
+    deps = [
+        "@gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin dependencies for consistent PBR material behavior
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:lighting_demo",
+        "//models:all_models",
+    ],
+)
+
+# Visual effects demonstration
+# Advanced post-processing pipeline with GPU-accelerated rendering effects
+cc_binary(
+    name = "visual_effects",
+    srcs = ["visual_effects.cc"],
+    deps = [
+        "@gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-rendering//:gz-rendering",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin dependencies for stable visual effects pipeline
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:lighting_demo",
+        "//models:all_models",
+    ],
+)
+
+# ============================================================================
+# 3D Visualization Demo Launchers
+# ============================================================================
+# These shell script wrappers launch the demos with complete 3D visualization
+# by integrating gz::sim::Server with gz-gui built from source.
+
+# Material Showcase with 3D Visualization
+genrule(
+    name = "material_showcase_3d",
+    outs = ["material_showcase_3d.sh"],
+    cmd = '''cat > $@ << 'EOF'
+#!/bin/bash
+# Material Showcase 3D Visualization Launcher
+echo "=========================================="
+echo "TUTORIAL: Material Showcase with 3D GUI"
+echo "=========================================="
+echo "Requirements: Qt5/Qt6 must be installed"
+echo "  Ubuntu/Debian: sudo apt install qt5-default libqt5widgets5-dev"
+echo "  Fedora: sudo dnf install qt5-qtbase-devel qt5-qtwidgets-devel"
+echo "  macOS: brew install qt@5"
+echo ""
+
+# Find the demo_launcher binary
+LAUNCHER="$$(pwd)/$(location :demo_launcher)"
+WORLD_FILE="$$(pwd)/$(location //worlds:material_showcase_visual)"
+
+if [[ ! -f "$$LAUNCHER" ]]; then
+    echo "ERROR: demo_launcher not found at $$LAUNCHER"
+    echo "Run: bazelisk build //examples/03_rendering_demo:demo_launcher"
+    exit 1
+fi
+
+# Launch with proper arguments
+exec "$$LAUNCHER" "Material Showcase" "$$WORLD_FILE"
+EOF
+chmod +x $@''',
+    tools = [
+        ":demo_launcher",
+        "//worlds:material_showcase_visual",
+    ],
+    executable = True,
+)
+
+# Lighting Demo with 3D Visualization
+genrule(
+    name = "lighting_demo_3d",
+    outs = ["lighting_demo_3d.sh"],
+    cmd = '''cat > $@ << 'EOF'
+#!/bin/bash
+# Lighting Demo 3D Visualization Launcher
+echo "======================================="
+echo "TUTORIAL: Lighting Demo with 3D GUI"
+echo "======================================="
+echo "Requirements: Qt5/Qt6 must be installed"
+echo ""
+
+LAUNCHER="$$(pwd)/$(location :demo_launcher)"
+WORLD_FILE="$$(pwd)/$(location //worlds:lighting_demo_visual)"
+
+if [[ ! -f "$$LAUNCHER" ]]; then
+    echo "ERROR: demo_launcher not found"
+    echo "Run: bazelisk build //examples/03_rendering_demo:demo_launcher"
+    exit 1
+fi
+
+exec "$$LAUNCHER" "Lighting Demo" "$$WORLD_FILE"
+EOF
+chmod +x $@''',
+    tools = [
+        ":demo_launcher",
+        "//worlds:lighting_demo_visual",
+    ],
+    executable = True,
+)
+
+# ============================================================================
+# Comprehensive Rendering Demo Collection
+# ============================================================================
+#
+# This target builds all 5 advanced rendering demonstrations, providing a complete
+# educational experience for mastering Gazebo's rendering capabilities:
+#
+# 1. material_showcase - PBR material workflows and property visualization
+# 2. lighting_demo - Advanced lighting systems and shadow optimization
+# 3. camera_demo - Multi-camera sensor systems and rendering pipeline integration
+# 4. pbr_explorer - Interactive material artist workflow tools
+# 5. visual_effects - Post-processing effects and GPU-accelerated rendering
+#
+# Build Command: bazelisk build //examples/03_rendering_demo:all_demos
+# Educational Value: Complete rendering mastery from basics to advanced techniques
+# ============================================================================
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":material_showcase",
+        ":lighting_demo",
+        ":camera_demo",
+        ":pbr_explorer",
+        ":visual_effects",
+    ],
+)

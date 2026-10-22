@@ -52,3 +52,21 @@ jobs:
       - run: bazelisk test //...
       - if: matrix.check
         run: ${{ matrix.check }}
+
+  # Manual only (Actions > examples > Run workflow): building gz-sim and
+  # ogre-next from source takes too long for every pull request.
+  gazebo_tutorial:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    defaults:
+      run:
+        working-directory: examples/gazebo_tutorial
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-gazebo_tutorial-${{ hashFiles('examples/gazebo_tutorial/MODULE.bazel.lock') }}
+          restore-keys: bazel-gazebo_tutorial-
+      - run: bazelisk test //...

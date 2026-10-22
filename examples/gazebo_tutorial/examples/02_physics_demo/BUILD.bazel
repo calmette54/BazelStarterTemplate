@@ -1,0 +1,154 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+# Example 2: Physics Engine Demonstration
+# Explores advanced physics concepts and engine capabilities:
+# - Comparison of different physics engines (DART, Bullet, TPE)
+# - Collision detection and response mechanisms
+# - Joint mechanics and constraint systems
+# - Physics benchmarking and performance analysis
+# - Physics parameter configuration and tuning
+
+# Physics engine comparison demonstration
+# Compares DART, Bullet, and TPE physics engines with detailed performance analysis
+cc_binary(
+    name = "physics_comparison",
+    srcs = ["physics_comparison.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-physics//:gz-physics",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin integration for reliable physics engine testing
+        # Note: This approach ensures consistent physics behavior across different environments
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:physics_comparison_world",
+        "//models:all_models",
+        "//config:server_config",
+    ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
+)
+
+# Collision detection and response demonstration
+# Explores collision detection algorithms, surface properties, and contact forces
+cc_binary(
+    name = "collision_demo",
+    srcs = ["collision_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin integration for reliable collision detection
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-contact-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:collision_demo_world",
+        "//models:all_models",
+        "//config:server_config",
+    ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
+)
+
+# Joint constraints and mechanisms demonstration
+# Demonstrates various joint types, constraints, and mechanical linkages
+cc_binary(
+    name = "joint_demo",
+    srcs = ["joint_demo.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin integration for reliable joint simulation
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:joint_demo_world",
+        "//models:all_models",
+        "//config:server_config",
+    ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
+)
+
+# Physics performance benchmarking tool
+# Measures physics engine performance and provides detailed timing analysis
+cc_binary(
+    name = "physics_benchmark",
+    srcs = ["physics_benchmark.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin integration for consistent benchmarking
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//worlds:physics_benchmark_world",
+        "//models:all_models",
+        "//config:server_config",
+    ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
+)
+
+# Physics configuration utility
+# Interactive tool for configuring and tuning physics engine parameters
+cc_binary(
+    name = "physics_configurator",
+    srcs = ["physics_configurator.cc"],
+    deps = [
+        "@gz-sim//:gz-sim",
+        "@gz-common//:gz-common",
+        "@gz-msgs//:gz-msgs",
+        "@gz-transport//:gz-transport",
+        "@gz-math//:gz-math",
+        # Hermetic static plugin integration for configuration management
+        "@gz-sim//:gz-sim-physics-system-static",
+        "@gz-sim//:gz-sim-user-commands-system-static",
+        "@gz-sim//:gz-sim-scene-broadcaster-system-static",
+    ],
+    data = [
+        "//config:server_config",
+    ],
+    env = {
+        "GZ_SIM_SERVER_CONFIG_PATH": "$(location //config:server_config)",
+    },
+)
+
+# Convenience target to build all physics demos
+filegroup(
+    name = "all_demos",
+    srcs = [
+        ":physics_comparison",
+        ":collision_demo",
+        ":joint_demo",
+        ":physics_benchmark",
+        ":physics_configurator",
+    ],
+)

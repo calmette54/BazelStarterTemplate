@@ -1,0 +1,263 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="plugin_demo">
+    
+    <!-- Physics -->
+    <physics name="default" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    
+    <!-- Essential plugins -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    <plugin filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer"/>
+    <plugin filename="gz-sim-air-pressure-system" name="gz::sim::systems::AirPressure"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors"/>
+    
+    <!-- Custom system plugin for demonstration -->
+    <!-- This would be loaded if we had the plugin compiled -->
+    <!-- <plugin filename="libcustom_system_plugin.so" name="tutorial::CustomSystemPlugin"/> -->
+    
+    <!-- Lighting -->
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <direction>0 0 -1</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.5 0.5 0.5 1</specular>
+      <intensity>1.0</intensity>
+    </light>
+    
+    <!-- Ground plane -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Plugin demonstration models -->
+    
+    <!-- Sensor-enabled robot for plugin demos -->
+    <model name="sensor_robot">
+      <pose>0 0 0.5 0 0 0</pose>
+      <static>false</static>
+      
+      <link name="base_link">
+        <inertial>
+          <mass>10.0</mass>
+          <inertia>
+            <ixx>0.833</ixx>
+            <iyy>0.833</iyy>
+            <izz>0.833</izz>
+          </inertia>
+        </inertial>
+        
+        <collision name="collision">
+          <geometry>
+            <box><size>1.0 1.0 0.5</size></box>
+          </geometry>
+        </collision>
+        
+        <visual name="visual">
+          <geometry>
+            <box><size>1.0 1.0 0.5</size></box>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+          </material>
+          
+          <!-- Custom visual plugin would be attached here -->
+          <!-- <plugin filename="libcustom_visual_plugin.so" name="tutorial::CustomVisualPlugin"/> -->
+        </visual>
+        
+        <!-- IMU sensor -->
+        <sensor name="imu_sensor" type="imu">
+          <pose>0 0 0.2 0 0 0</pose>
+          <update_rate>100</update_rate>
+          <imu>
+            <angular_velocity>
+              <x>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.01</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.01</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.01</stddev>
+                </noise>
+              </z>
+            </angular_velocity>
+            <linear_acceleration>
+              <x>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.1</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.1</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0</mean>
+                  <stddev>0.1</stddev>
+                </noise>
+              </z>
+            </linear_acceleration>
+          </imu>
+          
+          <!-- Custom sensor plugin would be attached here -->
+          <!-- <plugin filename="libcustom_sensor_plugin.so" name="tutorial::CustomSensorPlugin"/> -->
+        </sensor>
+        
+        <!-- Camera sensor -->
+        <sensor name="camera" type="camera">
+          <pose>0.4 0 0.2 0 0 0</pose>
+          <update_rate>30</update_rate>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>100</far>
+            </clip>
+            <noise>
+              <type>gaussian</type>
+              <mean>0</mean>
+              <stddev>0.005</stddev>
+            </noise>
+          </camera>
+        </sensor>
+      </link>
+      
+      <!-- Custom model plugin would be attached here -->
+      <!-- <plugin filename="libcustom_model_plugin.so" name="tutorial::CustomModelPlugin">
+        <update_rate>100</update_rate>
+        <force_magnitude>50</force_magnitude>
+      </plugin> -->
+    </model>
+    
+    <!-- Moving objects for visual effects -->
+    <model name="moving_sphere">
+      <pose>3 3 1 0 0 0</pose>
+      <static>false</static>
+      
+      <link name="sphere_link">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+          </inertia>
+        </inertial>
+        
+        <collision name="collision">
+          <geometry>
+            <sphere><radius>0.5</radius></sphere>
+          </geometry>
+        </collision>
+        
+        <visual name="visual">
+          <geometry>
+            <sphere><radius>0.5</radius></sphere>
+          </geometry>
+          <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Test objects for collision and interaction -->
+    <model name="test_box_1">
+      <pose>-2 -2 0.25 0 0 0</pose>
+      <static>false</static>
+      <link name="link">
+        <inertial>
+          <mass>2.0</mass>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box><size>0.5 0.5 0.5</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.5 0.5 0.5</size></box>
+          </geometry>
+          <material>
+            <ambient>0 1 0 1</ambient>
+            <diffuse>0 1 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <model name="test_box_2">
+      <pose>2 -2 0.25 0 0 0</pose>
+      <static>false</static>
+      <link name="link">
+        <inertial>
+          <mass>2.0</mass>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box><size>0.5 0.5 0.5</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.5 0.5 0.5</size></box>
+          </geometry>
+          <material>
+            <ambient>1 1 0 1</ambient>
+            <diffuse>1 1 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+  </world>
+</sdf>
