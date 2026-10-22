@@ -1,0 +1,16 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Production-Ready 3D LiDAR Library
+# Provides clean, modular interface for 3D LiDAR processing with Gazebo integration
+
+cc_library(
+    name = "lidar_3d",
+    deps = [
+        "//lib:core",
+        "//lib:sensor",
+        "//lib:control",
+        "//lib:visualization",
+    ],
+)
