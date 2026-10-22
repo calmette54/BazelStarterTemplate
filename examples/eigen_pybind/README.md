@@ -1,6 +1,6 @@
 # Example: Python bindings for an Eigen library (pybind11)
 
-A C++ library built on [Eigen](https://eigen.tuxfamily.org) (matrix and
+The Eigen-based C++ library in [`eigen_math`](../eigen_math) (matrix and
 vector operations, decompositions, rotations), exposed to Python with
 [pybind11](https://pybind11.readthedocs.io). NumPy arrays convert to and from
 Eigen matrices automatically.
@@ -27,9 +27,9 @@ x = eb.solve_linear_system(a, np.array([1.0, 2.0, 3.0]))
 
 | File | Role |
 |---|---|
-| `MODULE.bazel` | Its own Bazel module: `eigen`, `pybind11_bazel`, `rules_python` (Python 3.12) and the pip hub `pypi` |
+| `MODULE.bazel` | Its own Bazel module: `pybind11_bazel`, `rules_python` (Python 3.12), the pip hub `pypi`, and `example_eigen_math` through `local_path_override` |
 | `toolchains.MODULE.bazel` | Symlink to the template's `bzl/toolchains.MODULE.bazel`: the same hermetic LLVM 19 toolchain, C++23 and sysroots |
-| `eigen_math.{h,cpp}` | Plain C++ library (`cc_library`), no Python in it |
+| `../eigen_math/` | Plain C++ library (`cc_library`), no Python in it; `test_eigen_math.cpp` here tests it |
 | `python_bindings.cpp` | The pybind11 module; `pybind_extension` builds `eigen_bindings.so` |
 | `BUILD.bazel` | `py_library(data = [":eigen_bindings"], imports = ["."])` makes `import eigen_bindings` work for Python targets |
 | `requirements.in`, `requirements_lock.txt` | NumPy and pytest, locked with hashes |

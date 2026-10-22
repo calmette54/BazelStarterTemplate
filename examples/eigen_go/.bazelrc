@@ -1,0 +1,9 @@
+# Build for aarch64 or x86_64, as in the template
+build:aarch64 --platforms=@toolchains_llvm//platforms:linux-aarch64
+build:x86_64 --platforms=@toolchains_llvm//platforms:linux-x86_64
+
+test --test_output=errors
+
+# The LLVM toolchain links position-independent executables; Go must emit
+# PIE code too, or cgo binaries cross-compiled for aarch64 fail to link.
+build --@rules_go//go/config:linkmode=pie

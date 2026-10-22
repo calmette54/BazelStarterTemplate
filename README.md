@@ -107,7 +107,9 @@ devenv shell
 `examples/` holds optional demos. Each is its own Bazel module with its own
 dependencies, so the template's `MODULE.bazel` stays small; the root build
 skips them (`.bazelignore`). They share the template's LLVM toolchain through
-`bzl/toolchains.MODULE.bazel`. Build one from its directory:
+`bzl/toolchains.MODULE.bazel`. `examples/eigen_math` is not an example of its
+own: it is the C++ library both binding examples depend on. Build one from its
+directory:
 
 ```bash
 cd examples/eigen_pybind && bazelisk test //...
@@ -116,6 +118,7 @@ cd examples/eigen_pybind && bazelisk test //...
 | Example | Shows |
 |---|---|
 | [`eigen_pybind`](examples/eigen_pybind) | Python bindings for an Eigen-based C++ library with pybind11 |
+| [`eigen_go`](examples/eigen_go) | Go bindings (cgo) for the same library |
 
 ## Acknowledgments
 

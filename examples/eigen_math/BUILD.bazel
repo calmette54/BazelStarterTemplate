@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# Plain C++ library: knows nothing about Python or Go
+cc_library(
+    name = "eigen_math",
+    srcs = ["eigen_math.cpp"],
+    hdrs = ["eigen_math.h"],
+    copts = [
+        "-O3",
+        # Disable Eigen's runtime assertions
+        "-DEIGEN_NO_DEBUG",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@eigen"],
+)

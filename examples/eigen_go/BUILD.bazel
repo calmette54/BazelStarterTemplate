@@ -1,0 +1,44 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+# C API over the C++ library: cgo can only call C functions
+cc_library(
+    name = "eigen_math_wrapper",
+    srcs = ["eigen_math_wrapper.cpp"],
+    hdrs = ["eigen_math_wrapper.h"],
+    copts = [
+        "-O3",
+        "-DEIGEN_NO_DEBUG",
+    ],
+    deps = ["@example_eigen_math//:eigen_math"],
+)
+
+go_library(
+    name = "eigen_math",
+    srcs = [
+        "eigen_math.go",
+        "eigen_math_wrapper.h",
+        "types.go",
+    ],
+    cdeps = [":eigen_math_wrapper"],
+    cgo = True,
+    importpath = "example.com/eigen_go",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "eigen_math_test",
+    size = "small",
+    srcs = ["eigen_math_test.go"],
+    embed = [":eigen_math"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
+
+go_binary(
+    name = "go_example",
+    srcs = ["example/main.go"],
+    deps = [":eigen_math"],
+)
