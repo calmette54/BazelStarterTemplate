@@ -1,18 +1,36 @@
 var indexSectionsWithContent =
 {
-  0: "at",
-  1: "at"
+  0: "adefglmnw",
+  1: "g",
+  2: "gm",
+  3: "gm",
+  4: "n",
+  5: "l",
+  6: "def",
+  7: "ad"
 };
 
 var indexSectionNames =
 {
   0: "all",
-  1: "pages"
+  1: "classes",
+  2: "files",
+  3: "functions",
+  4: "variables",
+  5: "enums",
+  6: "enumvalues",
+  7: "pages"
 };
 
 var indexSectionLabels =
 {
   0: "All",
-  1: "Pages"
+  1: "Classes",
+  2: "Files",
+  3: "Functions",
+  4: "Variables",
+  5: "Enumerations",
+  6: "Enumerator",
+  7: "Pages"
 };
 

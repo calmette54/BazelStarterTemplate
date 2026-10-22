@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['title_0',['Alejandro Title',['../index.html',1,'']]]
+  ['documentation_0',['API documentation',['../index.html',1,'']]]
 ];
