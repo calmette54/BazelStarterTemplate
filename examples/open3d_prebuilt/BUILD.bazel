@@ -1,0 +1,25 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+
+# The Open3D release used here is built for x86_64 Linux only
+X86_64_LINUX = [
+    "@platforms//cpu:x86_64",
+    "@platforms//os:linux",
+]
+
+cc_binary(
+    name = "open3d_example",
+    srcs = ["open3d_example.cpp"],
+    target_compatible_with = X86_64_LINUX,
+    deps = ["@open3d"],
+)
+
+cc_test(
+    name = "open3d_test",
+    size = "small",
+    srcs = ["open3d_test.cpp"],
+    target_compatible_with = X86_64_LINUX,
+    deps = [
+        "@googletest//:gtest_main",
+        "@open3d",
+    ],
+)
