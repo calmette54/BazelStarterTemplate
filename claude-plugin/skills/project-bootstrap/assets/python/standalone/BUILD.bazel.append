@@ -1,0 +1,15 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+
+# Make the files available to doxygen
+filegroup(
+    name = "sources",
+    srcs = glob(["*.py"]),
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "hello-world",
+    srcs = ["main.py"],
+    main = "main.py",
+    deps = ["//lib/greeter"],
+)

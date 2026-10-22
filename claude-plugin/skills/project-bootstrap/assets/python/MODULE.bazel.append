@@ -1,0 +1,11 @@
+
+#--------------------- Python dependencies --------------
+# Direct dependencies in requirements.in; update the lock with
+# `bazelisk run //:requirements.update`.
+pip_project = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip_project.parse(
+    hub_name = "pypi",
+    python_version = "3.12",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip_project, "pypi")

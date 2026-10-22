@@ -63,6 +63,8 @@ The current starter template uses the following programs:
 > Use `cz commit` instead of `git commit` (this way you'll have some hints to
 > write your commit message).
 
+<!-- separate the two alerts -->
+
 > [!NOTE]
 > Committing will trigger the **pre-commit hooks**:
 >
@@ -90,6 +92,30 @@ devenv shell
 ```
 
 ## Using this template for a new project
+
+### With Claude Code (recommended)
+
+The repository ships a Claude Code plugin, `bazel-starter`, that uses this
+template as the reference for project infrastructure:
+
+```text
+/plugin install bazel-starter --marketplace calmette54/BazelStarterTemplate
+```
+
+(older Claude Code: `/plugin marketplace add calmette54/BazelStarterTemplate`,
+then `/plugin install bazel-starter@bazel-starter`).
+
+| Skill | Use |
+|---|---|
+| `project-bootstrap` | New C++ or Python repository from this template, with a chosen set of components (image, docs, benchmark), verified and committed |
+| `project-standardize` | Audit an existing repository against the template, adopt missing concerns one PR at a time, upgrade to a newer template release |
+| `starter-template` | Which template files implement each concern (build, environment, lint, tests, release, CI, image, docs) |
+| `bazel-workspace`, `devenv-env` | Bazel dependencies and toolchains; tools in `devenv.nix` |
+
+Ask for example "start a new Python project called sensor-fusion from the
+template" or "audit this repository against the template".
+
+### By hand
 
 1. Set the project parameters in `bzl/variables.bzl` (product name,
    description, repository URL, image name) and rename `module(name = ...)`

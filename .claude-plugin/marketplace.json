@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "bazel-starter",
+  "description": "Skills that bootstrap and standardize Bazel projects from BazelStarterTemplate",
+  "owner": {
+    "name": "Alejandro Moreno"
+  },
+  "plugins": [
+    {
+      "name": "bazel-starter",
+      "description": "Bootstrap new repositories from BazelStarterTemplate and keep existing ones in line with it: hermetic Bazel builds, devenv, format/lint, tests, CI, release-please, OCI images, Doxygen.",
+      "source": "./claude-plugin",
+      "category": "development"
+    }
+  ]
+}
