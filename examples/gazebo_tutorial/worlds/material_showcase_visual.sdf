@@ -1,0 +1,516 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo Tutorial - Material Showcase Visual World
+
+  This world demonstrates Physically Based Rendering (PBR) materials with interactive 3D visualization:
+
+  1. PBR Material Types:
+     - Metals (varied metalness values)
+     - Dielectrics (plastics, ceramics, wood)
+     - Glass and transparent materials
+     - Emissive and glowing materials
+
+  2. Material Properties:
+     - Metalness (0.0 = dielectric, 1.0 = conductor)
+     - Roughness (0.0 = mirror, 1.0 = rough surface)
+     - Albedo and color values
+     - Transparency and opacity
+
+  3. Professional Lighting:
+     - 3-point lighting setup (key, fill, rim)
+     - Optimized for material visualization
+     - Shadow casting for depth perception
+
+  4. Educational Layout:
+     - Multiple test objects showing same material
+     - Comparison objects with different properties
+     - Professional studio-like environment
+
+  5. Usage:
+     Launch with gz-sim for interactive 3D material exploration
+     Perfect for understanding PBR workflows and material design
+-->
+
+<sdf version="1.10">
+  <world name="material_showcase">
+
+    <!-- Physics with stable timestep for smooth visualization -->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <!-- Essential system plugins for interactive GUI -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics" />
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands" />
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
+
+    <!--
+      Professional 3-Point Lighting Setup for Material Visualization
+      Key Light: Primary illumination from upper right
+      Fill Light: Softer illumination to reduce harsh shadows
+      Rim Light: Back lighting for edge definition and depth
+    -->
+
+    <!-- Key Light (Primary) - Warm directional light -->
+    <light type="directional" name="key_light">
+      <cast_shadows>true</cast_shadows>
+      <pose>5 5 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.8 1</diffuse>
+      <specular>0.8 0.8 0.8 1</specular>
+      <direction>-0.5 -0.5 -1</direction>
+    </light>
+
+    <!-- Fill Light - Cool soft light to balance shadows -->
+    <light type="directional" name="fill_light">
+      <cast_shadows>false</cast_shadows>
+      <pose>-3 3 8 0 0 0</pose>
+      <diffuse>0.4 0.4 0.5 1</diffuse>
+      <specular>0.2 0.2 0.3 1</specular>
+      <direction>0.3 -0.3 -1</direction>
+    </light>
+
+    <!-- Rim Light - Back light for edge definition -->
+    <light type="directional" name="rim_light">
+      <cast_shadows>false</cast_shadows>
+      <pose>0 -8 6 0 0 0</pose>
+      <diffuse>0.3 0.3 0.4 1</diffuse>
+      <specular>0.5 0.5 0.5 1</specular>
+      <direction>0 1 -0.3</direction>
+    </light>
+
+    <!-- Neutral ground plane for material contrast -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.7</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Material Showcase Objects - Center Stage -->
+
+    <!-- Main Showcase Sphere - Changes material properties dynamically -->
+    <model name="showcase_sphere">
+      <pose>0 0 2 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.4</ixx>
+            <iyy>0.4</iyy>
+            <izz>0.4</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>1.0</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>1.0</radius>
+            </sphere>
+          </geometry>
+          <!-- Default: Matte plastic material -->
+          <material>
+            <ambient>0.2 0.2 0.2 1</ambient>
+            <diffuse>0.8 0.2 0.2 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.9</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Material Comparison Grid -->
+
+    <!-- Row 1: Metal Materials -->
+
+    <!-- Polished Chrome -->
+    <model name="polished_chrome">
+      <pose>-3 2 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+          <material>
+            <ambient>0.7 0.7 0.7 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.9 0.9 0.9 1</specular>
+            <pbr>
+              <metal>
+                <metalness>1.0</metalness>
+                <roughness>0.05</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Brushed Aluminum -->
+    <model name="brushed_aluminum">
+      <pose>0 2 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.9</metalness>
+                <roughness>0.3</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Copper -->
+    <model name="copper">
+      <pose>3 2 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><sphere><radius>0.5</radius></sphere></geometry>
+          <material>
+            <ambient>0.7 0.4 0.2 1</ambient>
+            <diffuse>0.9 0.5 0.3 1</diffuse>
+            <specular>0.8 0.6 0.4 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.95</metalness>
+                <roughness>0.2</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Row 2: Dielectric Materials -->
+
+    <!-- Matte Plastic -->
+    <model name="matte_plastic">
+      <pose>-3 0 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1 1 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1 1 1</size></box></geometry>
+          <material>
+            <ambient>0.2 0.2 0.8 1</ambient>
+            <diffuse>0.3 0.3 0.9 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.95</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Glossy Paint -->
+    <model name="glossy_paint">
+      <pose>0 0 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1 1 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1 1 1</size></box></geometry>
+          <material>
+            <ambient>0.1 0.6 0.1 1</ambient>
+            <diffuse>0.2 0.8 0.2 1</diffuse>
+            <specular>0.7 0.7 0.7 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.1</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Ceramic -->
+    <model name="ceramic">
+      <pose>3 0 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1 1 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1 1 1</size></box></geometry>
+          <material>
+            <ambient>0.9 0.9 0.85 1</ambient>
+            <diffuse>0.95 0.95 0.9 1</diffuse>
+            <specular>0.4 0.4 0.4 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.3</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Row 3: Special Materials -->
+
+    <!-- Glass -->
+    <model name="glass">
+      <pose>-3 -2 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.5</radius><length>1.5</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.5</radius><length>1.5</length></cylinder></geometry>
+          <material>
+            <ambient>0.9 0.95 1.0 0.3</ambient>
+            <diffuse>0.95 0.98 1.0 0.3</diffuse>
+            <specular>1.0 1.0 1.0 0.3</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.02</roughness>
+              </metal>
+            </pbr>
+          </material>
+          <transparency>0.7</transparency>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Emissive Material -->
+    <model name="emissive">
+      <pose>0 -2 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.5</radius><length>1.5</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.5</radius><length>1.5</length></cylinder></geometry>
+          <material>
+            <ambient>0.2 0.1 0.4 1</ambient>
+            <diffuse>0.4 0.2 0.8 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0.6 0.3 1.0 1</emissive>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.7</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Rubber -->
+    <model name="rubber">
+      <pose>3 -2 1 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.5</radius><length>1.5</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.5</radius><length>1.5</length></cylinder></geometry>
+          <material>
+            <ambient>0.1 0.1 0.1 1</ambient>
+            <diffuse>0.2 0.2 0.2 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.98</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Background Environment -->
+
+    <!-- Background wall for depth and contrast -->
+    <model name="background_wall">
+      <pose>0 -8 3 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>15 0.2 6</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>15 0.2 6</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.9 0.9 0.9 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <pbr>
+              <metal>
+                <metalness>0.0</metalness>
+                <roughness>0.8</roughness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Interactive GUI Configuration -->
+    <gui fullscreen="0">
+      <!-- Main 3D Scene with Ogre2 for advanced PBR rendering -->
+      <plugin filename="MinimalScene" name="3D Material Showcase">
+        <gz-gui>
+          <title>Material Showcase - 3D View</title>
+          <property type="bool" key="showTitleBar">true</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.2 0.2 0.2</ambient_light>
+        <background_color>0.1 0.1 0.15</background_color>
+        <camera_pose>-6 6 4 0 0.3 -0.8</camera_pose>
+      </plugin>
+
+      <!-- World Control Panel -->
+      <plugin filename="WorldControl" name="World control">
+        <gz-gui>
+          <title>Simulation Control</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">200</property>
+          <property key="height" type="double">50</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">10</property>
+          <property key="y" type="double">10</property>
+        </gz-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+      </plugin>
+
+      <!-- Entity Tree for Material Inspection -->
+      <plugin filename="EntityTree" name="Entity tree">
+        <gz-gui>
+          <title>Scene Objects</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">280</property>
+          <property key="height" type="double">300</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">10</property>
+          <property key="y" type="double">80</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Transform Control for Object Manipulation -->
+      <plugin filename="TransformControl" name="Transform control">
+        <gz-gui>
+          <title>Transform Controls</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">250</property>
+          <property key="height" type="double">120</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">10</property>
+          <property key="y" type="double">400</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Scene Manager -->
+      <plugin filename="GzSceneManager" name="Scene Manager">
+        <gz-gui>
+          <title>Scene Manager</title>
+          <property key="resizable" type="bool">false</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
+          <property key="state" type="string">floating</property>
+          <property key="showTitleBar" type="bool">false</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- View Angle Controls -->
+      <plugin filename="ViewAngle" name="View Angle">
+        <gz-gui>
+          <title>Camera Views</title>
+          <property key="resizable" type="bool">true</property>
+          <property key="width" type="double">200</property>
+          <property key="height" type="double">100</property>
+          <property key="state" type="string">floating</property>
+          <property key="x" type="double">220</property>
+          <property key="y" type="double">10</property>
+        </gz-gui>
+      </plugin>
+
+    </gui>
+
+  </world>
+</sdf>

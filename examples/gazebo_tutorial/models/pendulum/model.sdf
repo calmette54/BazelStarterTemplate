@@ -1,0 +1,189 @@
+<?xml version="1.0"?>
+<!--
+  Pendulum Model
+  
+  A complete pendulum mechanism demonstrating revolute joint constraints,
+  gravitational effects, and oscillatory motion.
+  
+  Features:
+  1. Proper pendulum physics with accurate inertia
+  2. Revolute joint with limits and damping
+  3. Realistic pendulum proportions
+  4. Joint control capability
+-->
+
+<sdf version="1.10">
+  <model name="pendulum">
+    
+    <pose>0 0 3 0 0 0</pose>
+    
+    <!-- Fixed mounting point -->
+    <link name="mount">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>5.0</mass>
+        <inertia>
+          <ixx>0.5</ixx>
+          <iyy>0.5</iyy>
+          <izz>0.5</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.3 0.3 0.3</size>
+          </box>
+        </geometry>
+      </collision>
+      
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.3 0.3 0.3</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.5 0.5 0.5 1</ambient>
+          <diffuse>0.5 0.5 0.5 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Pendulum rod -->
+    <link name="rod">
+      <pose>0 0 -1.5 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.5</mass>
+        <!-- Rod inertia: thin rod of length L -->
+        <inertia>
+          <ixx>0.375</ixx>  <!-- (1/12) * m * L^2 for L=3m -->
+          <iyy>0.375</iyy>
+          <izz>0.001</izz>  <!-- Minimal about rod axis -->
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>3.0</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.05</radius>
+            <length>3.0</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.8 0.4 0.2 1</ambient>
+          <diffuse>0.8 0.4 0.2 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Pendulum bob (mass at the end) -->
+    <link name="bob">
+      <pose>0 0 -3.2 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>2.0</mass>
+        <!-- Sphere inertia -->
+        <inertia>
+          <ixx>0.32</ixx>  <!-- (2/5) * m * r^2 for r=0.4m -->
+          <iyy>0.32</iyy>
+          <izz>0.32</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      
+      <collision name="collision">
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.8</mu>
+              <mu2>0.8</mu2>
+            </ode>
+          </friction>
+          <restitution>0.2</restitution>
+        </surface>
+      </collision>
+      
+      <visual name="visual">
+        <geometry>
+          <sphere>
+            <radius>0.4</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <ambient>1 1 0 1</ambient>
+          <diffuse>1 1 0 1</diffuse>
+          <specular>0.2 0.2 0.2 1</specular>
+          
+          <pbr>
+            <metal>
+              <metalness>0.8</metalness>  <!-- Metallic bob -->
+              <roughness>0.3</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Joint connecting mount to world (fixed) -->
+    <joint name="mount_joint" type="fixed">
+      <parent>world</parent>
+      <child>mount</child>
+    </joint>
+    
+    <!-- Revolute joint for pendulum motion -->
+    <joint name="pendulum_joint" type="revolute">
+      <parent>mount</parent>
+      <child>rod</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- Swing in XZ plane -->
+        <limit>
+          <lower>-1.57</lower>   <!-- -90 degrees -->
+          <upper>1.57</upper>    <!-- +90 degrees -->
+          <effort>100</effort>
+          <velocity>10</velocity>
+        </limit>
+        <dynamics>
+          <damping>0.05</damping>   <!-- Light damping for realistic motion -->
+          <friction>0.01</friction>
+        </dynamics>
+      </axis>
+      <pose>0 0 1.5 0 0 0</pose>  <!-- Joint at top of rod -->
+    </joint>
+    
+    <!-- Joint connecting rod to bob (fixed) -->
+    <joint name="rod_bob_joint" type="fixed">
+      <parent>rod</parent>
+      <child>bob</child>
+      <pose>0 0 -1.7 0 0 0</pose>  <!-- Bob attached at bottom of rod -->
+    </joint>
+    
+    <!-- Configuration -->
+    <static>false</static>
+    <allow_auto_disable>false</allow_auto_disable>  <!-- Keep pendulum active -->
+    
+  </model>
+</sdf>

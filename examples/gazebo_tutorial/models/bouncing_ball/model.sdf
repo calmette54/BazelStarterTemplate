@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<!--
+  Bouncing Ball Model
+  
+  A sphere optimized for demonstrating restitution and bounce physics,
+  with configurable bounce properties and visual feedback.
+  
+  Features:
+  1. High restitution coefficient for bouncing
+  2. Optimal sphere inertia properties
+  3. Visual design for motion tracking
+  4. Surface properties for realistic bouncing
+-->
+
+<sdf version="1.10">
+  <model name="bouncing_ball">
+    
+    <pose>0 0 1 0 0 0</pose>
+    
+    <link name="link">
+      <!-- Sphere inertia properties -->
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1.0</mass>
+        <inertia>
+          <!-- Sphere inertia: I = (2/5) * m * r^2 -->
+          <ixx>0.4</ixx>
+          <iyy>0.4</iyy>
+          <izz>0.4</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      
+      <!-- Collision geometry optimized for bouncing -->
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+        
+        <!-- Surface properties for bouncing -->
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.3</mu>    <!-- Low friction for sliding -->
+              <mu2>0.3</mu2>
+            </ode>
+          </friction>
+          
+          <restitution>0.9</restitution>  <!-- High bounce -->
+          
+          <contact>
+            <ode>
+              <max_vel>0.01</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      
+      <!-- Visual representation with motion-tracking design -->
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.5</radius>
+          </sphere>
+        </geometry>
+        
+        <material>
+          <!-- Bright orange for visibility -->
+          <ambient>1 0.5 0 1</ambient>
+          <diffuse>1 0.5 0 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+          <emissive>0.1 0.05 0 1</emissive>
+          
+          <!-- PBR properties for rubber-like appearance -->
+          <pbr>
+            <metal>
+              <metalness>0.0</metalness>  <!-- Non-metallic -->
+              <roughness>0.8</roughness>  <!-- Matte finish -->
+            </metal>
+          </pbr>
+        </material>
+        
+        <cast_shadows>true</cast_shadows>
+      </visual>
+      
+      <!-- Additional visual element for rotation tracking -->
+      <visual name="stripe_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.51</radius>  <!-- Slightly larger than sphere -->
+            <length>0.1</length>
+          </cylinder>
+        </geometry>
+        
+        <material>
+          <ambient>0 0 0 1</ambient>
+          <diffuse>0 0 0 1</diffuse>
+        </material>
+        
+        <cast_shadows>false</cast_shadows>
+      </visual>
+      
+    </link>
+    
+    <!-- Configuration -->
+    <static>false</static>
+    <allow_auto_disable>true</allow_auto_disable>
+    
+  </model>
+</sdf>

@@ -1,0 +1,14 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+# Parses every world with sdformat (the same library gz sim uses), so a
+# broken world fails `bazel test` instead of the simulation.
+cc_test(
+    name = "worlds_test",
+    size = "small",
+    srcs = ["worlds_test.cc"],
+    data = ["//worlds:every_world"],
+    deps = [
+        "@googletest//:gtest_main",
+        "@sdformat",
+    ],
+)

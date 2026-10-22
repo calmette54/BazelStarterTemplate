@@ -1,0 +1,74 @@
+# Gazebo tutorial: worlds and demo programs for gz-sim, built from the BCR.
+#
+# A separate Bazel module: build it from this directory, not from the
+# repository root (the root .bazelignore skips examples/).
+module(name = "example_gazebo_tutorial")
+
+# Same hermetic LLVM toolchain as the template (symlink to
+# ../../bzl/toolchains.MODULE.bazel).
+include("//:toolchains.MODULE.bazel")
+
+# Gazebo Ionic dependencies from Bazel Central Registry (BCR)
+# These provide the complete Gazebo simulation environment
+
+# Core simulation engine - latest available version for Harmonic
+bazel_dep(name = "gz-sim", version = "9.3.0")
+
+# Eigen linear algebra library for point cloud processing
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+
+# Sensor simulation capabilities
+bazel_dep(name = "gz-sensors", version = "9.2.0.bcr.1")
+
+# Rendering engine with Ogre2 support
+bazel_dep(name = "gz-rendering", version = "9.2.0")
+
+# Ogre-Next 3D graphics engine for gz-rendering backend
+bazel_dep(name = "ogre-next", version = "2.3.3")
+
+# Physics simulation with multiple engine support (DART, Bullet, TPE)
+bazel_dep(name = "gz-physics", version = "8.3.0")
+
+# Common utilities and base functionality
+bazel_dep(name = "gz-common", version = "6.1.0")
+
+# Additional required dependencies (need to be explicit in Bazel 8+)
+bazel_dep(name = "gz-math", version = "8.1.1.bcr.1")
+bazel_dep(name = "gz-msgs", version = "11.1.0.bcr.2")
+bazel_dep(name = "gz-plugin", version = "3.1.0")
+bazel_dep(name = "gz-transport", version = "14.1.0.bcr.1")
+bazel_dep(name = "gz-utils", version = "3.1.0")
+
+# SDF format library - required for working with .sdf world and model files
+bazel_dep(name = "sdformat", version = "15.3.0.bcr.2")
+
+# Build toolchain requirements
+bazel_dep(name = "rules_cc", version = "0.2.0")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+# Foreign CC support for building CMake-based projects (gz-gui)
+bazel_dep(name = "rules_foreign_cc", version = "0.14.0")
+
+# Compression library for Gazebo components (version aligned with FreeImage)
+bazel_dep(name = "zlib", version = "1.3.1.bcr.6")
+
+# Image processing library - explicit dependency to ensure correct version
+bazel_dep(name = "freeimage", version = "3.19.10.bcr.3")
+
+# For comprehensive documentation generation (disabled for now - not in BCR)
+# bazel_dep(name = "rules_doxygen", version = "0.5.1")
+
+# ============================================================================
+# 3D Visualization Approach - System Gazebo Integration
+# ============================================================================
+# For 3D visualization, we integrate with system-installed Gazebo rather than
+# building gz-gui from source (which would require 15+ complex dependencies).
+#
+# Installation instructions:
+# - Ubuntu/Debian: sudo apt install gz-harmonic
+# - Fedora: sudo dnf install gz-harmonic
+# - macOS: brew install gazebo
+#
+# This provides immediate working 3D visualization while keeping tutorial
+# logic built hermetically with Bazel.
+bazel_dep(name = "googletest", version = "1.15.2", dev_dependency = True)

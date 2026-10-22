@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<!--
+  Physics Test Box Model
+  
+  A box specifically designed for physics demonstrations with
+  configurable properties and enhanced physics debugging.
+  
+  Features:
+  1. Adjustable mass and inertia properties
+  2. Multiple surface material options
+  3. Enhanced collision detection
+  4. Physics performance optimization
+-->
+
+<sdf version="1.10">
+  <model name="physics_box">
+    
+    <pose>0 0 0.5 0 0 0</pose>
+    
+    <link name="link">
+      <!-- Physics properties optimized for testing -->
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.166</ixx>
+          <iyy>0.166</iyy>
+          <izz>0.166</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      
+      <!-- Collision geometry with detailed surface properties -->
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        
+        <!-- Configurable surface properties -->
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+              <fdir1>0 0 0</fdir1>
+              <slip1>0.0</slip1>
+              <slip2>0.0</slip2>
+            </ode>
+            <torsional>
+              <coefficient>1.0</coefficient>
+              <patch_radius>0.0</patch_radius>
+              <surface_radius>0.0</surface_radius>
+              <use_patch_radius>true</use_patch_radius>
+              <ode>
+                <slip>0.0</slip>
+              </ode>
+            </torsional>
+          </friction>
+          
+          <restitution>0.3</restitution>
+          
+          <contact>
+            <collide_without_contact>false</collide_without_contact>
+            <collide_without_contact_bitmask>1</collide_without_contact_bitmask>
+            <collide_bitmask>1</collide_bitmask>
+            <ode>
+              <soft_cfm>0</soft_cfm>
+              <soft_erp>0.2</soft_erp>
+              <kp>1e+13</kp>
+              <kd>1</kd>
+              <max_vel>0.01</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      
+      <!-- Visual representation -->
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        
+        <material>
+          <script>
+            <name>Gazebo/Red</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <ambient>0.8 0.2 0.2 1</ambient>
+          <diffuse>0.8 0.2 0.2 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
+          
+          <!-- PBR properties for realistic appearance -->
+          <pbr>
+            <metal>
+              <metalness>0.1</metalness>
+              <roughness>0.6</roughness>
+            </metal>
+          </pbr>
+        </material>
+        
+        <transparency>0.0</transparency>
+        <cast_shadows>true</cast_shadows>
+      </visual>
+      
+    </link>
+    
+    <!-- Physics configuration -->
+    <static>false</static>
+    <allow_auto_disable>true</allow_auto_disable>
+    
+  </model>
+</sdf>

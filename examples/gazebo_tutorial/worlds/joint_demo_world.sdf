@@ -1,0 +1,522 @@
+<?xml version="1.0" ?>
+<!--
+  Joint Demonstration World
+  
+  This world showcases various joint types and mechanical mechanisms
+  to demonstrate how different constraints affect object motion.
+  
+  Features:
+  1. Multiple joint types (revolute, prismatic, universal, fixed)
+  2. Joint limits and constraints
+  3. Complex multi-body mechanisms
+  4. Joint control and actuation examples
+-->
+
+<sdf version="1.10">
+  <world name="joint_demo">
+    
+    <!-- Physics configuration -->
+    <physics name="default" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    
+    <!-- Essential plugins -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController"/>
+    
+    <!-- Lighting -->
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <direction>0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+    </light>
+    
+    <!-- Ground plane -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Simple Pendulum - Revolute Joint -->
+    <model name="pendulum">
+      <pose>-5 0 3 0 0 0</pose>
+      
+      <!-- Fixed base -->
+      <link name="base">
+        <inertial>
+          <mass>10</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <iyy>1</iyy>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Pendulum arm -->
+      <link name="arm">
+        <pose>0 0 -1 0 0 0</pose>
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.33</ixx>
+            <iyy>0.33</iyy>
+            <izz>0.01</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.05</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.05</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Pendulum bob -->
+      <link name="bob">
+        <pose>0 0 -2.5 0 0 0</pose>
+        <inertial>
+          <mass>2</mass>
+          <inertia>
+            <ixx>0.2</ixx>
+            <iyy>0.2</iyy>
+            <izz>0.2</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>0.3</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.3</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>1 1 0 1</ambient>
+            <diffuse>1 1 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Joints -->
+      <joint name="base_joint" type="fixed">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      
+      <joint name="pendulum_joint" type="revolute">
+        <parent>base</parent>
+        <child>arm</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1.57</lower>
+            <upper>1.57</upper>
+            <effort>100</effort>
+            <velocity>10</velocity>
+          </limit>
+          <dynamics>
+            <damping>0.1</damping>
+            <friction>0.01</friction>
+          </dynamics>
+        </axis>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+      
+      <joint name="arm_bob_joint" type="fixed">
+        <parent>arm</parent>
+        <child>bob</child>
+        <pose>0 0 -1.5 0 0 0</pose>
+      </joint>
+    </model>
+    
+    <!-- Piston Mechanism - Prismatic Joint -->
+    <model name="piston_mechanism">
+      <pose>0 0 1 0 0 0</pose>
+      
+      <!-- Cylinder -->
+      <link name="cylinder">
+        <inertial>
+          <mass>5</mass>
+          <inertia>
+            <ixx>0.5</ixx>
+            <iyy>0.5</iyy>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.2</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.2</radius>
+              <length>2</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Piston -->
+      <link name="piston">
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <mass>2</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.15</radius>
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.15</radius>
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0 1 1 1</ambient>
+            <diffuse>0 1 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Joints -->
+      <joint name="cylinder_joint" type="fixed">
+        <parent>world</parent>
+        <child>cylinder</child>
+      </joint>
+      
+      <joint name="piston_joint" type="prismatic">
+        <parent>cylinder</parent>
+        <child>piston</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-0.8</lower>
+            <upper>0.8</upper>
+            <effort>1000</effort>
+            <velocity>5</velocity>
+          </limit>
+          <dynamics>
+            <damping>10</damping>
+            <friction>5</friction>
+          </dynamics>
+        </axis>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+    </model>
+    
+    <!-- Door Mechanism - Revolute Joint with Friction -->
+    <model name="door_mechanism">
+      <pose>5 0 1 0 0 0</pose>
+      
+      <!-- Door frame -->
+      <link name="frame">
+        <inertial>
+          <mass>20</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <iyy>1</iyy>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.2 0.2 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.2 0.2 3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.3 0.1 1</ambient>
+            <diffuse>0.6 0.3 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Door -->
+      <link name="door">
+        <pose>0.6 0 0 0 0 0</pose>
+        <inertial>
+          <mass>10</mass>
+          <inertia>
+            <ixx>2.5</ixx>
+            <iyy>0.33</iyy>
+            <izz>2.5</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1.2 0.1 2.5</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.2 0.1 2.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.5 0.2 1</ambient>
+            <diffuse>0.8 0.5 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Joints -->
+      <joint name="frame_joint" type="fixed">
+        <parent>world</parent>
+        <child>frame</child>
+      </joint>
+      
+      <joint name="door_hinge" type="revolute">
+        <parent>frame</parent>
+        <child>door</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>0</lower>
+            <upper>1.57</upper>
+            <effort>200</effort>
+            <velocity>2</velocity>
+          </limit>
+          <dynamics>
+            <damping>5</damping>
+            <friction>2</friction>
+          </dynamics>
+        </axis>
+        <pose>-0.6 0 0 0 0 0</pose>
+      </joint>
+    </model>
+    
+    <!-- Universal Joint Demonstration -->
+    <model name="universal_joint_demo">
+      <pose>0 5 2 0 0 0</pose>
+      
+      <!-- Base -->
+      <link name="base">
+        <inertial>
+          <mass>5</mass>
+          <inertia>
+            <ixx>0.5</ixx>
+            <iyy>0.5</iyy>
+            <izz>0.5</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.5 0.5 0.2</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.5 0.5 0.2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>1 0.5 0 1</ambient>
+            <diffuse>1 0.5 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Intermediate link -->
+      <link name="intermediate">
+        <pose>0 0 0.5 0 0 0</pose>
+        <inertial>
+          <mass>2</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.01</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.05</radius>
+              <length>1</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.05</radius>
+              <length>1</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0 1 0.5 1</ambient>
+            <diffuse>0 1 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- End effector -->
+      <link name="end_effector">
+        <pose>0 0 1.2 0 0 0</pose>
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.05</ixx>
+            <iyy>0.05</iyy>
+            <izz>0.05</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>0.2</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.2</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>1 0 0.5 1</ambient>
+            <diffuse>1 0 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      
+      <!-- Joints -->
+      <joint name="universal_base" type="fixed">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      
+      <joint name="universal_axis1" type="revolute">
+        <parent>base</parent>
+        <child>intermediate</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <lower>-0.785</lower>
+            <upper>0.785</upper>
+            <effort>50</effort>
+          </limit>
+          <dynamics>
+            <damping>0.5</damping>
+          </dynamics>
+        </axis>
+        <pose>0 0 0.3 0 0 0</pose>
+      </joint>
+      
+      <joint name="universal_axis2" type="revolute">
+        <parent>intermediate</parent>
+        <child>end_effector</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-0.785</lower>
+            <upper>0.785</upper>
+            <effort>50</effort>
+          </limit>
+          <dynamics>
+            <damping>0.5</damping>
+          </dynamics>
+        </axis>
+        <pose>0 0 0.7 0 0 0</pose>
+      </joint>
+    </model>
+    
+  </world>
+</sdf>

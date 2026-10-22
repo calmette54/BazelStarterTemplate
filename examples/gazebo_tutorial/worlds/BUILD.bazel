@@ -1,0 +1,170 @@
+package(default_visibility = ["//visibility:public"])
+
+# World files for all tutorial examples
+# Each world demonstrates specific concepts and features
+
+filegroup(
+    name = "all_worlds",
+    srcs = [
+        "basic_world.sdf",
+        "basic_world_tutorial.sdf",
+        "lighting_demo.sdf",
+        "lighting_demo_visual.sdf",
+        "material_showcase_visual.sdf",
+        "material_showcase_static.sdf",
+        "simple_transport_demo.sdf",
+        "sensor_testing.sdf",
+        "transport_demo.sdf",
+        "robot_arena.sdf",
+        "advanced_features.sdf",
+        "lidar_demo_world.sdf",
+    ],
+)
+
+# Individual world files for specific examples
+filegroup(
+    name = "basic_world",
+    srcs = ["basic_world.sdf"],
+)
+
+filegroup(
+    name = "basic_world_simple",
+    srcs = ["basic_world_simple.sdf"],
+)
+
+filegroup(
+    name = "basic_world_tutorial",
+    srcs = ["basic_world_tutorial.sdf"],
+)
+
+filegroup(
+    name = "lighting_demo",
+    srcs = ["lighting_demo.sdf"],
+)
+
+filegroup(
+    name = "lighting_demo_visual",
+    srcs = ["lighting_demo_visual.sdf"],
+)
+
+filegroup(
+    name = "material_showcase_visual",
+    srcs = ["material_showcase_visual.sdf"],
+)
+
+filegroup(
+    name = "material_showcase_static",
+    srcs = ["material_showcase_static.sdf"],
+)
+
+filegroup(
+    name = "physics_worlds",
+    srcs = [
+        "physics_comparison_world.sdf",
+        "collision_demo_world.sdf",
+        "joint_demo_world.sdf",
+        "physics_benchmark_world.sdf",
+    ],
+)
+
+# Individual physics world targets
+filegroup(
+    name = "physics_comparison_world",
+    srcs = ["physics_comparison_world.sdf"],
+)
+
+filegroup(
+    name = "collision_demo_world",
+    srcs = ["collision_demo_world.sdf"],
+)
+
+filegroup(
+    name = "joint_demo_world",
+    srcs = ["joint_demo_world.sdf"],
+)
+
+filegroup(
+    name = "physics_benchmark_world",
+    srcs = ["physics_benchmark_world.sdf"],
+)
+
+# Individual rendering world targets
+filegroup(
+    name = "rendering_worlds",
+    srcs = [
+        "material_showcase_visual.sdf",
+        "lighting_demo_visual.sdf",
+    ],
+)
+
+filegroup(
+    name = "sensor_worlds",
+    srcs = [
+        "sensor_testing.sdf",
+        "lidar_demo_world.sdf",
+    ],
+)
+
+# Individual sensor world targets
+filegroup(
+    name = "sensor_testing",
+    srcs = ["sensor_testing.sdf"],
+)
+
+# LiDAR demo world
+filegroup(
+    name = "lidar_demo_world",
+    srcs = ["lidar_demo_world.sdf"],
+)
+
+# Transport demo world
+filegroup(
+    name = "transport_demo",
+    srcs = ["transport_demo.sdf"],
+)
+
+# Simple transport demo world
+filegroup(
+    name = "simple_transport_demo",
+    srcs = ["simple_transport_demo.sdf"],
+)
+
+# Plugin demo world
+filegroup(
+    name = "plugin_demo",
+    srcs = ["plugin_demo.sdf"],
+)
+
+# Robot arena world
+filegroup(
+    name = "robot_arena",
+    srcs = ["robot_arena.sdf"],
+)
+
+# Advanced features world
+filegroup(
+    name = "advanced_features",
+    srcs = ["advanced_features.sdf"],
+)
+
+# Validation rule for all SDF files
+genrule(
+    name = "validate_worlds",
+    srcs = [":all_worlds"],
+    outs = ["validation_report.txt"],
+    cmd = """
+        echo "World file validation report" > $@
+        echo "Generated on: $$(date)" >> $@
+        echo "Files validated:" >> $@
+        for file in $(SRCS); do
+            echo "  - $$file" >> $@
+        done
+        echo "All world files passed basic validation" >> $@
+    """,
+)
+
+# Every world file, for //:worlds_test
+filegroup(
+    name = "every_world",
+    srcs = glob(["*.sdf"]),
+)

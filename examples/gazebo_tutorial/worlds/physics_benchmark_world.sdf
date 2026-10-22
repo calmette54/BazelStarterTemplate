@@ -1,0 +1,79 @@
+<?xml version="1.0" ?>
+<!--
+  Physics Benchmark World Template
+  
+  This is a template world that gets dynamically populated by the
+  physics benchmark tool with varying numbers of objects for
+  performance testing.
+  
+  Features:
+  1. Minimal base setup for benchmark consistency  
+  2. Ground plane for object interaction
+  3. Configurable physics parameters
+  4. Performance monitoring setup
+-->
+
+<sdf version="1.10">
+  <world name="physics_benchmark">
+    
+    <!-- Physics configuration - optimized for benchmarking -->
+    <physics name="default" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    
+    <!-- Essential plugins -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    
+    <!-- Minimal lighting for performance -->
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <direction>0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+    </light>
+    
+    <!-- Large ground plane for benchmark objects -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>50 50</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <restitution>0.3</restitution>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>50 50</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    
+    <!-- Note: Benchmark objects are added dynamically by the benchmark tool -->
+    
+  </world>
+</sdf>
