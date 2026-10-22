@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.1.0](https://github.com/calmette54/BazelStarterTemplate/compare/v3.0.0...v3.1.0) (2026-10-22)
+
+
+### Features
+
+* **examples:** Add eigen_go cgo example ([#136](https://github.com/calmette54/BazelStarterTemplate/issues/136)) ([2903a34](https://github.com/calmette54/BazelStarterTemplate/commit/2903a342be0def119c7144d01285e4aed0e9939f))
+* **examples:** Add eigen_pybind example as a separate module ([#135](https://github.com/calmette54/BazelStarterTemplate/issues/135)) ([d07c920](https://github.com/calmette54/BazelStarterTemplate/commit/d07c920b5a682f7aa10725ffe4b0e1d1748f5eb0))
+* **examples:** Add gazebo_tutorial example (build only) ([#140](https://github.com/calmette54/BazelStarterTemplate/issues/140)) ([9c87bff](https://github.com/calmette54/BazelStarterTemplate/commit/9c87bff7e5a16c0912c9ef1eee90a069e57f6a61))
+* **examples:** Add lidar_3d Gazebo example ([#139](https://github.com/calmette54/BazelStarterTemplate/issues/139)) ([7b4fba6](https://github.com/calmette54/BazelStarterTemplate/commit/7b4fba61c664b9f0a79230730fdc2210b680b2ff))
+* **examples:** Add open3d_prebuilt example ([#138](https://github.com/calmette54/BazelStarterTemplate/issues/138)) ([eca0ef7](https://github.com/calmette54/BazelStarterTemplate/commit/eca0ef70a80951e406c6a323ef7edafc5a6ef64f))
+* **examples:** Add python_ai example with Gazelle-generated BUILD files ([#137](https://github.com/calmette54/BazelStarterTemplate/issues/137)) ([c575c0f](https://github.com/calmette54/BazelStarterTemplate/commit/c575c0fdb30f07fc3b64dadef275eb6327b06c32))
+* **plugin:** Add the bazel-starter Claude Code plugin ([#141](https://github.com/calmette54/BazelStarterTemplate/issues/141)) ([7d47efa](https://github.com/calmette54/BazelStarterTemplate/commit/7d47efaf06b5c8f0772c86ccb6aa788d1213d31b))
+
+
+### Bug Fixes
+
+* **core:** Repair release stamping, aarch64 toolchain and template defaults ([#128](https://github.com/calmette54/BazelStarterTemplate/issues/128)) ([1e51959](https://github.com/calmette54/BazelStarterTemplate/commit/1e519590f164263245e3ef33a9c2bba338ccf023))
+* **pre-commit:** formatter hook ([#127](https://github.com/calmette54/BazelStarterTemplate/issues/127)) ([2e55c36](https://github.com/calmette54/BazelStarterTemplate/commit/2e55c362236e2dd45d1eb1c9923aa5caee2eda97))
+* **toolchain:** compile with C++23 as configured ([#131](https://github.com/calmette54/BazelStarterTemplate/issues/131)) ([cb83bdd](https://github.com/calmette54/BazelStarterTemplate/commit/cb83bddaa36cadcddec7896d93303cd312e14d5c))
+
 ## [3.0.0](https://github.com/alemoreno991/BazelStarterTemplate/compare/v2.0.0...v3.0.0) (2025-04-28)
 
 
