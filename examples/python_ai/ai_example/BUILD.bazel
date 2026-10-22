@@ -1,0 +1,30 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_binary(
+    name = "main",
+    srcs = ["main.py"],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//ai_example/agents",
+        "//ai_example/models",
+        "@pypi//numpy",
+        "@pypi//pydantic",
+        "@pypi//torch",
+    ],
+)
+
+py_library(
+    name = "ai_example",
+    srcs = [
+        "__init__.py",
+        "main.py",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//ai_example/agents",
+        "//ai_example/models",
+        "@pypi//numpy",
+        "@pypi//pydantic",
+        "@pypi//torch",
+    ],
+)

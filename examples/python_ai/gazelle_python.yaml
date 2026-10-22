@@ -1,0 +1,35 @@
+# GENERATED FILE - DO NOT EDIT!
+#
+# To update this file, run:
+#   bazel run //:gazelle_python_manifest.update
+
+---
+manifest:
+  modules_mapping:
+    annotated_types: annotated_types
+    filelock: filelock
+    fsspec: fsspec
+    functorch: torch
+    iniconfig: iniconfig
+    isympy: sympy
+    jinja2: jinja2
+    markupsafe: markupsafe
+    mpmath: mpmath
+    networkx: networkx
+    numpy: numpy
+    packaging: packaging
+    pluggy: pluggy
+    py: pytest
+    pydantic: pydantic
+    pydantic_core: pydantic_core
+    pygments: pygments
+    pytest: pytest
+    setuptools: setuptools
+    sympy: sympy
+    torch: torch
+    torchgen: torch
+    typing_extensions: typing_extensions
+    typing_inspection: typing_inspection
+  pip_repository:
+    name: pypi
+integrity: 35f13ee5adc2db73e0eb00581e2b147a4b4ae3316c0524d2fab96c2ac4a69f35

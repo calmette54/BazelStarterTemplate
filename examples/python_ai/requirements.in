@@ -1,0 +1,6 @@
+# Direct dependencies; requirements_lock.txt is generated from this file
+# (see README.md).
+numpy
+pydantic
+pytest
+torch

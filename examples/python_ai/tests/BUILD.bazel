@@ -1,0 +1,20 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "tests",
+    srcs = ["__init__.py"],
+    visibility = ["//:__subpackages__"],
+)
+
+py_test(
+    name = "test_ai_example",
+    srcs = ["test_ai_example.py"],
+    deps = [
+        "//ai_example",
+        "//ai_example/agents",
+        "//ai_example/models",
+        "@pypi//numpy",
+        "@pypi//pytest",
+        "@pypi//torch",
+    ],
+)
