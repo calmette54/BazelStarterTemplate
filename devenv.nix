@@ -140,7 +140,7 @@
       # List of file types to run on (default: [ "file" ] (all files))
       # see also https://pre-commit.com/#filtering-files-with-types
       # You probably only need to specify one of `files` or `types`:
-      types_or = ["c" "c++"];
+      types_or = ["c" "c++" "python"];
       # Exclude files that were matched by these patterns (default: [ ] (none)):
       excludes = [];
       # The language of the hook - tells pre-commit

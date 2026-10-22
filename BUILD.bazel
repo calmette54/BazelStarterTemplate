@@ -5,7 +5,9 @@
 # See https://bazel.build/extending/config and
 # https://github.com/bazelbuild/bazel-skylib) for more info.
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag", "int_flag")
+# >>> template:cpp
 load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+# <<< template:cpp
 load("//:bzl/defs.bzl", "revision_mode")
 
 revision_mode(
@@ -42,6 +44,7 @@ config_setting(
 exports_files(
     [
         ".clang-tidy",
+        ".ruff.toml",
     ],
     visibility = ["//visibility:public"],
 )
@@ -51,7 +54,9 @@ alias(
     actual = "//bzl/format",
 )
 
+# >>> template:cpp
 refresh_compile_commands(
     name = "refresh_all",
     targets = ["//..."],
 )
+# <<< template:cpp
