@@ -1,6 +1,6 @@
 {
   "name": "bazel-starter",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Bootstrap new repositories from BazelStarterTemplate and keep existing ones in line with it: hermetic Bazel builds, devenv, format/lint, tests, CI, release-please, OCI images, Doxygen.",
   "author": {
     "name": "Alejandro Moreno"
