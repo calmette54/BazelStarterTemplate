@@ -98,6 +98,12 @@
     markdownlint = {
       enable = true;
       description = "Style checker and linter for markdown files";
+      # Tables, commands and prompt files exceed 80 columns; agent and skill
+      # files start with front matter and a prompt, not a heading.
+      settings.configuration = {
+        MD013 = false;
+        MD041 = false;
+      };
     };
 
     mixed-line-endings = {
