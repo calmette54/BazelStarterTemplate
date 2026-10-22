@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/calmette54/BazelStarterTemplate/compare/v3.1.0...v3.1.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **devenv:** declare git-hooks input for devenv 2.x ([#142](https://github.com/calmette54/BazelStarterTemplate/issues/142)) ([a53b253](https://github.com/calmette54/BazelStarterTemplate/commit/a53b253fab37659a409df6d03506e6324845a9df))
+
 ## [3.1.0](https://github.com/calmette54/BazelStarterTemplate/compare/v3.0.0...v3.1.0) (2026-10-22)
 
 
