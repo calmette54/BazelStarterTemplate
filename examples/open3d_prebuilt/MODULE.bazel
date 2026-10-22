@@ -1,0 +1,36 @@
+# Uses a prebuilt C++ SDK (Open3D's "devel" release) with the template's
+# toolchain: http_archive + a hand-written BUILD file with cc_import.
+#
+# A separate Bazel module: build it from this directory, not from the
+# repository root (the root .bazelignore skips examples/).
+module(name = "example_open3d_prebuilt")
+
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "googletest", version = "1.15.2", dev_dependency = True)
+
+# Same hermetic LLVM toolchain as the template (symlink to
+# ../../bzl/toolchains.MODULE.bazel).
+include("//:toolchains.MODULE.bazel")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# https://github.com/isl-org/Open3D/releases (x86_64 Linux only)
+http_archive(
+    name = "open3d",
+    build_file = "//third_party:open3d.BUILD",
+    integrity = "sha256-LlJf0q/n6AkH0rbjxmtp4u8UgdvO7Vcnt0mm5ly6VyA=",
+    strip_prefix = "open3d-devel-linux-x86_64-cxx11-abi-0.19.0",
+    urls = ["https://github.com/isl-org/Open3D/releases/download/v0.19.0/open3d-devel-linux-x86_64-cxx11-abi-0.19.0.tar.xz"],
+)
+
+# libc++.so.1 for libOpen3D.so, from the LLVM release of the toolchain
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+use_repo(llvm, "llvm_toolchain_llvm")
+
+llvm_runtime = use_repo_rule("//third_party:llvm_runtime.bzl", "llvm_runtime")
+
+llvm_runtime(
+    name = "llvm_runtime",
+    llvm_build_file = "@llvm_toolchain_llvm//:BUILD.bazel",
+)
