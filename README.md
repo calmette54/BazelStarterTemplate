@@ -99,6 +99,23 @@ devenv shell
 1. Reset `.release-please-manifest.json`, `.cz.yaml` and `CHANGELOG.md` to
    your first version.
 1. Replace `lib/greeter` and `standalone` with your own code.
+1. Delete `examples/` (and `.github/workflows/examples.yml`) or keep the
+   ones you need.
+
+## Examples
+
+`examples/` holds optional demos. Each is its own Bazel module with its own
+dependencies, so the template's `MODULE.bazel` stays small; the root build
+skips them (`.bazelignore`). They share the template's LLVM toolchain through
+`bzl/toolchains.MODULE.bazel`. Build one from its directory:
+
+```bash
+cd examples/eigen_pybind && bazelisk test //...
+```
+
+| Example | Shows |
+|---|---|
+| [`eigen_pybind`](examples/eigen_pybind) | Python bindings for an Eigen-based C++ library with pybind11 |
 
 ## Acknowledgments
 

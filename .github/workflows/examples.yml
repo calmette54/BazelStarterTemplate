@@ -1,0 +1,44 @@
+# Builds and tests each module under examples/. They are separate Bazel
+# modules, so the root build (BuildBuddy) does not cover them.
+name: examples
+
+on:
+  pull_request:
+    paths:
+      - "examples/**"
+      - "bzl/toolchains.MODULE.bazel"
+      - ".bazelversion"
+      - ".github/workflows/examples.yml"
+  push:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "bzl/toolchains.MODULE.bazel"
+      - ".bazelversion"
+      - ".github/workflows/examples.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.example }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - eigen_pybind
+    defaults:
+      run:
+        working-directory: examples/${{ matrix.example }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-${{ matrix.example }}-${{ hashFiles(format('examples/{0}/MODULE.bazel.lock', matrix.example)) }}
+          restore-keys: bazel-${{ matrix.example }}-
+      # bazelisk is preinstalled on GitHub-hosted Ubuntu runners
+      - run: bazelisk test //...
