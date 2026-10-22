@@ -1,12 +1,18 @@
+# >>> template:container
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push", "oci_load")
+# <<< template:container
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//:bzl/naming_convention.bzl", "naming_convention")
-load("//:bzl/variables.bzl", "IMAGE_NAME", "PROJECT_NAME")
+# >>> template:container
+load("//:bzl/variables.bzl", "IMAGE_NAME")
 load("//:bzl/transition.bzl", "multi_arch")
+# <<< template:container
+load("//:bzl/variables.bzl", "PROJECT_NAME")
 
 package(default_visibility = ["//visibility:public"])
 
+# >>> template:cpp
 # Make the files available to doxygen
 filegroup(
     name = "sources",
@@ -21,6 +27,7 @@ cc_binary(
     srcs = ["main.cpp"],
     deps = ["//lib/greeter"],
 )
+# <<< template:cpp
 
 # Exposes the value of the project's naming convention and
 # some compilation information to the package naming.
@@ -38,6 +45,10 @@ naming_convention(
 pkg_tar(
     name = "tar",
     srcs = [":hello-world"],
+    # >>> template:python
+    # The interpreter and the libraries are in the runfiles.
+    include_runfiles = True,
+    # <<< template:python
     package_file_name = select({
         "//:is_release": "{product_name}_{target_gnu_system}_{compilation_mode}__v{version}.tar",
         "//:is_wip": "{product_name}_{target_gnu_system}_{compilation_mode}__sha256-{commit_sha}.tar",
@@ -47,9 +58,10 @@ pkg_tar(
     package_variables = ":naming",
 )
 
+# >>> template:container
 # Making image
-# C++ programs need some fundamental libraries such as glibc and libstdc++,
-# so we use the docker.io/library/ubuntu image as the base.
+# The binary needs some fundamental libraries such as glibc (and libstdc++
+# for C++), so we use the docker.io/library/ubuntu image as the base.
 
 # Use the value of --embed_label under --stamp, otherwise use a deterministic constant
 # value to ensure cache hits for actions that depend on this.
@@ -173,3 +185,4 @@ filegroup(
     srcs = [":load_host_image"],
     output_group = "tarball",
 )
+# <<< template:container
