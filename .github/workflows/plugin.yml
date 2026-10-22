@@ -1,0 +1,64 @@
+# Creates projects with the bazel-starter plugin's bootstrap script and
+# checks that they build, pass their tests (including the image test), are
+# formatted and pass the audit. Keeps the template's component markers, the
+# Python overlay and the plugin scripts working together.
+name: plugin
+
+on:
+  pull_request:
+    paths-ignore:
+      - "examples/**"
+      - "CHANGELOG.md"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "examples/**"
+      - "CHANGELOG.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: cpp
+            args: --lang cpp
+          - name: cpp-minimal
+            args: --lang cpp --without container,docs,benchmark
+          - name: python
+            args: --lang python
+    env:
+      PROJECT: ${{ github.workspace }}/../demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-plugin-${{ matrix.name }}-${{ hashFiles('MODULE.bazel', 'bzl/toolchains.MODULE.bazel') }}
+          restore-keys: bazel-plugin-${{ matrix.name }}-
+      - name: Bootstrap
+        run: |
+          python3 claude-plugin/skills/project-bootstrap/scripts/bootstrap.py \
+            --template . --out "$PROJECT" --name demo ${{ matrix.args }}
+          git -C "$PROJECT" init -q -b main
+          git -C "$PROJECT" add -A
+      # bazelisk is preinstalled on GitHub-hosted Ubuntu runners
+      - name: Install the credential helper
+        working-directory: ${{ env.PROJECT }}
+        run: chmod +x "$(bazelisk run @tweag-credential-helper//installer)"
+      - name: Test
+        working-directory: ${{ env.PROJECT }}
+        run: bazelisk test //...
+      - name: Format check
+        working-directory: ${{ env.PROJECT }}
+        run: bazelisk run //bzl/format:format.check
+      - name: Audit
+        run: |
+          git -C "$PROJECT" add -A
+          python3 claude-plugin/skills/project-standardize/scripts/audit.py "$PROJECT" --template .

@@ -9,6 +9,7 @@ Run them with the Aspect CLI (`bazelisk lint //...`, configured in
 
 load("@aspect_rules_lint//lint:clang_tidy.bzl", "lint_clang_tidy_aspect")
 load("@aspect_rules_lint//lint:lint_test.bzl", "lint_test")
+load("@aspect_rules_lint//lint:ruff.bzl", "lint_ruff_aspect")
 
 clang_tidy = lint_clang_tidy_aspect(
     binary = Label("//bzl/lint:clang_tidy"),
@@ -19,3 +20,10 @@ clang_tidy = lint_clang_tidy_aspect(
 )
 
 clang_tidy_test = lint_test(aspect = clang_tidy)
+
+ruff = lint_ruff_aspect(
+    binary = Label("@aspect_rules_lint//format:ruff"),
+    configs = [Label("//:.ruff.toml")],
+)
+
+ruff_test = lint_test(aspect = ruff)

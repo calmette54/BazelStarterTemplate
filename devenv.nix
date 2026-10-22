@@ -98,6 +98,12 @@
     markdownlint = {
       enable = true;
       description = "Style checker and linter for markdown files";
+      # Tables, commands and prompt files exceed 80 columns; agent and skill
+      # files start with front matter and a prompt, not a heading.
+      settings.configuration = {
+        MD013 = false;
+        MD041 = false;
+      };
     };
 
     mixed-line-endings = {
@@ -140,7 +146,7 @@
       # List of file types to run on (default: [ "file" ] (all files))
       # see also https://pre-commit.com/#filtering-files-with-types
       # You probably only need to specify one of `files` or `types`:
-      types_or = ["c" "c++"];
+      types_or = ["c" "c++" "python"];
       # Exclude files that were matched by these patterns (default: [ ] (none)):
       excludes = [];
       # The language of the hook - tells pre-commit

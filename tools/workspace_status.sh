@@ -12,14 +12,20 @@
 set -eo pipefail # exit immediately if any command fails.
 
 function remove_url_credentials() {
-  which perl >/dev/null && perl -pe 's#//.*?:.*?@#//#' || cat
+  if command -v perl >/dev/null; then
+    perl -pe 's#//.*?:.*?@#//#'
+  else
+    cat
+  fi
 }
 
-repo_url=$(git config --get remote.origin.url | remove_url_credentials)
+# Empty in a clone without an origin remote (e.g. a freshly created project).
+repo_url=$({ git config --get remote.origin.url || true; } | remove_url_credentials)
 echo "REPO_URL $repo_url"
 
-commit_sha=$(git rev-parse HEAD)
-commit_sha_short=$(git rev-parse --short=6 HEAD)
+# Placeholders before the first commit.
+commit_sha=$(git rev-parse --verify -q HEAD || echo 0000000000000000000000000000000000000000)
+commit_sha_short=${commit_sha:0:6}
 echo "COMMIT_SHA $commit_sha"
 
 # release-please bumps this manifest in every release PR, so it holds the

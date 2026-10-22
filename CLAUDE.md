@@ -50,6 +50,7 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 | `documentation/` | Doxygen + doxygen-awesome |
 | `bzl/` | flags (`defs.bzl`), packaging names, multi-arch transition, platforms, format and lint setup, template parameters (`variables.bzl`) |
 | `tools/workspace_status.sh` | stamp keys (version, commit, image registry) |
+| `claude-plugin/` | Claude Code plugin `bazel-starter` (skills, agents; `.claude/agents` links to its agents) |
 | `examples/<name>/` | optional demos, each a separate Bazel module (build from its directory; the root `.bazelignore` skips them) |
 
 ## Conventions
@@ -76,6 +77,33 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
   attaches the binaries and publishes the docs to GitHub Pages.
 - **GitHub Actions** (`.github/workflows/examples.yml`) runs `bazelisk test //...`
   in each example when `examples/` or the shared toolchain changes.
+
+- **GitHub Actions** (`.github/workflows/plugin.yml`) bootstraps a C++, a
+  minimal C++ and a Python project with the plugin and runs their tests,
+  format check and audit.
+
+## Claude Code plugin (`claude-plugin/`)
+
+The `bazel-starter` plugin (marketplace in `.claude-plugin/`) makes this
+template the reference for other repositories: `starter-template` (concern →
+files map), `project-bootstrap` (new repository), `project-standardize` (audit,
+adopt, upgrade), `bazel-workspace`, `devenv-env`, and the agents. Install with
+`/plugin marketplace add calmette54/BazelStarterTemplate` and
+`/plugin install bazel-starter@bazel-starter`. release-please keeps its version
+equal to the template's.
+
+When changing the template:
+
+- Optional parts are wrapped in `# >>> template:<name>` / `# <<< template:<name>`
+  (`cpp`, `python`, `container`, `docs`, `benchmark`); new code of an optional
+  component gets the same markers.
+- Adding, moving or removing a component's files: update
+  `claude-plugin/skills/starter-template/references/components.md` and the path
+  lists in `project-bootstrap/scripts/bootstrap.py`.
+- Python projects are this template plus `project-bootstrap/assets/python/`
+  (files copied over, `*.append` appended).
+- Try a change locally with
+  `python3 claude-plugin/skills/project-bootstrap/scripts/bootstrap.py --template . --worktree --out <dir> --name demo [--lang python]`.
 
 ## Tools for Claude
 

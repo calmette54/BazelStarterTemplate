@@ -1,0 +1,9 @@
+
+# Python: every package ships its own __init__.py (no implicit ones).
+common --incompatible_default_to_explicit_init_py
+
+# Shell launcher that runs the hermetic interpreter from the runfiles, so the
+# release tarball and the image need no python3 on the PATH. The venv is
+# created at run time: pkg_tar cannot package its declared symlinks.
+common --@rules_python//python/config_settings:bootstrap_impl=script
+common --@rules_python//python/config_settings:venvs_use_declare_symlink=no

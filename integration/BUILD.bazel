@@ -44,6 +44,7 @@ py_test(
         "local",
         "requires-docker",
     ],
+    visibility = ["//test/lint:__pkg__"],
     deps = [
         "@rules_python//python/runfiles",
         requirement("docker"),

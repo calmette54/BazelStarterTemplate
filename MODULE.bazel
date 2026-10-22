@@ -4,7 +4,9 @@ module(
 )
 
 #------------- Application dependencies -------------
+# >>> template:cpp
 bazel_dep(name = "fmt", version = "10.2.1")
+# <<< template:cpp
 bazel_dep(name = "protobuf", version = "31.0-rc2", repo_name = "com_google_protobuf")
 bazel_dep(name = "bazel_features", version = "1.29.0", repo_name = "proto_bazel_features")
 
@@ -12,10 +14,15 @@ version = use_extension("@proto_bazel_features//private:extensions.bzl", "versio
 use_repo(version, "bazel_features_globals", "bazel_features_version")
 
 #------------- Testing dependencies -----------------
+# >>> template:cpp
 bazel_dep(name = "googletest", version = "1.15.2")
-bazel_dep(name = "google_benchmark", version = "1.9.2")
 bazel_dep(name = "doctest", version = "2.4.11")
+# <<< template:cpp
+# >>> template:benchmark
+bazel_dep(name = "google_benchmark", version = "1.9.2")
+# <<< template:benchmark
 
+# >>> template:docs
 #------------- Documentation dependencies -----------
 # Starlark implementation of Doxygen rules in Bazel to automatically document the codebase
 # https://github.com/TendTo/rules_doxygen
@@ -30,6 +37,7 @@ doxygen_extension.configuration(
     version = "1.10.0",
 )
 use_repo(doxygen_extension, "doxygen")
+# <<< template:docs
 
 #################################################################################
 # Utilities
@@ -40,6 +48,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 # https://github.com/aspect-build/rules_lint
 bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
 
+# >>> template:cpp
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
@@ -48,6 +57,7 @@ git_override(
     commit = "6d29d97b4a40143104cce158b0da848db72cb769",
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
 )
+# <<< template:cpp
 
 ###############################################################################
 # Bazel Dependencies # https://registry.bazel.build/
@@ -72,6 +82,7 @@ python = use_extension(
 
 python.toolchain(python_version = "3.12", is_default=True)
 
+# >>> template:container
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
     hub_name = "testcontainers_deps",
@@ -79,16 +90,22 @@ pip.parse(
     requirements_lock = "//integration:requirements_lock_3_12.txt",
 )
 use_repo(pip, "testcontainers_deps")
+# <<< template:container
 
 ###############################################################################
-# Containarize your application
+# Package your application (release tarballs, stamped files, credentials)
+###############################################################################
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
+bazel_dep(name = "tweag-credential-helper", version = "0.0.5")
+
+# >>> template:container
+###############################################################################
+# Containerize your application
 #
 # TIP: For testing, https://registry.bazel.build/modules/container_structure_test
 ###############################################################################
 bazel_dep(name = "rules_oci", version = "2.2.6")
-bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
-bazel_dep(name = "tweag-credential-helper", version = "0.0.5")
 
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 
@@ -105,3 +122,4 @@ oci.pull(
 
 # Expose the base image
 use_repo(oci, "docker_lib_ubuntu", "docker_lib_ubuntu_linux_amd64", "docker_lib_ubuntu_linux_arm64_v8")
+# <<< template:container
