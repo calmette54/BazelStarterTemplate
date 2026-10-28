@@ -15,13 +15,14 @@ llvm.toolchain(
     cxx_standard = {"": "c++23"},   # "" = all targets
     stdlib = {"linux-x86_64": "stdc++", "linux-aarch64": "stdc++"},
 )
-llvm.sysroot(name = "llvm_toolchain", label = "@sysroot_linux_x64//:sysroot", targets = ["linux-x86_64"])
+llvm.sysroot(name = "llvm_toolchain", label = "@sysroot_linux_x64//sysroot", targets = ["linux-x86_64"])
 use_repo(llvm, "llvm_toolchain")
 register_toolchains("@llvm_toolchain//:all", dev_dependency = True)
 ```
 
 - **Every dict attribute (`sha256`, `strip_prefix`, `urls`, `stdlib`, `cxx_standard`, ...) is keyed by target `os-arch`; `""` means all targets.** Any other key, such as an LLVM version (`"19.1.6": "c++23"`), is silently ignored and the default applies (c++17). Verify with `bazel aquery 'mnemonic("CppCompile", //some:target)' | grep -o -- '-std=[^ ]*'`.
 - Each platform's `sha256` must be the hash of that platform's archive. Known values are in `toolchain/internal/llvm_distributions.bzl` of toolchains_llvm; copying the x86_64 hash to aarch64 fails only when someone builds for aarch64.
+- Declare sysroots with the `sysroot` repository rule of toolchains_llvm (`use_repo_rule("@toolchains_llvm//toolchain:sysroot.bzl", "sysroot")`, label `@<name>//sysroot`), not an `http_archive` with `glob(["**"])`: a directory is one sandbox symlink and one RBE Merkle node. A file group prints `WARNING: Sysroot ... resolved to 13285 files` on Bazel 9.
 - Cross-compile with `build:aarch64 --platforms=@toolchains_llvm//platforms:linux-aarch64` in `.bazelrc`, and check the result with `file bazel-bin/...`.
 
 ## Sysroot and glibc
