@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.2.0](https://github.com/calmette54/BazelStarterTemplate/compare/v3.1.0...v3.2.0) (2026-10-28)
+
+
+### Features
+
+* **bazel:** Upgrade Bazel to 9.3.1 ([#144](https://github.com/calmette54/BazelStarterTemplate/issues/144)) ([d82203f](https://github.com/calmette54/BazelStarterTemplate/commit/d82203f5ba5887954795dfc4a864a5893a29fe93))
+
+
+### Bug Fixes
+
+* **devenv:** declare git-hooks input for devenv 2.x ([#142](https://github.com/calmette54/BazelStarterTemplate/issues/142)) ([a53b253](https://github.com/calmette54/BazelStarterTemplate/commit/a53b253fab37659a409df6d03506e6324845a9df))
+
 ## [3.1.0](https://github.com/calmette54/BazelStarterTemplate/compare/v3.0.0...v3.1.0) (2026-10-22)
 
 
