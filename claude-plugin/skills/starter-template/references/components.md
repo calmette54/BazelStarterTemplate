@@ -11,14 +11,14 @@ Claude Code
 ## 1. Hermetic build (always)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `.bazelversion`, `.bazeliskrc` | Bazel version; bazelisk runs the Aspect CLI (`bazelisk lint`) on top of it |
-| `MODULE.bazel` | bzlmod deps; `[cpp]` fmt/doctest/googletest/hedron, `[benchmark]`, `[docs]` rules_doxygen, `[container]` rules_oci + base image + testcontainers pip hub |
+| `MODULE.bazel` | bzlmod deps; `[cpp]` fmt/doctest/googletest/hedron, BuildBuddy RBE toolchain (`toolchains_buildbuddy`), `[benchmark]`, `[docs]` rules_doxygen, `[container]` rules_oci + base image + testcontainers pip hub |
 | `bzl/toolchains.MODULE.bazel` | hermetic LLVM 19 + Debian bullseye sysroots (x86_64, aarch64), C++23; `include()`d by MODULE.bazel |
 | `.bazelrc` | credential helper, `--config=aarch64/x86_64`, stamping, `--config=ci` (BuildBuddy RBE), coverage |
 | `bzl/platforms/BUILD.bazel` | `linux-x86_64`, `linux-aarch64` platforms (used by the multi-arch image) |
 | `tools/credential-helper`, `.bazelrc` `--credential_helper` lines | tweag credential helper for GitHub and Docker Hub downloads |
-| `WORKSPACE.bzlmod` | only the BuildBuddy RBE toolchain (`common --enable_workspace` in `.bazelrc`) |
+| `bzl/patches/` | `[cpp]` patch that makes hedron's compile-commands extractor load `py_binary`/`cc_binary` (Bazel 9 removed the native rules) |
 | `.bazelignore` | nested modules (template: `examples`) |
 
 Project values: `module(name, version)`; application deps.
@@ -32,7 +32,7 @@ Details and pitfalls: `bazel-workspace` skill (`references/toolchains.md`).
 ## 2. Developer environment (always)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `devenv.nix`, `devenv.yaml`, `devenv.lock`, `.envrc` | `devenv shell`: bazelisk, commitizen, jq, crane, credential helper install, git hooks |
 | `devenv.nix` `pre-commit.hooks` | actionlint, alejandra, check-json/yaml, commitizen (commit-msg), detect-private-keys, end-of-file, markdownlint, mixed-line-endings, no-commit-to-branch `main`, ripsecrets, shellcheck, trailing-whitespace, formatting via `bazelisk run //bzl/format` |
 
@@ -43,7 +43,7 @@ Details: `devenv-env` skill.
 ## 3. Format and lint (always)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `bzl/format/BUILD.bazel`, root alias `//:format` | rules_lint `format_multirun`: clang-format (C/C++), ruff (Python) |
 | `bzl/lint/linters.bzl`, `bzl/lint/BUILD.bazel` | aspects `clang_tidy`, `ruff` and their `lint_test` macros |
 | `.aspect/cli/config.yaml` | aspects run by `bazelisk lint //...` |
@@ -58,7 +58,7 @@ break a rule once to see the lint test fail.
 ## 4. Tests, benchmarks, coverage (always; benchmark optional)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `test/greeter/` | unit tests: doctest `[cpp]`; pytest for Python (overlay), `size = "small"` |
 | `benchmark/` `[benchmark]` | google-benchmark as a `cc_test` |
 | `.bazelrc` `coverage` lines | LLVM coverage, combined lcov in `bazel-out/_coverage/_coverage_report.dat` |
@@ -73,7 +73,7 @@ Verify: `bazelisk test //...`, `bazelisk coverage //...`.
 ## 5. Release and stamping (always)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `.cz.yaml` | commitizen: conventional commits, `v$version` tags |
 | `release-please-config.json`, `.release-please-manifest.json` | release-please, `release-type: bazel` (bumps `MODULE.bazel` version, writes CHANGELOG) |
 | `tools/workspace_status.sh` | stamp keys: `STABLE_SEMANTIC_VERSION` (from the manifest), `STABLE_GIT_COMMIT[_SHORT]`, `STABLE_IMAGE_REGISTRY` |
@@ -91,10 +91,10 @@ and check the file name; `./tools/workspace_status.sh`.
 ## 6. CI (always)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `buildbuddy.yaml` | BuildBuddy workflow: `bazel test --config=ci <packages> --test_tag_filters=-requires-docker` on pushes to `main` and PRs |
 | `.bazelrc` `build:ci` | BES + RBE on remote.buildbuddy.io, strict action env |
-| `WORKSPACE.bzlmod` | `@buildbuddy_toolchain` (RBE execution platform) |
+| `MODULE.bazel` `toolchains_buildbuddy` | `@toolchains_buildbuddy//platforms:linux_x86_64` (RBE execution platform) |
 | `.github/workflows/release-please.yml` | release automation (section 5) |
 | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` | issue and PR templates |
 
@@ -107,7 +107,7 @@ like `.github/workflows/examples.yml`).
 ## 7. Container image (optional: `container`)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `MODULE.bazel` `[container]` | rules_oci, `oci.pull` of ubuntu by digest for amd64 + arm64 |
 | `standalone/BUILD.bazel` `[container]` | `oci_image`, `multi_arch` (transition in `bzl/transition.bzl`), `oci_image_index`, stamped labels and tags, `oci_push` `:push_image`, `oci_load` `:load_image` and `:load_host_image` |
 | `integration/` | Python testcontainers test that runs the image (tags `requires-docker`, `local`) |
@@ -123,7 +123,7 @@ Verify: `bazelisk run //standalone:load_image`, then
 ## 8. Documentation (optional: `docs`)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `MODULE.bazel` `[docs]` | rules_doxygen, pinned Doxygen 1.10.0 |
 | `documentation/BUILD.bazel` | `//documentation:docs` (tag `manual`): Doxyfile and header expanded from `bzl/variables.bzl`, version stamped |
 | `documentation/Doxyfile.template`, `_static/`, `README.md` | doxygen-awesome theme, Mermaid, main page |

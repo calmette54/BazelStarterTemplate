@@ -5,9 +5,9 @@
 # repository root (the root .bazelignore skips examples/).
 module(name = "example_open3d_prebuilt")
 
-bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "googletest", version = "1.15.2", dev_dependency = True)
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.27")
+bazel_dep(name = "googletest", version = "1.18.0.bcr.1", dev_dependency = True)
 
 # Same hermetic LLVM toolchain as the template (symlink to
 # ../../bzl/toolchains.MODULE.bazel).

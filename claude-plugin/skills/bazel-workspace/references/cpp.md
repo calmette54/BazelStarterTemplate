@@ -5,7 +5,7 @@
 ```text
 MODULE.bazel   rules_cc, eigen, googletest (dev dependency)
 .bazelrc       bzlmod, C++20 (target and host), test output on errors
-.bazelversion  9.3.0
+.bazelversion  9.3.1
 BUILD.bazel    root package
 example/       rotation.hpp (interface), rotation.cc, gtest test
 ```

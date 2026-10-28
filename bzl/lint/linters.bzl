@@ -16,6 +16,8 @@ clang_tidy = lint_clang_tidy_aspect(
     global_config = [Label("//:.clang-tidy")],
     lint_target_headers = True,
     angle_includes_are_system = False,
+    # rules_lint 2.x skips tests by default; lint them too.
+    rule_kinds = ["cc_binary", "cc_library", "cc_test"],
     verbose = False,
 )
 

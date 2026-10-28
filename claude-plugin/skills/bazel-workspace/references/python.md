@@ -5,7 +5,7 @@
 ```text
 MODULE.bazel           rules_python: Python 3.12 toolchain, pip hub "pypi", explicit __init__.py
 .bazelrc               bzlmod, test output on errors
-.bazelversion          9.3.0
+.bazelversion          9.3.1
 requirements.in        direct PyPI deps
 requirements_lock.txt  generated, with hashes, for all platforms
 BUILD.bazel            root package (makes //:requirements_lock.txt addressable)

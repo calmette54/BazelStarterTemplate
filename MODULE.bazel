@@ -5,28 +5,28 @@ module(
 
 #------------- Application dependencies -------------
 # >>> template:cpp
-bazel_dep(name = "fmt", version = "10.2.1")
+bazel_dep(name = "fmt", version = "12.2.0.bcr.1")
 # <<< template:cpp
-bazel_dep(name = "protobuf", version = "31.0-rc2", repo_name = "com_google_protobuf")
-bazel_dep(name = "bazel_features", version = "1.29.0", repo_name = "proto_bazel_features")
+bazel_dep(name = "protobuf", version = "36.2", repo_name = "com_google_protobuf")
+bazel_dep(name = "bazel_features", version = "1.54.1", repo_name = "proto_bazel_features")
 
 version = use_extension("@proto_bazel_features//private:extensions.bzl", "version_extension")
 use_repo(version, "bazel_features_globals", "bazel_features_version")
 
 #------------- Testing dependencies -----------------
 # >>> template:cpp
-bazel_dep(name = "googletest", version = "1.15.2")
-bazel_dep(name = "doctest", version = "2.4.11")
+bazel_dep(name = "googletest", version = "1.18.0.bcr.1")
+bazel_dep(name = "doctest", version = "2.5.2")
 # <<< template:cpp
 # >>> template:benchmark
-bazel_dep(name = "google_benchmark", version = "1.9.2")
+bazel_dep(name = "google_benchmark", version = "1.10.0")
 # <<< template:benchmark
 
 # >>> template:docs
 #------------- Documentation dependencies -----------
 # Starlark implementation of Doxygen rules in Bazel to automatically document the codebase
 # https://github.com/TendTo/rules_doxygen
-bazel_dep(name = "rules_doxygen", version = "2.1.0", dev_dependency = True)
+bazel_dep(name = "rules_doxygen", version = "2.7.0", dev_dependency = True)
 
 doxygen_extension = use_extension("@rules_doxygen//:extensions.bzl", "doxygen_extension")
 
@@ -43,10 +43,10 @@ use_repo(doxygen_extension, "doxygen")
 # Utilities
 #################################################################################
 # https://github.com/bazelbuild/bazel-skylib
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "bazel_skylib", version = "1.9.2")
 # Formatting and Linting
 # https://github.com/aspect-build/rules_lint
-bazel_dep(name = "aspect_rules_lint", version = "1.2.2")
+bazel_dep(name = "aspect_rules_lint", version = "2.9.1")
 
 # >>> template:cpp
 # Hedron's Compile Commands Extractor for Bazel
@@ -55,6 +55,10 @@ bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 git_override(
     module_name = "hedron_compile_commands",
     commit = "6d29d97b4a40143104cce158b0da848db72cb769",
+    # Upstream is unmaintained: load py_binary/cc_binary from rules_python and
+    # rules_cc, which Bazel 9 no longer provides natively.
+    patch_strip = 1,
+    patches = ["//bzl/patches:hedron_compile_commands_bazel9.patch"],
     remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
 )
 # <<< template:cpp
@@ -63,16 +67,23 @@ git_override(
 # Bazel Dependencies # https://registry.bazel.build/
 ###############################################################################
 # https://github.com/bazelbuild/rules_cc
-bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "rules_cc", version = "0.2.27")
 # https://github.com/bazelbuild/platforms/release
-bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "platforms", version = "1.1.0")
 
 #--------------------- LLVM Toolchain --------------
 include("//:bzl/toolchains.MODULE.bazel")
 
+#--------------------- Remote execution (BuildBuddy) --------------
+# Execution platform and toolchains for --config=ci (see .bazelrc).
+# https://github.com/buildbuddy-io/buildbuddy-toolchain
+bazel_dep(name = "toolchains_buildbuddy", version = "0.0.4", dev_dependency = True)
+
+buildbuddy = use_extension("@toolchains_buildbuddy//:extensions.bzl", "buildbuddy", dev_dependency = True)
+
 #--------------------- Python Toolchain --------------
 # https://rules-python.readthedocs.io/en/latest/toolchains.html
-bazel_dep(name = "rules_python", version = "1.4.1", dev_dependency = True)
+bazel_dep(name = "rules_python", version = "2.4.5", dev_dependency = True)
 
 python = use_extension(
     "@rules_python//python/extensions:python.bzl",
@@ -95,9 +106,9 @@ use_repo(pip, "testcontainers_deps")
 ###############################################################################
 # Package your application (release tarballs, stamped files, credentials)
 ###############################################################################
-bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "aspect_bazel_lib", version = "2.15.3")
-bazel_dep(name = "tweag-credential-helper", version = "0.0.5")
+bazel_dep(name = "rules_pkg", version = "1.3.0")
+bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
+bazel_dep(name = "tweag-credential-helper", version = "0.0.9")
 
 # >>> template:container
 ###############################################################################
@@ -105,7 +116,7 @@ bazel_dep(name = "tweag-credential-helper", version = "0.0.5")
 #
 # TIP: For testing, https://registry.bazel.build/modules/container_structure_test
 ###############################################################################
-bazel_dep(name = "rules_oci", version = "2.2.6")
+bazel_dep(name = "rules_oci", version = "2.3.0")
 
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 

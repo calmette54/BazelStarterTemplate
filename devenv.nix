@@ -130,6 +130,8 @@
     trim-trailing-whitespace = {
       enable = true;
       description = "Trim trailing whitespace";
+      # A blank context line in a patch is a single space.
+      excludes = ["\\.patch$"];
     };
 
     # Custom hook to perform formatting via Bazel

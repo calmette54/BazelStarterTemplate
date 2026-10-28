@@ -125,8 +125,8 @@ def audit(repo: Repo) -> tuple[list[Result], dict]:
     )
     add(
         "build",
-        "bzlmod only (no WORKSPACE / WORKSPACE.bazel)",
-        not repo.has("WORKSPACE") and not repo.has("WORKSPACE.bazel"),
+        "bzlmod only (no WORKSPACE / WORKSPACE.bazel / WORKSPACE.bzlmod)",
+        not any(repo.has(f) for f in ("WORKSPACE", "WORKSPACE.bazel", "WORKSPACE.bzlmod")),
         "",
         "MODULE.bazel",
     )
