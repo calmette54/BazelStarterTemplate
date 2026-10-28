@@ -16,9 +16,9 @@ experiments. Where the two disagree on versions (Bazel, rules, test framework),
 the template's pins win for projects.
 
 | Template | Verified with | Contents |
-|---|---|---|
-| `assets/template-python/` | Bazel 9.3.0, rules_python 2.4.1, Python 3.12 | pip hub `pypi` from a hashed universal lockfile, explicit `__init__.py`, `example/` library + pytest test |
-| `assets/template-cpp/` | Bazel 9.3.0, rules_cc 0.2.26, C++20 | Eigen, GoogleTest, `example/` library (header = interface) + gtest test |
+| --- | --- | --- |
+| `assets/template-python/` | Bazel 9.3.1, rules_python 2.4.1, Python 3.12 | pip hub `pypi` from a hashed universal lockfile, explicit `__init__.py`, `example/` library + pytest test |
+| `assets/template-cpp/` | Bazel 9.3.1, rules_cc 0.2.26, C++20 | Eigen, GoogleTest, `example/` library (header = interface) + gtest test |
 
 Details: `references/python.md` (pip, lockfile, heavy frameworks, Gazelle, pybind11) and `references/cpp.md` (BCR libraries, non-BCR deps). Read the one for the chosen language. Read `references/toolchains.md` for a hermetic LLVM toolchain or sysroot, several modules in one repository (`include()`, `.bazelignore`), deps that do not build with the project's C++ standard, LLVM coverage, prebuilt SDKs (`cc_import`) or cgo.
 

@@ -1,0 +1,34 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index b7d14c7..138a191 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -1,5 +1,7 @@
+ load("@rules_gazebo//gazebo:headers.bzl", "gz_configure_header", "gz_export_header")
+ load("@rules_license//rules:license.bzl", "license")
++load("@rules_cc//cc:cc_library.bzl", "cc_library")
++load("@rules_cc//cc:cc_test.bzl", "cc_test")
+ 
+ package(
+     default_applicable_licenses = [":license"],
+diff --git a/MODULE.bazel b/MODULE.bazel
+index 3e9a617..a8c4960 100644
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -4,6 +4,7 @@ module(
+     compatibility_level = 10,
+ )
+ 
++bazel_dep(name = "rules_cc", version = "0.2.27")
+ bazel_dep(name = "curl", version = "8.8.0.bcr.3")
+ bazel_dep(name = "googletest", version = "1.15.2")
+ bazel_dep(name = "jsoncpp", version = "1.9.6")
+diff --git a/test/BUILD.bazel b/test/BUILD.bazel
+index d624a7c..1b2cd69 100644
+--- a/test/BUILD.bazel
++++ b/test/BUILD.bazel
+@@ -1,4 +1,5 @@
+ load("@rules_gazebo//gazebo:headers.bzl", "gz_configure_header")
++load("@rules_cc//cc:cc_test.bzl", "cc_test")
+ 
+ package(
+     default_applicable_licenses = ["//:license"],

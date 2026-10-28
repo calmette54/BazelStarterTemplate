@@ -4,9 +4,9 @@
 # repository root (the root .bazelignore skips examples/).
 module(name = "example_eigen_pybind")
 
-bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.27")
+bazel_dep(name = "eigen", version = "3.4.1.bcr.2")
 
 # The C++ library, shared with examples/eigen_go
 bazel_dep(name = "example_eigen_math")
@@ -15,14 +15,14 @@ local_path_override(
     path = "../eigen_math",
 )
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
-bazel_dep(name = "googletest", version = "1.15.2", dev_dependency = True)
+bazel_dep(name = "googletest", version = "1.18.0.bcr.1", dev_dependency = True)
 
 # Same hermetic LLVM toolchain as the template (symlink to
 # ../../bzl/toolchains.MODULE.bazel).
 include("//:toolchains.MODULE.bazel")
 
 #--------------------- Python Toolchain --------------
-bazel_dep(name = "rules_python", version = "1.4.1")
+bazel_dep(name = "rules_python", version = "2.4.5")
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(

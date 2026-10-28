@@ -50,7 +50,7 @@ COMPONENT_PATHS = {
     "container": ("integration/", "bzl/transition.bzl", "bzl/platforms/"),
     "docs": ("documentation/",),
     "benchmark": ("benchmark/",),
-    "cpp": ("lib/greeter/", "test/greeter/", "standalone/main.cpp"),
+    "cpp": ("lib/greeter/", "test/greeter/", "standalone/main.cpp", "bzl/patches/"),
 }
 
 # Components that a language cannot have.

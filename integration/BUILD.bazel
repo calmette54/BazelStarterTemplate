@@ -1,3 +1,4 @@
+load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("@testcontainers_deps//:requirements.bzl", "requirement")
@@ -44,6 +45,9 @@ py_test(
         "local",
         "requires-docker",
     ],
+    # The pip hub only has wheels for the host, and the test talks to the
+    # host's daemon: skip it when cross-compiling (--config=aarch64).
+    target_compatible_with = HOST_CONSTRAINTS,
     visibility = ["//test/lint:__pkg__"],
     deps = [
         "@rules_python//python/runfiles",

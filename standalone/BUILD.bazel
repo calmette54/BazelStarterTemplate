@@ -2,6 +2,9 @@
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_push", "oci_load")
 # <<< template:container
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
+# >>> template:cpp
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+# <<< template:cpp
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//:bzl/naming_convention.bzl", "naming_convention")
 # >>> template:container

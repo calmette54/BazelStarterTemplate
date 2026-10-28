@@ -5,5 +5,5 @@
 # also provides the toolchain (include() works only in the root module).
 module(name = "example_eigen_math")
 
-bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+bazel_dep(name = "rules_cc", version = "0.2.27")
+bazel_dep(name = "eigen", version = "3.4.1.bcr.2")

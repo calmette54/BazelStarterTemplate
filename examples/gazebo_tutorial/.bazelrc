@@ -8,3 +8,8 @@ test --test_output=errors
 # become ambiguous under the C++20 rewritten-operator rules.
 build --per_file_copt=external/assimp.*\.cpp$@-std=c++17
 build --host_per_file_copt=external/assimp.*\.cpp$@-std=c++17
+
+# freeimage links its bundled copy of OpenEXR's half.cpp next to Imath's
+# (through openexr), so printBits() is defined twice. Both are the same code.
+build --linkopt=-Wl,--allow-multiple-definition
+build --host_linkopt=-Wl,--allow-multiple-definition

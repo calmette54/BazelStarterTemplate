@@ -78,5 +78,6 @@ Facts about this workspace, verified against the code. Check them before recomme
 - **Bazel version**: `.bazeliskrc` selects the Aspect CLI (needed for `bazelisk lint`), which runs the Bazel version in `.bazelversion`.
 - **Downloads** go through the tweag credential helper (`.bazelrc`); a fresh clone needs `bazelisk run @tweag-credential-helper//installer` once.
 - **Coverage** uses LLVM-native coverage with `--build_tests_only`: instrumented aarch64 targets cannot link (no aarch64 `libclang_rt.profile.a` in the x86_64 LLVM release).
-- **RBE**: `--config=ci` targets BuildBuddy; `common --enable_workspace` is still needed for `WORKSPACE.bzlmod` (BuildBuddy toolchain). `protobuf` and the `bazel_features` override came with RBE support; test with `--config=ci` before changing them.
+- **Bazel 9**: no WORKSPACE support and no native `cc_*`/`py_*` rules or `CcInfo`; every BUILD/.bzl file loads them from `rules_cc`/`rules_python`. An unmaintained dependency that still uses the native rules gets a patch (`bzl/patches/`, applied with `git_override`/`single_version_override`); the examples pin newer BCR releases of stale transitive deps with `single_version_override`.
+- **RBE**: `--config=ci` targets BuildBuddy through the `toolchains_buildbuddy` module (`--host_platform=@toolchains_buildbuddy//platforms:linux_x86_64`). `protobuf` and the `bazel_features` override came with RBE support; test with `--config=ci` before changing them.
 - Verify with `bazelisk build //...`, `bazelisk test //...`, `bazelisk build //... --config=aarch64`.

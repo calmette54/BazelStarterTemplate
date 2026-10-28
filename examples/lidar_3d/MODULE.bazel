@@ -7,14 +7,32 @@
 # repository root (the root .bazelignore skips examples/).
 module(name = "example_lidar_3d")
 
-bazel_dep(name = "rules_cc", version = "0.2.0")
-bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
-bazel_dep(name = "gz-common", version = "6.1.0")
-bazel_dep(name = "gz-math", version = "8.1.1.bcr.1")
-bazel_dep(name = "gz-msgs", version = "11.1.0.bcr.2")
-bazel_dep(name = "gz-transport", version = "14.1.0.bcr.1")
-bazel_dep(name = "googletest", version = "1.15.2", dev_dependency = True)
+bazel_dep(name = "rules_cc", version = "0.2.27")
+bazel_dep(name = "eigen", version = "3.4.1.bcr.2")
+bazel_dep(name = "gz-common", version = "6.3.0")
+bazel_dep(name = "gz-math", version = "8.4.0")
+bazel_dep(name = "gz-msgs", version = "11.2.0")
+bazel_dep(name = "gz-transport", version = "14.3.0")
+bazel_dep(name = "googletest", version = "1.18.0.bcr.1", dev_dependency = True)
 
 # Same hermetic LLVM toolchain as the template (symlink to
 # ../../bzl/toolchains.MODULE.bazel).
 include("//:toolchains.MODULE.bazel")
+
+# Bazel 9 removed the native cc_* rules; these transitive dependencies of the
+# gz-* modules only load them from rules_cc in newer BCR releases.
+single_version_override(module_name = "cppzmq", version = "4.10.0.bcr.3")
+single_version_override(module_name = "libuuid", version = "2.41.2.bcr.1")
+
+# No Ionic release of gz-utils loads rules_cc yet: add the load() statements
+# (patches/ links to ../gazebo_tutorial/patches).
+single_version_override(
+    module_name = "gz-utils",
+    patch_strip = 1,
+    patches = ["//patches:gz-utils-3.1.1-bazel9.patch"],
+    version = "3.1.1",
+)
+
+# abseil-cpp 20260526's absl::SourceLocation fallback (libstdc++ 10 in the
+# sysroot has no std::source_location) does not compile with clang 19.
+single_version_override(module_name = "abseil-cpp", version = "20260107.1")

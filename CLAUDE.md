@@ -41,14 +41,14 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 ## Layout
 
 | Path | Contents |
-|---|---|
+| --- | --- |
 | `lib/greeter/` | example library (`cc_library`, uses `fmt`) |
 | `standalone/` | `hello-world` CLI, release tarball, multi-arch OCI image |
 | `test/greeter/`, `test/lint/` | doctest unit tests, clang-tidy `lint_test` |
 | `benchmark/` | google-benchmark |
 | `integration/` | Python testcontainers test of the image |
 | `documentation/` | Doxygen + doxygen-awesome |
-| `bzl/` | flags (`defs.bzl`), packaging names, multi-arch transition, platforms, format and lint setup, template parameters (`variables.bzl`) |
+| `bzl/` | flags (`defs.bzl`), packaging names, multi-arch transition, platforms, format and lint setup, template parameters (`variables.bzl`), dependency patches (`patches/`) |
 | `tools/workspace_status.sh` | stamp keys (version, commit, image registry) |
 | `claude-plugin/` | Claude Code plugin `bazel-starter` (skills, agents; `.claude/agents` links to its agents) |
 | `examples/<name>/` | optional demos, each a separate Bazel module (build from its directory; the root `.bazelignore` skips them) |
