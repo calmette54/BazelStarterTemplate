@@ -1,0 +1,17 @@
+# The NativeLink server (setup.sh installs it; "Remote execution" in
+# tools/remote/README.md).
+[Unit]
+Description=NativeLink remote execution: CAS, scheduler, CPU worker
+After=network.target
+
+[Service]
+User=nativelink
+ExecStart=/opt/rbe-remote/nativelink /opt/rbe-remote/server.json5
+Restart=always
+RestartSec=5
+# server.json5: global.max_open_files.
+LimitNOFILE=131072
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target

@@ -8,11 +8,14 @@ The current starter template uses the following programs:
   - [Bazel](https://bazel.build/): Build and test software of any size, quickly
     and reliably.
 - Continuous integration (CI):
-  - [BuildBuddy Workflows](https://www.buildbuddy.io/docs/workflows-setup/):
-    build and test every push and pull request with remote execution
-    (`buildbuddy.yaml`).
-  - [GitHub Actions](https://github.com/features/actions): release automation
-    (images, binaries and documentation) on pushes to `main`.
+  - [GitHub Actions](https://github.com/features/actions): build and test
+    every push and pull request (`.github/workflows/ci.yml`), and release
+    automation (images, binaries and documentation) on pushes to `main`.
+- Remote execution:
+  - [NativeLink](https://github.com/TraceMachina/nativelink): a self-hosted
+    remote execution server (`bazelisk test --config=remote //...`) that rents
+    [vast.ai](https://vast.ai) GPU boxes on demand for the tests that need a
+    GPU. See [tools/remote/README.md](tools/remote/README.md).
 - Development environment
   - [devenv](https://devenv.sh/): Declaratively define your development
     environment by toggling basic options.
@@ -73,8 +76,9 @@ The current starter template uses the following programs:
 1. Push your changes
 
 > [!NOTE]
-> Pushing will trigger the **BuildBuddy workflow**, which builds and tests
-> `//test/...`, `//benchmark/...` and `//integration/...`.
+> Pushing will trigger the **ci workflow** (GitHub Actions), which builds and
+> tests `//...`. Tests that need a GPU are built but only run with
+> `--config=gpu` (local GPU) or `--config=remote --config=gpu` (rented GPU).
 
 1. After pushing your changes to the remote, an automatic pull request
   (i.e. `release PR`) will show up. Whenever you decide to merge it an
@@ -106,7 +110,7 @@ template as the reference for project infrastructure:
 then `/plugin install bazel-starter@bazel-starter`).
 
 | Skill | Use |
-|---|---|
+| --- | --- |
 | `project-bootstrap` | New C++ or Python repository from this template, with a chosen set of components (image, docs, benchmark), verified and committed |
 | `project-standardize` | Audit an existing repository against the template, adopt missing concerns one PR at a time, upgrade to a newer template release |
 | `starter-template` | Which template files implement each concern (build, environment, lint, tests, release, CI, image, docs) |
@@ -142,7 +146,7 @@ cd examples/eigen_pybind && bazelisk test //...
 ```
 
 | Example | Shows |
-|---|---|
+| --- | --- |
 | [`eigen_pybind`](examples/eigen_pybind) | Python bindings for an Eigen-based C++ library with pybind11 |
 | [`eigen_go`](examples/eigen_go) | Go bindings (cgo) for the same library |
 | [`gazebo_tutorial`](examples/gazebo_tutorial) | Gazebo (gz-sim) demos and worlds built from the BCR; builds, demos not yet simulating (see its README) |

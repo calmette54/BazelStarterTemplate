@@ -50,7 +50,7 @@ COMPONENT_PATHS = {
     "container": ("integration/", "bzl/transition.bzl", "bzl/platforms/"),
     "docs": ("documentation/",),
     "benchmark": ("benchmark/",),
-    "cpp": ("lib/greeter/", "test/greeter/", "standalone/main.cpp", "bzl/patches/"),
+    "cpp": ("lib/greeter/", "test/greeter/", "test/cuda/", "standalone/main.cpp", "bzl/patches/"),
 }
 
 # Components that a language cannot have.
@@ -218,15 +218,6 @@ def main() -> None:
     substitute(module, r'^(\s*version = )".*",', r'\1"0.0.0",')
     substitute(out / ".cz.yaml", r"^(\s*version: ).*$", r"\g<1>0.0.0")
     (out / ".release-please-manifest.json").write_text('{\n  ".": "0.0.0"\n}\n')
-
-    # Test only the packages that exist.
-    if (out / "buildbuddy.yaml").exists():
-        for component, package in (
-            ("benchmark", "//benchmark/..."),
-            ("container", "//integration/..."),
-        ):
-            if component in removed:
-                substitute(out / "buildbuddy.yaml", " " + re.escape(package), "")
 
     bazelignore = out / ".bazelignore"
     if bazelignore.exists():

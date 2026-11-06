@@ -281,10 +281,10 @@ def audit(repo: Repo) -> tuple[list[Result], dict]:
     )
     add(
         "ci",
-        "tests run on every PR (BuildBuddy or GitHub Actions)",
-        repo.has("buildbuddy.yaml") or re.search(r"bazel(isk)? test", workflows) is not None,
+        "tests run on every PR (GitHub Actions)",
+        re.search(r"bazel(isk)? test", workflows) is not None,
         "",
-        "buildbuddy.yaml",
+        ".github/workflows/ci.yml",
     )
     add(
         "ci",
@@ -299,6 +299,14 @@ def audit(repo: Repo) -> tuple[list[Result], dict]:
         repo.has(".github/PULL_REQUEST_TEMPLATE.md"),
         "",
         ".github/PULL_REQUEST_TEMPLATE.md",
+        warn=True,
+    )
+    add(
+        "ci",
+        "remote execution with rented GPU workers (--config=remote)",
+        "build:remote" in bazelrc and repo.has("tools/remote/server/gpu-scaler"),
+        "",
+        "tools/remote/, bzl/gpu.bzl",
         warn=True,
     )
 

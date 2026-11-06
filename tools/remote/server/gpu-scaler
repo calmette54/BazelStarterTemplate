@@ -1,0 +1,424 @@
+#!/usr/bin/env bash
+# gpu-scaler: the GPU workers of the NativeLink server (see "Remote execution"
+# in tools/remote/README.md). Rents a vast.ai box when the scheduler
+# queues an action for a GPU worker (a test with bzl/gpu.bzl's
+# exec_properties) and destroys it once it has been idle for IDLE_MINUTES.
+# Runs on the server as gpu-scaler.service; setup.sh installs it with gpu.env
+# (the offer query, the price and spend caps, the timings), the worker config
+# and the nativelink binary in /opt/rbe-remote.
+#
+#   gpu-scaler loop      # the service: a tick every POLL_SECONDS
+#   gpu-scaler tick      # one decision: rent, keep, reconnect or destroy
+#   gpu-scaler up        # rent the box now, ahead of the demand
+#   gpu-scaler down      # drain the worker and destroy the box
+#   gpu-scaler status    # the box, its worker, the queued GPU actions
+#
+# The box runs the plain Ubuntu image (the tests bring CUDA, vast.ai's runtime
+# the driver) with nothing listening: reverse ssh tunnels from this server
+# carry the worker's connections to the scheduler (50061) and the CAS (50051),
+# so the worker API, which has no authentication, never leaves this host's
+# loopback. The box's own watchdog destroys it once no ssh session is
+# left for IDLE_MINUTES, or after MAX_HOURS: a dead scaler leaves nothing
+# billing.
+set -uo pipefail
+
+SCALER_DIR=${SCALER_DIR:-/opt/rbe-remote}
+STATE_DIR=${STATE_DIR:-/var/lib/rbe-remote}
+ADMIN=${ADMIN:-http://127.0.0.1:50061/admin/scheduler/MAIN_SCHEDULER}
+# The value of the `gpu` platform property (bzl/gpu.bzl, ../worker/nativelink.json5).
+GPU=cuda
+# The vastai CLI of setup.sh's venv.
+PATH="$SCALER_DIR/venv/bin:$PATH"
+
+log() { echo "gpu-scaler: $*" >&2; }
+
+# QUERY, MAX_DPH, DISK, IDLE_MINUTES, MAX_HOURS, MONTHLY_CAP, LAUNCH_TIMEOUT, POLL_SECONDS.
+# shellcheck source=/dev/null
+source "$SCALER_DIR/gpu.env" || {
+  log "no $SCALER_DIR/gpu.env: run tools/remote/server/setup.sh"
+  exit 1
+}
+: "${QUERY:?}" "${MAX_DPH:?}" "${DISK:?}" "${IDLE_MINUTES:?}" "${MAX_HOURS:?}" "${MONTHLY_CAP:?}"
+LAUNCH_TIMEOUT=${LAUNCH_TIMEOUT:-600}
+POLL_SECONDS=${POLL_SECONDS:-10}
+DRAIN_SECONDS=${DRAIN_SECONDS:-120}
+LABEL=${LABEL:-rbe-gpu}
+# Plain Ubuntu: no CUDA userland. The tests bring their own (the hermetic
+# CUDA runtime of rules_cuda, or the nvidia wheels of a PyTorch dependency,
+# which an image's libcudart would shadow).
+IMAGE=${IMAGE:-ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852}
+
+mkdir -p "$STATE_DIR"
+ssh_config="$STATE_DIR/$LABEL.ssh_config"
+ssh_opts=(-F "$ssh_config" -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=6)
+socket="$STATE_DIR/$LABEL.tunnel"
+# One tunnel per port, each an ssh connection of its own: in one connection,
+# the scheduler's stream waited behind a fresh box's pull of gigabytes from the
+# CAS until the worker gave it up and the scheduler evicted the worker,
+# discarding the half-fetched inputs of its action.
+TUNNELS=(cas:50051 scheduler:50061)
+
+remote() { ssh -n "${ssh_opts[@]}" "$LABEL" "$@"; }
+
+# The scheduler's admin listings (../server/nativelink.json5: loopback only).
+admin() { curl -fsS --max-time 10 "$ADMIN/$1"; }
+
+gpu_worker() { # "<id> <running actions> <draining>" of the GPU worker; empty if none, 1 if the scheduler did not answer
+  admin workers | python3 -c '
+import json, sys
+try:
+    workers = json.load(sys.stdin)
+except ValueError:
+    sys.exit(1)
+for w in workers:
+    if w.get("platform_properties", {}).get("gpu") == sys.argv[1]:
+        print(w["id"], w.get("running_actions", 0), int(bool(w.get("is_draining"))))
+        break' "$GPU"
+}
+
+gpu_demand() { # the number of queued actions that need a GPU worker; 1 if the scheduler did not answer
+  admin demand | python3 -c '
+import json, sys
+try:
+    queued = json.load(sys.stdin)
+except ValueError:
+    sys.exit(1)
+print(sum(1 for a in queued if a.get("platform_properties", {}).get("gpu") == sys.argv[1]))' "$GPU"
+}
+
+box() { # "<id> <status> <ssh host> <ssh port>" of the box; empty if none, 1 if the API failed
+  vastai show instances --raw 2>/dev/null | python3 -c '
+import json, sys
+try:
+    rows = json.load(sys.stdin)
+except ValueError:
+    sys.exit(1)
+if not isinstance(rows, list):
+    sys.exit(1)
+for r in rows:
+    if r.get("label") == sys.argv[1]:
+        direct = (r.get("ports") or {}).get("22/tcp")
+        host, port = (r.get("public_ipaddr"), direct[0]["HostPort"]) if direct else (r.get("ssh_host"), r.get("ssh_port"))
+        print(r["id"], r.get("actual_status") or "none", host or "-", port or "-")
+        break' "$LABEL"
+}
+
+ssh_config_for() { # instance id, host, port: ssh to the box as $LABEL; a known_hosts file per instance
+  cat >"$ssh_config" <<EOF
+Host $LABEL
+  HostName $2
+  Port $3
+  User root
+  IdentityFile $STATE_DIR/id_ed25519
+  IdentitiesOnly yes
+  UserKnownHostsFile $STATE_DIR/known_hosts.$1
+  StrictHostKeyChecking accept-new
+EOF
+}
+
+# gpu-scaler's ssh key reaches the box as an account key (setup.sh registers
+# it): vast.ai rewrites authorized_keys after the onstart script.
+onstart() { # the box's startup script: /work, curl, the watchdog
+  cat <<EOF
+mkdir -p /work
+cat >/work/.watchdog <<'W'
+# Destroys this instance after IDLE s without an ssh session (the server's
+# tunnel) or after MAX s in all; stops it if the destroy is refused.
+env1() { tr '\0' '\n' </proc/1/environ | sed -n "s/^\$1=//p"; }
+key=\${CONTAINER_API_KEY:-\$(env1 CONTAINER_API_KEY)} id=\${CONTAINER_ID:-\$(env1 CONTAINER_ID)}
+start=\$(date +%s) last=\$start
+while sleep 20; do
+  now=\$(date +%s)
+  # An established connection (state 01) to sshd (port 22 = 0016).
+  cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | awk '\$2 ~ /:0016\$/ && \$4 == "01" { found = 1 } END { exit !found }' && last=\$now
+  if [ \$((now - last)) -ge \$1 ] || [ \$((now - start)) -ge \$2 ]; then
+    url=https://console.vast.ai/api/v0/instances/\$id/ auth="Authorization: Bearer \$key"
+    curl -fsS -X DELETE -H "\$auth" "\$url" && break
+    curl -fsS -X PUT -H "\$auth" -H 'Content-Type: application/json' -d '{"state": "stopped"}' "\$url" && break
+  fi
+done
+W
+command -v curl >/dev/null || { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl; } >/dev/null
+nohup bash /work/.watchdog $((IDLE_MINUTES * 60)) $((MAX_HOURS * 3600)) >/work/.watchdog.log 2>&1 &
+command -v curl >/dev/null && touch /work/.ready
+EOF
+}
+
+destroy() { # instance id
+  log "destroying $LABEL (instance $1)"
+  vastai destroy instance "$1" -y --raw >/dev/null 2>&1 || true
+  rm -f "$STATE_DIR/known_hosts.$1"
+}
+
+book() { # the rental that just ended, in this month's ledger (MONTHLY_CAP)
+  local since price
+  read -r since price _ 2>/dev/null <"$STATE_DIR/rented" || return 0
+  awk -v month="$(date +%Y-%m)" -v seconds=$(($(date +%s) - since)) -v dph="$price" \
+    'BEGIN { printf "%s %.3f\n", month, seconds / 3600 * dph }' >>"$STATE_DIR/ledger"
+  rm -f "$STATE_DIR/rented"
+}
+
+spent() { # $ booked this month
+  awk -v month="$(date +%Y-%m)" '$1 == month { total += $2 } END { printf "%.2f", total + 0 }' \
+    "$STATE_DIR/ledger" 2>/dev/null || echo 0.00
+}
+
+under_cap() {
+  local booked
+  booked=$(spent)
+  awk -v booked="$booked" -v cap="$MONTHLY_CAP" 'BEGIN { exit !(booked + 0 >= cap + 0) }' || return 0
+  log "\$$booked of rentals booked this month, MONTHLY_CAP is \$$MONTHLY_CAP (gpu.env): not renting"
+  return 1
+}
+
+tunnel_open() { ssh -S "$socket.$1" -O check "${ssh_opts[@]}" "$LABEL" >/dev/null 2>&1; }
+
+tunnel_ok() {
+  local t
+  for t in "${TUNNELS[@]}"; do tunnel_open "${t%%:*}" || return 1; done
+}
+
+tunnel_up() { # the reverse tunnels, ssh control masters (checked and closed by their sockets)
+  # Only the ones that are down: the box keeps a closed tunnel's port bound
+  # while its connections drain, so reopening a live one could fail.
+  local t name port
+  for t in "${TUNNELS[@]}"; do
+    name=${t%%:*} port=${t#*:}
+    tunnel_open "$name" && continue
+    rm -f "$socket.$name"
+    ssh -f -N -M -S "$socket.$name" -o ExitOnForwardFailure=yes \
+      -R "127.0.0.1:$port:127.0.0.1:$port" "${ssh_opts[@]}" "$LABEL" || return 1
+  done
+}
+
+tunnel_down() {
+  local t
+  for t in "${TUNNELS[@]}"; do
+    ssh -S "$socket.${t%%:*}" -O exit "${ssh_opts[@]}" "$LABEL" >/dev/null 2>&1
+    rm -f "$socket.${t%%:*}"
+  done
+}
+
+connect() { # the tunnel; the worker binary, config and process on the box
+  tunnel_up || return 1
+  scp -q "${ssh_opts[@]}" "$SCALER_DIR/nativelink" "$SCALER_DIR/worker.json5" "$LABEL:/work/" || return 1
+  start_worker
+}
+
+start_worker() { # the worker process, unless it runs: a worker whose tunnel came back reconnects by itself
+  # A worker that died is started again, the end of its log in the journal.
+  # The worker keeps no descriptor of the ssh session, and it is backgrounded
+  # on its own (an `a && b &` list runs in a subshell that waits for it): either
+  # would hold the session open as long as the worker lives.
+  # shellcheck disable=SC2016 # expanded on the box
+  remote 'cd /work && { kill -0 "$(cat worker.pid 2>/dev/null)" 2>/dev/null ||
+    { tail -n 2 worker.log 2>/dev/null; chmod +x nativelink; nohup ./nativelink worker.json5 </dev/null >worker.log 2>&1 & echo $! >worker.pid; }; }' |
+    sed "s/^/gpu-scaler: $LABEL worker: /" >&2
+}
+
+wait_ready() { # instance id: running, reachable and set up within LAUNCH_TIMEOUT
+  local deadline=$((SECONDS + LAUNCH_TIMEOUT)) out id status host port
+  while ((SECONDS < deadline)); do
+    if out=$(box); then
+      read -r id status host port <<<"$out"
+      [[ ${id:-} == "$1" ]] || return 1 # gone (destroyed by its watchdog or in the console)
+    else
+      status=api-error
+    fi
+    case $status in
+      exited | unknown | offline | stopped) return 1 ;;
+      running)
+        if [[ $host != - && $port != - ]]; then
+          ssh_config_for "$id" "$host" "$port"
+          remote 'test -e /work/.ready' 2>/dev/null && return 0
+        fi
+        ;;
+    esac
+    sleep "$POLL_SECONDS"
+  done
+  log "instance $1 not ready after ${LAUNCH_TIMEOUT}s"
+  return 1
+}
+
+launch() { # the cheapest offer under MAX_DPH; another machine when one never comes up
+  local tried=() attempt offer machine price gpu where id
+  for attempt in 1 2 3; do
+    offer=
+    read -r offer machine price gpu where < <(
+      vastai search offers "$QUERY dph_total<=$MAX_DPH" -o dph_total --raw 2>/dev/null | python3 -c '
+import json, sys
+try:
+    offers = json.load(sys.stdin)
+except ValueError:
+    sys.exit(1)
+for o in offers:
+    if str(o["machine_id"]) not in sys.argv[1:]:
+        print(o["id"], o["machine_id"], "%.3f" % o["dph_total"], o.get("gpu_name", "").replace(" ", "_"), o.get("geolocation", "").replace(" ", "_"))
+        break' "${tried[@]}"
+    ) || true
+    if [[ -z $offer ]]; then
+      log "no offer at <= \$$MAX_DPH/h for the query in gpu.env"
+      return 1
+    fi
+    log "renting offer $offer ($gpu, $where, machine $machine, \$$price/h) as $LABEL, attempt $attempt"
+    id=$(vastai create instance "$offer" --image "$IMAGE" --disk "$DISK" --ssh --direct --label "$LABEL" \
+      --onstart-cmd "$(onstart)" --cancel-unavail --raw 2>/dev/null | python3 -c '
+import json, sys
+try:
+    r = json.load(sys.stdin)
+except ValueError:
+    sys.exit(1)
+if not r.get("success") or not r.get("new_contract"):
+    sys.exit(1)
+print(r["new_contract"])') || {
+      tried+=("$machine")
+      continue
+    }
+    printf '%s %s %s\n' "$(date +%s)" "$price" "$id" >"$STATE_DIR/rented"
+    rm -f "$STATE_DIR/worker_seen"
+    wait_ready "$id" && return 0
+    teardown "$id"
+    tried+=("$machine")
+  done
+  return 1
+}
+
+teardown() { # instance id [worker id]: drain the worker, close the tunnel, destroy the box, book the cost
+  local deadline worker running
+  if [[ -n ${2:-} ]]; then
+    curl -fsS --max-time 10 -X POST "$ADMIN/set_drain_worker/$2/1" >/dev/null 2>&1
+    deadline=$((SECONDS + DRAIN_SECONDS))
+    while ((SECONDS < deadline)); do
+      worker=$(gpu_worker) || break
+      [[ -n $worker ]] || break
+      read -r _ running _ <<<"$worker"
+      ((running > 0)) || break
+      sleep "$POLL_SECONDS"
+    done
+  fi
+  tunnel_down
+  destroy "$1"
+  book
+}
+
+ensure_up() { # the box rented, reachable and running its worker
+  local out id='' status host port
+  if ! out=$(box); then
+    log "the vast.ai instance list failed" # never rent blind: the box may exist
+    return 1
+  fi
+  read -r id status host port <<<"$out"
+  if [[ -n $id ]] && ! wait_ready "$id"; then
+    teardown "$id" # left over (a crashed launch, an exited box)
+    id=
+  fi
+  if [[ -z $id ]]; then
+    under_cap && launch || return 1
+  fi
+  connect || {
+    log "could not connect $LABEL"
+    # rented: "<time> <price> <instance id>" (launch)
+    read -r _ _ id _ 2>/dev/null <"$STATE_DIR/rented" && teardown "$id"
+    return 1
+  }
+  date +%s >"$STATE_DIR/last_busy"
+}
+
+tick() { # rent on demand, keep while busy, reconnect, destroy when idle or broken
+  local out id='' status host port demand worker wid='' running=0 now since seen last
+  if ! out=$(box); then
+    log "the vast.ai instance list failed"
+    return 1
+  fi
+  read -r id status host port <<<"$out"
+  if ! demand=$(gpu_demand) || ! worker=$(gpu_worker); then
+    log "the scheduler did not answer"
+    return 1
+  fi
+  [[ -n $worker ]] && read -r wid running _ <<<"$worker"
+  now=$(date +%s)
+  if [[ -z $id ]]; then
+    ((demand > 0)) || return 0
+    log "$demand GPU action(s) queued"
+    ensure_up
+    return
+  fi
+  ((running > 0 || demand > 0)) && echo "$now" >"$STATE_DIR/last_busy"
+  [[ -n $wid ]] && echo "$now" >"$STATE_DIR/worker_seen"
+  read -r since _ 2>/dev/null <"$STATE_DIR/rented" || since=$now
+  seen=$(cat "$STATE_DIR/worker_seen" 2>/dev/null || echo 0)
+  ((seen > since)) && since=$seen # a worker re-registering (a lost stream) gets the launch time again
+  last=$(cat "$STATE_DIR/last_busy" 2>/dev/null || echo "$now")
+  if [[ $status != running ]]; then
+    log "$LABEL (instance $id) is $status"
+    teardown "$id"
+  elif [[ -z $wid ]] && ((now - since > LAUNCH_TIMEOUT)); then
+    log "no GPU worker registered from $LABEL within ${LAUNCH_TIMEOUT}s"
+    teardown "$id"
+  elif ((now - last >= IDLE_MINUTES * 60)); then
+    log "$LABEL idle for $IDLE_MINUTES min"
+    teardown "$id" "$wid"
+  elif ! tunnel_ok; then
+    log "reconnecting $LABEL"
+    ssh_config_for "$id" "$host" "$port"
+    connect
+  elif [[ -z $wid ]]; then
+    start_worker # not registered yet: starting, or died (a config error)
+  fi
+}
+
+down() {
+  local out id='' worker wid=''
+  out=$(box) || {
+    log "the vast.ai instance list failed"
+    return 1
+  }
+  read -r id _ <<<"$out"
+  [[ -n $id ]] || {
+    log "no $LABEL"
+    return 0
+  }
+  worker=$(gpu_worker) && [[ -n $worker ]] && read -r wid _ <<<"$worker"
+  teardown "$id" "$wid"
+}
+
+status() {
+  local out worker demand
+  if out=$(box); then
+    echo "box: ${out:-none}"
+  else
+    echo "box: the vast.ai instance list failed"
+  fi
+  if worker=$(gpu_worker); then
+    echo "worker: ${worker:-none}${worker:+ (id, running actions, draining)}"
+  else
+    echo "worker: the scheduler did not answer"
+  fi
+  demand=$(gpu_demand) && echo "queued GPU actions: $demand"
+  tunnel_ok && echo "tunnel: up" || echo "tunnel: down"
+  echo "booked this month: \$$(spent) of \$$MONTHLY_CAP"
+}
+
+locked() { # one scaler decision at a time (the service and the commands by hand)
+  (
+    flock -w 600 9 || exit 1
+    "$@"
+  ) 9>"$STATE_DIR/$LABEL.lock"
+}
+
+case ${1:-} in
+  loop)
+    while true; do
+      locked tick
+      sleep "$POLL_SECONDS"
+    done
+    ;;
+  tick) locked tick ;;
+  up) locked ensure_up ;;
+  down) locked down ;;
+  status) status ;;
+  *)
+    echo "usage: gpu-scaler loop|tick|up|down|status" >&2
+    exit 2
+    ;;
+esac

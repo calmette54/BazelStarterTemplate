@@ -1,0 +1,37 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_cuda//cuda:defs.bzl", "cuda_library")
+load("//:bzl/gpu.bzl", "GPU")
+
+# The CUDA redistributables (MODULE.bazel) are x86_64-only: skipped when
+# cross-compiling (--config=aarch64).
+_X86_64_LINUX = [
+    "@platforms//os:linux",
+    "@platforms//cpu:x86_64",
+]
+
+# Smoke test of the hermetic CUDA toolchain (see MODULE.bazel) on a GPU.
+cuda_library(
+    name = "saxpy",
+    srcs = ["saxpy.cu"],
+    hdrs = ["saxpy.h"],
+    target_compatible_with = _X86_64_LINUX,
+)
+
+# Needs a GPU, so `bazelisk test //...` skips it (.bazelrc):
+#
+#   bazelisk test --config=gpu //test/cuda:saxpy_test        # local GPU
+#   bazelisk test --config=remote --config=gpu //test/cuda:saxpy_test
+#
+# Under --config=remote its test action asks for a GPU worker, and the
+# server rents a vast.ai box for it (tools/remote/README.md).
+# `bazelisk build //...` still compiles and links it without a GPU.
+cc_test(
+    name = "saxpy_test",
+    size = "small",
+    srcs = ["saxpy_test.cc"],
+    exec_properties = GPU.exec_properties,
+    tags = GPU.tags,
+    target_compatible_with = _X86_64_LINUX,
+    visibility = ["//test/lint:__pkg__"],
+    deps = [":saxpy"],
+)

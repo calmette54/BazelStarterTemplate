@@ -18,6 +18,8 @@ and green.
 ```bash
 bazelisk build //...                          # build everything
 bazelisk test //...                           # unit tests, benchmark, clang-tidy, integration
+bazelisk test --config=gpu //...              # only the GPU tests, on this machine's GPU
+ssh -fN rbe-server && bazelisk test --config=remote --config=gpu //...  # on a rented vast.ai GPU
 bazelisk build //... --config=aarch64         # cross-compile (also --config=x86_64)
 bazelisk run //standalone:hello-world -- Alice fr
 bazelisk run //:format                        # clang-format
@@ -26,6 +28,12 @@ bazelisk coverage //...                       # bazel-out/_coverage/_coverage_re
 bazelisk build //documentation:docs           # Doxygen HTML in bazel-bin/documentation/html
 bazelisk run //:refresh_all                   # compile_commands.json for clangd
 ```
+
+Tests that need a GPU use `GPU` from `bzl/gpu.bzl` (tag `requires-gpu` plus the
+`exec_properties` that route them to a GPU worker); `bazelisk test //...` builds
+but skips them. `--config=remote` runs every action on the self-hosted
+NativeLink server of `tools/remote/`, which rents a vast.ai box for the GPU
+tests (setup and costs: `tools/remote/README.md`).
 
 `//integration:standalone_image_test` needs a Docker-compatible daemon. For
 rootless Podman, export `DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock`
@@ -45,10 +53,13 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 | `lib/greeter/` | example library (`cc_library`, uses `fmt`) |
 | `standalone/` | `hello-world` CLI, release tarball, multi-arch OCI image |
 | `test/greeter/`, `test/lint/` | doctest unit tests, clang-tidy `lint_test` |
+| `test/cuda/` | `saxpy_test`: the smallest GPU test (rules_cuda, hermetic CUDA 12.8) |
+| `test/remote/` | `gpu_scaler_test`: the GPU autoscaler against fake vastai/ssh |
+| `tools/remote/` | remote execution: NativeLink server and GPU worker configs, `gpu-scaler` (vast.ai), `setup.sh`, execution platform |
 | `benchmark/` | google-benchmark |
 | `integration/` | Python testcontainers test of the image |
 | `documentation/` | Doxygen + doxygen-awesome |
-| `bzl/` | flags (`defs.bzl`), packaging names, multi-arch transition, platforms, format and lint setup, template parameters (`variables.bzl`), dependency patches (`patches/`) |
+| `bzl/` | flags (`defs.bzl`), GPU test requirements (`gpu.bzl`), packaging names, multi-arch transition, platforms, format and lint setup, template parameters (`variables.bzl`), dependency patches (`patches/`) |
 | `tools/workspace_status.sh` | stamp keys (version, commit, image registry) |
 | `claude-plugin/` | Claude Code plugin `bazel-starter` (skills, agents; `.claude/agents` links to its agents) |
 | `examples/<name>/` | optional demos, each a separate Bazel module (build from its directory; the root `.bazelignore` skips them) |
@@ -70,8 +81,9 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 
 ## CI/CD
 
-- **BuildBuddy** (`buildbuddy.yaml`) runs the tests on pushes and PRs with
-  `--config=ci` (RBE). Tests tagged `requires-docker` are skipped there.
+- **GitHub Actions** (`.github/workflows/ci.yml`) builds and tests `//...` with
+  `--config=ci` on pushes and PRs. The runners have no GPU: tests tagged
+  `requires-gpu`/`requires-large-gpu` are only built.
 - **GitHub Actions** (`.github/workflows/release-please.yml`) runs on `main`:
   it opens the release PR, and when that PR is merged it pushes the image,
   attaches the binaries and publishes the docs to GitHub Pages.
@@ -112,6 +124,6 @@ When changing the template:
   them before guessing an API or a configuration.
 - Agents in `.claude/agents/`:
   - `bazel-build-expert`: MODULE.bazel, toolchains, RBE, build performance
-  - `cicd-automation-architect`: GitHub Actions and BuildBuddy
+  - `cicd-automation-architect`: GitHub Actions
   - `documentation-architect`: docs and Doxygen comments
   - `sprint-planner`: break work into GitHub issues
