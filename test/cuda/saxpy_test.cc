@@ -5,8 +5,9 @@
 #include <string>
 #include <vector>
 
-// Writes the GPU it ran on to test.outputs/, which Bazel brings back from a
-// remote GPU worker: bazel-testlogs/test/cuda/saxpy_test/test.outputs/outputs.zip.
+// Writes the GPU it ran on to bazel-testlogs/test/cuda/saxpy_test/test.outputs/,
+// which Bazel brings back from a remote GPU worker (in outputs.zip, or as
+// gpu.txt on a box without zip).
 int main() {
   constexpr int kN = 1 << 16;
   std::vector<float> x(kN, 1.0F);
