@@ -197,7 +197,10 @@ def scaler(tmp_path):
         ("curl", FAKE_CURL),
     ]:
         path = fakes / tool
-        path.write_text(f"#!{sys.executable}\n" + text.format(common=FAKE_COMMON))
+        # Not `#!{sys.executable}`: the runfiles path of the interpreter can
+        # exceed the kernel's shebang limit (255 bytes), and exec then fails.
+        # PATH (below) puts this interpreter's directory first.
+        path.write_text("#!/usr/bin/env python3\n" + text.format(common=FAKE_COMMON))
         path.chmod(0o755)
     fake_state = tmp_path / "fake_state"
     fake_state.mkdir()
