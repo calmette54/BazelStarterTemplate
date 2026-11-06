@@ -25,8 +25,7 @@ http_archive(
 )
 
 # libc++.so.1 for libOpen3D.so, from the LLVM release of the toolchain
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
-use_repo(llvm, "llvm_toolchain_llvm")
+# (@llvm_toolchain_llvm, imported by toolchains.MODULE.bazel)
 
 llvm_runtime = use_repo_rule("//third_party:llvm_runtime.bzl", "llvm_runtime")
 
