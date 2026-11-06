@@ -1,6 +1,6 @@
 ---
 name: project-standardize
-description: Audits an existing repository against BazelStarterTemplate and brings it in line, one concern at a time - hermetic Bazel build, devenv and git hooks, format/lint tests, unit tests and coverage, conventional commits and release-please, CI, OCI image, documentation, CLAUDE.md - or upgrades a project created from the template to a newer template release. Use when the user asks to review, audit, standardize, clean up, modernize or "make consistent" a repository's infrastructure, to add CI, linting, formatting, releases, Docker/OCI images or docs to an existing project, to migrate a project to Bazel, or to update a project to the latest template.
+description: Audits an existing repository against BazelStarterTemplate and brings it in line, one concern at a time - hermetic Bazel build, devenv and git hooks, format/lint tests, unit tests and coverage, conventional commits and release-please, CI, remote execution and GPU tests, OCI image, documentation, CLAUDE.md - or upgrades a project created from the template to a newer template release. Use when the user asks to review, audit, standardize, clean up, modernize or "make consistent" a repository's infrastructure, to add CI, linting, formatting, releases, Docker/OCI images or docs to an existing project, to migrate a project to Bazel, or to update a project to the latest template.
 ---
 
 # Standardize an existing repository
@@ -30,7 +30,7 @@ format/lint → tests → release → CI → container → docs → Claude Code.
 
 For each concern:
 
-1. Branch `build/hermetic-toolchain`, `ci/buildbuddy`, ...
+1. Branch `build/hermetic-toolchain`, `ci/github-actions`, ...
 2. Read the concern's section in `components.md` and the named files in `$T`.
    Copy them and adapt the project values; for files with
    `# >>> template:<x>` blocks keep only the blocks of components the project

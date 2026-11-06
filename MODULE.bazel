@@ -74,12 +74,31 @@ bazel_dep(name = "platforms", version = "1.1.0")
 #--------------------- LLVM Toolchain --------------
 include("//:bzl/toolchains.MODULE.bazel")
 
-#--------------------- Remote execution (BuildBuddy) --------------
-# Execution platform and toolchains for --config=ci (see .bazelrc).
-# https://github.com/buildbuddy-io/buildbuddy-toolchain
-bazel_dep(name = "toolchains_buildbuddy", version = "0.0.4", dev_dependency = True)
+# >>> template:cpp
+#--------------------- CUDA Toolchain --------------
+# Hermetic CUDA from NVIDIA's redistributables (x86_64 only), for the GPU
+# tests (bzl/gpu.bzl, //test/cuda). Nothing is downloaded until a CUDA
+# target is built.
+# https://github.com/bazel-contrib/rules_cuda
+# CUDA 12.8 is the first nvcc that accepts clang 19 (the LLVM toolchain) as
+# host compiler.
+bazel_dep(name = "rules_cuda", version = "0.3.0")
 
-buildbuddy = use_extension("@toolchains_buildbuddy//:extensions.bzl", "buildbuddy", dev_dependency = True)
+cuda = use_extension("@rules_cuda//cuda:extensions.bzl", "toolchain")
+cuda.redist_json(
+    name = "cuda_redist",
+    components = [
+        "cccl",
+        "cudart",
+        "nvcc",
+        "nvtx",
+    ],
+    sha256 = "daa0d766b36feaa933592162c27be5fb63b68fc547ca6886c160a35d96ee8891",
+    version = "12.8.0",
+)
+cuda.toolkit(name = "cuda")
+use_repo(cuda, "cuda")
+# <<< template:cpp
 
 #--------------------- Python Toolchain --------------
 # https://rules-python.readthedocs.io/en/latest/toolchains.html
@@ -92,6 +111,16 @@ python = use_extension(
 )
 
 python.toolchain(python_version = "3.12", is_default=True)
+
+# pytest for //test/remote:gpu_scaler_test (remote execution, see
+# tools/remote/README.md).
+pip_remote = use_extension("@rules_python//python/extensions:pip.bzl", "pip", dev_dependency = True)
+pip_remote.parse(
+    hub_name = "remote_test_deps",
+    python_version = "3.12",
+    requirements_lock = "//test/remote:requirements_lock_3_12.txt",
+)
+use_repo(pip_remote, "remote_test_deps")
 
 # >>> template:container
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")

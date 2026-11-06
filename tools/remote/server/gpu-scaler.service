@@ -1,0 +1,15 @@
+# gpu-scaler's loop (setup.sh installs it; "Remote execution" in
+# tools/remote/README.md). Stopping it closes the tunnel to a rented
+# box, whose watchdog then destroys it after IDLE_MINUTES.
+[Unit]
+Description=GPU workers for NativeLink, rented on vast.ai
+After=nativelink.service
+Requires=nativelink.service
+
+[Service]
+ExecStart=/opt/rbe-remote/gpu-scaler loop
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

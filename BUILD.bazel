@@ -45,6 +45,7 @@ exports_files(
     [
         ".clang-tidy",
         ".ruff.toml",
+        "bzl/gpu.bzl",
     ],
     visibility = ["//visibility:public"],
 )

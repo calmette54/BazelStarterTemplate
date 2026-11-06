@@ -1,0 +1,31 @@
+# The remote execution server and its GPU workers (see
+# tools/remote/README.md), installed on the server by
+# server/setup.sh, outside Bazel. Exported for //test/remote:gpu_scaler_test.
+exports_files(
+    [
+        "server/gpu-scaler",
+        "server/gpu.env",
+        "server/nativelink.json5",
+        "server/setup.sh",
+        "worker/nativelink.json5",
+    ],
+    visibility = ["//test/remote:__pkg__"],
+)
+
+# The execution platform of --config=remote (.bazelrc). Every action asks for
+# a worker without a GPU, which only the server's own worker offers
+# (server/nativelink.json5): a property an action does not request never
+# restricts the match, so without "none" a rented GPU box would also take
+# build actions. A GPU test overrides it for its test action (bzl/gpu.bzl).
+platform(
+    name = "platform",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    exec_properties = {
+        "OSFamily": "linux",
+        "gpu": "none",
+    },
+    visibility = ["//visibility:public"],
+)

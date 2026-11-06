@@ -1,0 +1,108 @@
+// The NativeLink server: the CAS, the action cache, the scheduler and the CPU
+// worker in one process (see tools/remote/README.md). setup.sh installs it as
+// /opt/rbe-remote/server.json5 for nativelink.service.
+{
+  stores: [
+    {
+      name: "AC",
+      filesystem: {
+        content_path: "/var/lib/nativelink/ac",
+        temp_path: "/var/lib/nativelink/ac-tmp",
+        // 5 GB, least recently used first.
+        eviction_policy: { max_bytes: 5000000000 },
+      },
+    },
+    {
+      // The CAS. A worker needs a fast_slow store whose fast side is a
+      // filesystem store: it hardlinks the inputs from there into the action
+      // directory. With nothing behind it, the fast side is the CAS itself.
+      name: "CAS",
+      fast_slow: {
+        fast: {
+          filesystem: {
+            content_path: "/var/lib/nativelink/cas",
+            temp_path: "/var/lib/nativelink/cas-tmp",
+            // 150 GB of a 240 GB disk, least recently used first.
+            eviction_policy: { max_bytes: 150000000000 },
+          },
+        },
+        slow: { noop: {} },
+      },
+    },
+  ],
+  schedulers: [
+    {
+      name: "MAIN_SCHEDULER",
+      simple: {
+        // The properties an action may request. gpu routes: every action
+        // asks for "none" (tools/remote:platform), which only this worker
+        // below advertises, and a GPU test's test action for "cuda"
+        // (bzl/gpu.bzl), which only the vast.ai workers advertise
+        // (../worker/nativelink.json5). OSFamily is a preference, not a
+        // match. An action requesting any other key queues forever.
+        supported_platform_properties: {
+          OSFamily: "priority",
+          gpu: "exact",
+        },
+        // The GPU workers talk through an ssh tunnel: more slack than the
+        // default 10 s before a silent worker is dropped and its actions
+        // requeued.
+        worker_timeout_s: 30,
+      },
+    },
+  ],
+  workers: [
+    {
+      local: {
+        worker_api_endpoint: { uri: "grpc://127.0.0.1:50061" },
+        cas_fast_slow_store: "CAS",
+        upload_action_result: { ac_store: "AC" },
+        work_directory: "/var/lib/nativelink/work",
+        // gpu "none": the builds and the CPU tests, never the GPU tests.
+        platform_properties: {
+          OSFamily: { values: ["linux"] },
+          gpu: { values: ["none"] },
+        },
+        // nvcc takes 2-4 GB a job: 6 jobs on 8 vCPUs with 16-32 GB.
+        max_inflight_tasks: 6,
+        // A longer request is rejected, not clamped: the eternal tests ask
+        // for 3600 s.
+        max_action_timeout_s: 7200,
+      },
+    },
+  ],
+  servers: [
+    {
+      // The clients (Bazel through the ssh tunnel, the GPU workers' stores).
+      name: "clients",
+      listener: { http: { socket_address: "127.0.0.1:50051" } },
+      services: {
+        cas: [{ instance_name: "", cas_store: "CAS" }],
+        ac: [{ instance_name: "", ac_store: "AC" }],
+        execution: [{ instance_name: "", cas_store: "CAS", scheduler: "MAIN_SCHEDULER" }],
+        capabilities: [
+          {
+            instance_name: "",
+            remote_execution: { scheduler: "MAIN_SCHEDULER" },
+            // Bazel's --remote_cache_compression: zstd on the wire.
+            remote_cache_compression: true,
+          },
+        ],
+        bytestream: [{ instance_name: "", cas_store: "CAS" }],
+      },
+    },
+    {
+      // The worker API (which has no authentication: anything that reaches
+      // it runs actions) and the admin listings gpu-scaler reads. Loopback
+      // only; the GPU workers come in through gpu-scaler's tunnel.
+      name: "workers",
+      listener: { http: { socket_address: "127.0.0.1:50061" } },
+      services: {
+        worker_api: { scheduler: "MAIN_SCHEDULER" },
+        admin: {},
+        health: {},
+      },
+    },
+  ],
+  global: { max_open_files: 65536 },
+}

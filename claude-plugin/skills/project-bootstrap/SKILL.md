@@ -1,6 +1,6 @@
 ---
 name: project-bootstrap
-description: Creates a new repository (C++ or Python) from BazelStarterTemplate and makes its first commit - hermetic Bazel build, devenv, format/lint tests, unit tests, release-please, BuildBuddy CI, optional multi-arch OCI image, Doxygen docs and benchmark. Use when starting a new project, repository, service, library or CLI that should follow the standard infrastructure, or when the user says "new project", "bootstrap", "scaffold a repo" or "start from the template". Not for prototypes or scratch workspaces (bazel-workspace) or for repositories that already exist (project-standardize).
+description: Creates a new repository (C++ or Python) from BazelStarterTemplate and makes its first commit - hermetic Bazel build, devenv, format/lint tests, unit tests, release-please, GitHub Actions CI, remote execution with rented GPU workers, optional multi-arch OCI image, Doxygen docs and benchmark. Use when starting a new project, repository, service, library or CLI that should follow the standard infrastructure, or when the user says "new project", "bootstrap", "scaffold a repo" or "start from the template". Not for prototypes or scratch workspaces (bazel-workspace) or for repositories that already exist (project-standardize).
 ---
 
 # Bootstrap a project from the template
@@ -73,6 +73,6 @@ with `SKIP=no-commit-to-branch`. Everything after goes through branches and PRs.
 gh repo create <owner>/<name> --private --source . --push
 ```
 
-Then tell the user what is left by hand: BuildBuddy app + API key,
-`RELEASE_PLEASE_TOKEN` secret, GitHub Pages from `gh-pages` (docs), package
+Then tell the user what is left by hand: the remote execution server
+(`tools/remote/README.md`, optional), `RELEASE_PLEASE_TOKEN` secret, GitHub Pages from `gh-pages` (docs), package
 visibility on ghcr.io (container), branch protection on `main`.

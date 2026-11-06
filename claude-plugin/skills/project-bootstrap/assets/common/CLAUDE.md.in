@@ -29,6 +29,8 @@ bazelisk test //...                           # unit tests, lint tests, integrat
 bazelisk run //standalone:hello-world -- Alice fr
 bazelisk run //:format                        # clang-format and ruff
 bazelisk lint //...                           # lint results with fixes
+bazelisk test --config=gpu //...              # only the GPU tests, on this machine's GPU
+ssh -fN rbe-server && bazelisk test --config=remote --config=gpu //...  # on a rented vast.ai GPU
 <!-- >>> template:cpp -->
 bazelisk build //... --config=aarch64         # cross-compile (also --config=x86_64)
 bazelisk coverage //...                       # bazel-out/_coverage/_coverage_report.dat
@@ -41,6 +43,12 @@ bazelisk run //:requirements.update           # re-lock after editing requiremen
 bazelisk build //documentation:docs           # Doxygen HTML in bazel-bin/documentation/html
 <!-- <<< template:docs -->
 ```
+
+Tests that need a GPU use `GPU` from `bzl/gpu.bzl` (tag `requires-gpu` plus the
+`exec_properties` that route them to a GPU worker); `bazelisk test //...` builds
+but skips them. `--config=remote` runs every action on the self-hosted
+NativeLink server of `tools/remote/`, which rents a vast.ai box for the GPU
+tests (setup and costs: `tools/remote/README.md`).
 
 <!-- >>> template:container -->
 `//integration:standalone_image_test` needs a Docker-compatible daemon. For
@@ -64,6 +72,7 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 <!-- >>> template:cpp -->
 | `lib/greeter/` | example library (`cc_library`, uses `fmt`) |
 | `test/greeter/`, `test/lint/` | doctest unit tests, clang-tidy `lint_test` |
+| `test/cuda/` | `saxpy_test`: the smallest GPU test (rules_cuda, hermetic CUDA 12.8) |
 <!-- <<< template:cpp -->
 <!-- >>> template:python -->
 | `lib/greeter/` | example library (`py_library`, `import greeter`) |
@@ -80,7 +89,8 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 <!-- >>> template:docs -->
 | `documentation/` | Doxygen + doxygen-awesome |
 <!-- <<< template:docs -->
-| `bzl/` | flags (`defs.bzl`), packaging names, platforms, toolchain, format and lint setup, project parameters (`variables.bzl`) |
+| `tools/remote/`, `test/remote/` | remote execution: NativeLink server and GPU worker configs, `gpu-scaler` (vast.ai) and its test |
+| `bzl/` | flags (`defs.bzl`), GPU test requirements (`gpu.bzl`), packaging names, platforms, toolchain, format and lint setup, project parameters (`variables.bzl`) |
 | `tools/workspace_status.sh` | stamp keys (version, commit, image registry) |
 
 ## Conventions
@@ -96,8 +106,12 @@ bazelisk run //standalone:push_image --revision_mode=RELEASE
 
 ## CI/CD
 
-- **BuildBuddy** (`buildbuddy.yaml`) runs the tests on pushes and PRs with
-  `--config=ci` (RBE). Tests tagged `requires-docker` are skipped there.
+- **GitHub Actions** (`.github/workflows/ci.yml`) builds and tests `//...` with
+  `--config=ci` on pushes and PRs. The runners have no GPU: tests tagged
+  `requires-gpu`/`requires-large-gpu` are only built.
+- **Remote execution** (`--config=remote`, `tools/remote/README.md`): a
+  self-hosted NativeLink server runs every action and rents a vast.ai GPU box
+  for the GPU tests (`bzl/gpu.bzl`).
 - **GitHub Actions** (`.github/workflows/release-please.yml`) runs on `main`:
   it opens the release PR, and when that PR is merged it attaches the
   binaries<!-- >>> template:container -->, pushes the image<!-- <<< template:container --><!-- >>> template:docs --> and publishes the docs to GitHub Pages<!-- <<< template:docs -->.

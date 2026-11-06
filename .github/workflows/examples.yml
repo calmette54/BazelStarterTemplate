@@ -1,5 +1,5 @@
 # Builds and tests each module under examples/. They are separate Bazel
-# modules, so the root build (BuildBuddy) does not cover them.
+# modules, so the root build (ci.yml) does not cover them.
 name: examples
 
 on:

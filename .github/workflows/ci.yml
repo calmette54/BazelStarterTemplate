@@ -1,0 +1,32 @@
+# Builds and tests everything on pushes to main and on pull requests. The
+# GPU tests (bzl/gpu.bzl) are built but not run: the runners have no GPU.
+# Run them with `bazelisk test --config=remote --config=gpu //...`
+# (tools/remote/README.md).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-ci-${{ hashFiles('MODULE.bazel', 'MODULE.bazel.lock', 'bzl/toolchains.MODULE.bazel') }}
+          restore-keys: bazel-ci-
+      # bazelisk is preinstalled on GitHub-hosted Ubuntu runners
+      - name: Install the credential helper
+        run: chmod +x "$(bazelisk run @tweag-credential-helper//installer)"
+      - name: Build
+        run: bazelisk build --config=ci //...
+      - name: Test
+        run: bazelisk test --config=ci //...

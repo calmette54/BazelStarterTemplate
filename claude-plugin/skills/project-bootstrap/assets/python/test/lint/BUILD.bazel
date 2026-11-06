@@ -10,5 +10,6 @@ ruff_test(
         "//lib/greeter",
         "//standalone:hello-world",
         "//test/greeter:greeter_test",
+        "//test/remote:gpu_scaler_test",
     ],
 )

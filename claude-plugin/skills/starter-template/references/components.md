@@ -5,17 +5,17 @@ project changes; everything else is copied as is. `[x]` = marked block
 `template:x` (see SKILL.md).
 
 Contents: build · environment · format and lint · tests and coverage ·
-release and stamping · CI · container · documentation · repository hygiene ·
-Claude Code
+release and stamping · CI · remote execution and GPU tests · container ·
+documentation · repository hygiene · Claude Code
 
 ## 1. Hermetic build (always)
 
 | File | Purpose |
 | --- | --- |
 | `.bazelversion`, `.bazeliskrc` | Bazel version; bazelisk runs the Aspect CLI (`bazelisk lint`) on top of it |
-| `MODULE.bazel` | bzlmod deps; `[cpp]` fmt/doctest/googletest/hedron, BuildBuddy RBE toolchain (`toolchains_buildbuddy`), `[benchmark]`, `[docs]` rules_doxygen, `[container]` rules_oci + base image + testcontainers pip hub |
+| `MODULE.bazel` | bzlmod deps; `[cpp]` fmt/doctest/googletest/hedron and rules_cuda (hermetic CUDA 12.8), the `remote_test_deps` pip hub (pytest for `test/remote`), `[benchmark]`, `[docs]` rules_doxygen, `[container]` rules_oci + base image + testcontainers pip hub |
 | `bzl/toolchains.MODULE.bazel` | hermetic LLVM 19 + Debian bullseye sysroots (x86_64, aarch64), C++23; `include()`d by MODULE.bazel |
-| `.bazelrc` | credential helper, `--config=aarch64/x86_64`, stamping, `--config=ci` (BuildBuddy RBE), coverage |
+| `.bazelrc` | credential helper, `--config=aarch64/x86_64`, stamping, `[cpp]` CUDA flags, GPU test filters (`--config=gpu`, `--config=large-gpu`), `--config=remote` (section 7), `--config=ci`, coverage |
 | `bzl/platforms/BUILD.bazel` | `linux-x86_64`, `linux-aarch64` platforms (used by the multi-arch image) |
 | `tools/credential-helper`, `.bazelrc` `--credential_helper` lines | tweag credential helper for GitHub and Docker Hub downloads |
 | `bzl/patches/` | `[cpp]` patch that makes hedron's compile-commands extractor load `py_binary`/`cc_binary` (Bazel 9 removed the native rules) |
@@ -92,19 +92,40 @@ and check the file name; `./tools/workspace_status.sh`.
 
 | File | Purpose |
 | --- | --- |
-| `buildbuddy.yaml` | BuildBuddy workflow: `bazel test --config=ci <packages> --test_tag_filters=-requires-docker` on pushes to `main` and PRs |
-| `.bazelrc` `build:ci` | BES + RBE on remote.buildbuddy.io, strict action env |
-| `MODULE.bazel` `toolchains_buildbuddy` | `@toolchains_buildbuddy//platforms:linux_x86_64` (RBE execution platform) |
+| `.github/workflows/ci.yml` | `bazelisk build/test --config=ci //...` on pushes to `main` and PRs |
+| `.bazelrc` `ci` | colors off, `--test_output=errors`, GPU tests filtered (runners have Docker, no GPU) |
 | `.github/workflows/release-please.yml` | release automation (section 5) |
 | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` | issue and PR templates |
 
-Project values: install the BuildBuddy GitHub app and add the API key
-(`~/.bazelrc` or the BuildBuddy secrets); the package list in `buildbuddy.yaml`
-must name every top-level test package. A project without BuildBuddy needs a
-GitHub Actions test workflow instead (setup-bazel + `bazelisk test //...`,
-like `.github/workflows/examples.yml`).
+Verify: `bazelisk test --config=ci //...`.
 
-## 7. Container image (optional: `container`)
+## 7. Remote execution and GPU tests (always; the CUDA test `[cpp]`)
+
+A self-hosted NativeLink server runs every action under `--config=remote`
+(laptop → ssh tunnel → server loopback). GPU tests ask for a GPU worker; the
+server's `gpu-scaler` rents a vast.ai box for them and destroys it when idle.
+Guide: `tools/remote/README.md`.
+
+| File | Purpose |
+| --- | --- |
+| `bzl/gpu.bzl` | `GPU` / `LARGE_GPU`: tags `requires-gpu` / `requires-large-gpu` and `exec_properties = {"test.gpu": "cuda"}` |
+| `tools/remote/BUILD.bazel` | execution platform `:platform` (`gpu: none`) of `--config=remote`; exports for the test |
+| `tools/remote/server/` | `setup.sh` (installs NativeLink, vastai, systemd units), `nativelink.json5` (CAS, scheduler with `gpu: exact`, CPU worker), `gpu-scaler` + `gpu.env` (rent, tunnel, drain, destroy, spend cap) |
+| `tools/remote/worker/nativelink.json5` | the GPU box's worker (`gpu: cuda`, CAS and scheduler through reverse ssh tunnels) |
+| `.bazelrc` `remote`, `gpu`, `large-gpu` | remote executor `grpc://127.0.0.1:50051`, minimal downloads, test timeouts; tag filters |
+| `test/remote/` | `gpu_scaler_test`: the scaler against fake vastai/ssh/scp/curl (CPU) |
+| `test/cuda/` `[cpp]` | `saxpy_test`: a CUDA kernel, the smallest GPU test |
+
+Every test that needs a GPU uses `exec_properties = GPU.exec_properties,
+tags = GPU.tags` (or `LARGE_GPU`). The CUDA archs in `.bazelrc` and the GPU
+list in `gpu.env` go together.
+Project values: the server host (`rbe-server` in `~/.ssh/config`), `gpu.env`
+(GPUs, prices, spend cap), `VAST_API_KEY` at setup.
+Verify: `bazelisk test //test/remote/...`; with a GPU,
+`bazelisk test --config=gpu //test/cuda:saxpy_test`; end to end,
+`bazelisk test --config=remote --config=gpu //...` and `gpu-scaler status` on the server.
+
+## 8. Container image (optional: `container`)
 
 | File | Purpose |
 | --- | --- |
@@ -120,7 +141,7 @@ Verify: `bazelisk run //standalone:load_image`, then
 `DOCKER_HOST=... TESTCONTAINERS_RYUK_DISABLED=true bazelisk test //integration:standalone_image_test`
 (rootless Podman: `podman system service --time=0 unix://$XDG_RUNTIME_DIR/podman/podman.sock`).
 
-## 8. Documentation (optional: `docs`)
+## 9. Documentation (optional: `docs`)
 
 | File | Purpose |
 | --- | --- |
@@ -133,14 +154,14 @@ Each documented package exposes a `filegroup(name = "sources")` listed in
 `documentation/BUILD.bazel`. Doxygen reads C++ comments and Python docstrings.
 Verify: `bazelisk build //documentation:docs`, open `bazel-bin/documentation/html/index.html`.
 
-## 9. Repository hygiene (always)
+## 10. Repository hygiene (always)
 
 `.gitignore` (anchored `/bazel-*`, devenv, direnv, compile_commands),
 `LICENSE`, `README.md` (getting started via devenv), `CHANGELOG.md` (written
 by release-please), branch protection on `main` (PRs only; the
 `no-commit-to-branch` hook enforces it locally).
 
-## 10. Claude Code (always)
+## 11. Claude Code (always)
 
 `CLAUDE.md` (setup, commands, layout, conventions, CI), `.mcp.json`
 (context7, grep), `.claude/settings.json` (MCP servers enabled, bazelisk

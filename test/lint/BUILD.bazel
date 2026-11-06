@@ -10,15 +10,19 @@ clang_tidy_test(
         # <<< template:benchmark
         "//lib/greeter",
         "//standalone:hello-world",
+        "//test/cuda:saxpy_test",
         "//test/greeter:greeter_test",
     ],
 )
 # <<< template:cpp
 
-# >>> template:container
 # Fails when ruff reports anything (see //:.ruff.toml).
 ruff_test(
     name = "ruff_test",
-    srcs = ["//integration:standalone_image_test"],
+    srcs = [
+        # >>> template:container
+        "//integration:standalone_image_test",
+        # <<< template:container
+        "//test/remote:gpu_scaler_test",
+    ],
 )
-# <<< template:container

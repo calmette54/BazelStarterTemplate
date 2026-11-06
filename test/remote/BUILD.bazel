@@ -1,0 +1,36 @@
+load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
+load("@remote_test_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+# `bazelisk run //test/remote:requirements.update` regenerates the lock file;
+# `requirements_test` checks that it is up to date.
+compile_pip_requirements(
+    name = "requirements",
+    src = "requirements.in",
+    requirements_txt = "requirements_lock_3_12.txt",
+)
+
+# tools/remote/server/gpu-scaler against fake vastai, ssh, scp and curl (the
+# scheduler's admin listings): CPU, no network.
+py_test(
+    name = "gpu_scaler_test",
+    size = "small",
+    srcs = ["gpu_scaler_test.py"],
+    data = [
+        "//:bzl/gpu.bzl",
+        "//tools/remote:server/gpu-scaler",
+        "//tools/remote:server/gpu.env",
+        "//tools/remote:server/nativelink.json5",
+        "//tools/remote:worker/nativelink.json5",
+    ],
+    python_version = "3.12",
+    # The pip hub only has wheels for the host: skip it when cross-compiling
+    # (--config=aarch64).
+    target_compatible_with = HOST_CONSTRAINTS,
+    visibility = ["//test/lint:__pkg__"],
+    deps = [
+        "@rules_python//python/runfiles",
+        requirement("pytest"),
+    ],
+)

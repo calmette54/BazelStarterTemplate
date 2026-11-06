@@ -1,6 +1,6 @@
 ---
 name: starter-template
-description: The reference for project infrastructure - BazelStarterTemplate (github.com/calmette54/BazelStarterTemplate), a C++/Python Bazel template with hermetic toolchains, devenv, pre-commit, format/lint tests, coverage, Doxygen, release-please, BuildBuddy RBE, GitHub Actions and multi-arch OCI images. Load this first whenever a task touches a project's build system, CI/CD, tests, linting, formatting, documentation build, containerization, release cycle or developer environment, to know the standard and fetch the real files instead of writing them from memory. Routes to project-bootstrap (new repository), project-standardize (existing repository: audit, adopt, upgrade), bazel-workspace (dependencies, toolchains) and devenv-env (tools on PATH).
+description: The reference for project infrastructure - BazelStarterTemplate (github.com/calmette54/BazelStarterTemplate), a C++/Python Bazel template with hermetic toolchains, devenv, pre-commit, format/lint tests, coverage, Doxygen, release-please, GitHub Actions, self-hosted remote execution with rented vast.ai GPU workers and multi-arch OCI images. Load this first whenever a task touches a project's build system, CI/CD, tests, linting, formatting, documentation build, containerization, release cycle or developer environment, to know the standard and fetch the real files instead of writing them from memory. Routes to project-bootstrap (new repository), project-standardize (existing repository: audit, adopt, upgrade), bazel-workspace (dependencies, toolchains) and devenv-env (tools on PATH).
 ---
 
 # BazelStarterTemplate: the infrastructure reference
@@ -27,7 +27,7 @@ these skills.
 ## Which skill
 
 | Task | Skill |
-|---|---|
+| --- | --- |
 | New repository, first commit | `project-bootstrap` |
 | Existing repository: audit, add a missing concern, upgrade to a newer template release | `project-standardize` |
 | Bazel dependencies (BCR, PyPI), toolchains, sysroots, multi-module repos, pybind11/cgo, a minimal scratch workspace | `bazel-workspace` |

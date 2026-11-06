@@ -1,0 +1,75 @@
+// A GPU worker on a vast.ai box (see tools/remote/README.md). gpu-scaler copies it to the box as
+// /work/worker.json5 with the nativelink binary. The box reaches the server's
+// CAS and scheduler on its own loopback: gpu-scaler's reverse ssh tunnel
+// forwards 50051 and 50061 there. The worker serves nothing itself.
+{
+  stores: [
+    {
+      name: "SERVER_CAS",
+      grpc: {
+        instance_name: "",
+        store_type: "cas",
+        endpoints: [{ address: "grpc://127.0.0.1:50051" }],
+        // The inputs cross the tunnel, one ssh connection whose bandwidth
+        // its channels share: two connections, the small blobs in batches,
+        // the big ones compressed. With eight, on a 5 Mbit/s day each
+        // channel's 2 MB window queued a keepalive ping longer than HTTP/2
+        // waits for it: the connections dropped mid-blob and the fetch
+        // restarted, discarding the half-fetched files.
+        connections_per_endpoint: 2,
+        experimental_read_batching: {},
+        experimental_remote_cache_compression: true,
+      },
+    },
+    {
+      name: "SERVER_AC",
+      grpc: {
+        instance_name: "",
+        store_type: "ac",
+        endpoints: [{ address: "grpc://127.0.0.1:50051" }],
+      },
+    },
+    {
+      // The inputs, fetched from the server once per box and hardlinked from
+      // here into the action directory. "get": the outputs go straight to
+      // the server.
+      name: "CAS",
+      fast_slow: {
+        fast: {
+          filesystem: {
+            content_path: "/work/cas",
+            temp_path: "/work/cas-tmp",
+            // 60 GB of the box's disk (DISK in ../server/gpu.env).
+            eviction_policy: { max_bytes: 60000000000 },
+          },
+        },
+        fast_direction: "get",
+        slow: { ref_store: { name: "SERVER_CAS" } },
+      },
+    },
+  ],
+  workers: [
+    {
+      local: {
+        worker_api_endpoint: { uri: "grpc://127.0.0.1:50061" },
+        cas_fast_slow_store: "CAS",
+        upload_action_result: { ac_store: "SERVER_AC" },
+        work_directory: "/work/actions",
+        // gpu "cuda": what the GPU tests' test actions request (bzl/gpu.bzl)
+        // and what gpu-scaler looks for; every other action asks for "none"
+        // and stays on the server.
+        platform_properties: {
+          OSFamily: { values: ["linux"] },
+          gpu: { values: ["cuda"] },
+        },
+        // One GPU.
+        max_inflight_tasks: 1,
+        max_action_timeout_s: 7200,
+        // A fresh box pulls the first test's inputs (several GB with large
+        // toolchains or wheels) from the server.
+        max_download_timeout_s: 1800,
+      },
+    },
+  ],
+  servers: [],
+}
