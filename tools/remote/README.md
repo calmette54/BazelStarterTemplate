@@ -172,9 +172,27 @@ Start every session with `ssh -fN rbe-server`. If a previous tunnel still holds
 the port, `ExitOnForwardFailure` makes this command fail instead of lingering
 without the forward.
 
-The first `bazelisk build --config=remote //...` uploads every toolchain input
-over the laptop's uplink. Running that first build once on the server itself
-(a clone there, the same command) fills the CAS at datacenter speed.
+### Fill the cache from the server
+
+The first `bazelisk build --config=remote //...` sends every input that the
+server lacks: the LLVM toolchain, the sysroots and the CUDA toolkit, about 8 GB.
+Over a home uplink that takes hours. At 5 Mbit/s, the saturated tunnel also
+drops connections and fails the build (`UNAVAILABLE: Keepalive failed`).
+So run that first build once on the server, where the downloads come at
+datacenter speed. It needs `bazelisk` and the clone's credential helper:
+
+```bash
+sudo curl -fsSLo /usr/local/bin/bazelisk \
+  https://github.com/bazelbuild/bazelisk/releases/download/v1.30.0/bazelisk-linux-amd64
+sudo chmod +x /usr/local/bin/bazelisk
+cd <the clone of setup.sh> && git pull
+bazelisk run @tweag-credential-helper//installer
+bazelisk build --config=remote //...    # 127.0.0.1:50051 is the server itself
+```
+
+Afterwards the laptop's `bazelisk build --config=remote //...` finds the
+toolchains in the CAS and uploads only the sources. The same command, run on
+the server again after a toolchain or dependency upgrade, keeps it that way.
 
 ## Costs
 
