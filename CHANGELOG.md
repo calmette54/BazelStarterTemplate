@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.0.0](https://github.com/calmette54/BazelStarterTemplate/compare/v3.1.0...v4.0.0) (2026-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **remote:** BuildBuddy support is removed (buildbuddy.yaml, --config=ci RBE, toolchains_buildbuddy). CI runs on GitHub Actions (.github/workflows/ci.yml); --config=ci now only sets output options and filters out the GPU tests.
+
+### Features
+
+* **bazel:** Upgrade Bazel to 9.3.1 ([#144](https://github.com/calmette54/BazelStarterTemplate/issues/144)) ([d82203f](https://github.com/calmette54/BazelStarterTemplate/commit/d82203f5ba5887954795dfc4a864a5893a29fe93))
+* **remote:** Add self-hosted remote execution with rented vast.ai GPU workers ([#146](https://github.com/calmette54/BazelStarterTemplate/issues/146)) ([5848361](https://github.com/calmette54/BazelStarterTemplate/commit/584836145d59334c12a9a260899182c203f518d9))
+
+
+### Bug Fixes
+
+* **devenv:** declare git-hooks input for devenv 2.x ([#142](https://github.com/calmette54/BazelStarterTemplate/issues/142)) ([a53b253](https://github.com/calmette54/BazelStarterTemplate/commit/a53b253fab37659a409df6d03506e6324845a9df))
+
 ## [3.1.0](https://github.com/calmette54/BazelStarterTemplate/compare/v3.0.0...v3.1.0) (2026-10-22)
 
 
