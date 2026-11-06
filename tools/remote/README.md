@@ -34,7 +34,7 @@ vast.ai box (plain ubuntu:24.04, one sm_86 GPU, billed by the minute)
 | `server/setup.sh` | Root installer for the server: NativeLink (pinned, sha256-checked), the `vastai` CLI, the API key, the ssh key, systemd units, BBR |
 | `server/nativelink.json5` | Server config: CAS, action cache, scheduler, CPU worker, loopback listeners |
 | `server/gpu-scaler`, `server/gpu-scaler.service` | The autoscaler: rent, tunnel, start the worker, drain, destroy, book the cost |
-| `server/gpu.env` | The offer query (GPUs, price cap), idle and lifetime limits, monthly spend cap |
+| `server/gpu.env` | The offer query (GPUs, price cap), idle, orphan and lifetime limits, monthly spend cap |
 | `worker/nativelink.json5` | Config of the GPU box's worker. It reaches the server's CAS and scheduler through the tunnels |
 | `BUILD.bazel` | The execution platform `:platform` (`gpu: none`) for `--config=remote` |
 | `../../bzl/gpu.bzl` | `GPU` / `LARGE_GPU`: the tags and `exec_properties` of a GPU test |
@@ -93,7 +93,13 @@ cc_test(
   download starved the scheduler's keepalives. It then copies the NativeLink
   binary and `worker/nativelink.json5` to the box and starts the worker.
 - **Idle shutdown.** A worker that has been idle for `IDLE_MINUTES` is drained
-  and its box destroyed.
+  and its box destroyed. Idle means no GPU action running or queued, and no
+  bytes moving on a client's connection to port 50051 since the last poll. An
+  invocation that is still uploading its next GPU test's inputs thus keeps
+  the box.
+- **Interrupted tests.** NativeLink does not cancel an action whose client
+  went away (Ctrl-C): the box would run it to its end. When a GPU action runs
+  and no client byte has moved for `ORPHAN_MINUTES`, the scaler kills it.
 - **Failures.** A worker that does not register within `LAUNCH_TIMEOUT` costs
   its box. A lost tunnel is reopened. A box that never comes up is replaced by
   one on another machine.
@@ -101,7 +107,9 @@ cc_test(
   `MONTHLY_CAP` dollars have been spent in a month, nothing more is rented.
 - **Safety net.** A watchdog on the box destroys it when no ssh session (the
   tunnels) has been left for `IDLE_MINUTES`, or after `MAX_HOURS`. A dead
-  scaler therefore leaves nothing billing.
+  scaler therefore leaves nothing billing. The watchdog also kills processes
+  that a finished test left running in the background, which would hold the
+  GPU.
 
 ```bash
 /opt/rbe-remote/gpu-scaler status   # the box, its worker, the queued GPU actions, this month's spend

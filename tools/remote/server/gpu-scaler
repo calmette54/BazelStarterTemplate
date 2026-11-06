@@ -2,7 +2,11 @@
 # gpu-scaler: the GPU workers of the NativeLink server (see "Remote execution"
 # in tools/remote/README.md). Rents a vast.ai box when the scheduler
 # queues an action for a GPU worker (a test with bzl/gpu.bzl's
-# exec_properties) and destroys it once it has been idle for IDLE_MINUTES.
+# exec_properties) and destroys it once it has been idle for IDLE_MINUTES: no
+# GPU action running or queued, and no traffic from a client (an invocation
+# uploading its next test's inputs is about to queue one). Kills a GPU action
+# that no client has waited for in ORPHAN_MINUTES: NativeLink keeps running an
+# action whose client was interrupted.
 # Runs on the server as gpu-scaler.service; setup.sh installs it with gpu.env
 # (the offer query, the price and spend caps, the timings), the worker config
 # and the nativelink binary in /opt/rbe-remote.
@@ -19,7 +23,7 @@
 # so the worker API, which has no authentication, never leaves this host's
 # loopback. The box's own watchdog destroys it once no ssh session is
 # left for IDLE_MINUTES, or after MAX_HOURS: a dead scaler leaves nothing
-# billing.
+# billing. It also kills what a finished action left running (see onstart).
 set -uo pipefail
 
 SCALER_DIR=${SCALER_DIR:-/opt/rbe-remote}
@@ -32,7 +36,7 @@ PATH="$SCALER_DIR/venv/bin:$PATH"
 
 log() { echo "gpu-scaler: $*" >&2; }
 
-# QUERY, MAX_DPH, DISK, IDLE_MINUTES, MAX_HOURS, MONTHLY_CAP, LAUNCH_TIMEOUT, POLL_SECONDS.
+# QUERY, MAX_DPH, DISK, IDLE_MINUTES, MAX_HOURS, MONTHLY_CAP, LAUNCH_TIMEOUT, POLL_SECONDS, ORPHAN_MINUTES.
 # shellcheck source=/dev/null
 source "$SCALER_DIR/gpu.env" || {
   log "no $SCALER_DIR/gpu.env: run tools/remote/server/setup.sh"
@@ -41,6 +45,7 @@ source "$SCALER_DIR/gpu.env" || {
 : "${QUERY:?}" "${MAX_DPH:?}" "${DISK:?}" "${IDLE_MINUTES:?}" "${MAX_HOURS:?}" "${MONTHLY_CAP:?}"
 LAUNCH_TIMEOUT=${LAUNCH_TIMEOUT:-600}
 POLL_SECONDS=${POLL_SECONDS:-10}
+ORPHAN_MINUTES=${ORPHAN_MINUTES:-5}
 DRAIN_SECONDS=${DRAIN_SECONDS:-120}
 LABEL=${LABEL:-rbe-gpu}
 # Plain Ubuntu: no CUDA userland. The tests bring their own (the hermetic
@@ -74,6 +79,18 @@ for w in workers:
     if w.get("platform_properties", {}).get("gpu") == sys.argv[1]:
         print(w["id"], w.get("running_actions", 0), int(bool(w.get("is_draining"))))
         break' "$GPU"
+}
+
+client_traffic() { # bytes so far on the clients' connections to the CAS port; 1 if ss failed
+  # Bazel keeps its connections open between commands, idle: bytes moving on
+  # one mean an invocation in progress (uploading inputs, waiting on results).
+  # A client waiting on an action holds an open stream, which the server pings
+  # (17 bytes each way about once a minute); an idle connection gets no ping.
+  # The scaler's own CAS tunnel to the box (an ssh client) is not a client.
+  ss -tinpH state established '( dport = :50051 )' 2>/dev/null | awk '
+    / 127\.0\.0\.1:50051 / { client = $0 !~ /users:\(\("ssh",/ }
+    client { for (i = 1; i <= NF; i++) if ($i ~ /^bytes_(acked|received):/) { split($i, kv, ":"); total += kv[2] } }
+    END { printf "%d\n", total }'
 }
 
 gpu_demand() { # the number of queued actions that need a GPU worker; 1 if the scheduler did not answer
@@ -123,11 +140,20 @@ onstart() { # the box's startup script: /work, curl, the watchdog
 mkdir -p /work
 cat >/work/.watchdog <<'W'
 # Destroys this instance after IDLE s without an ssh session (the server's
-# tunnel) or after MAX s in all; stops it if the destroy is refused.
+# tunnel) or after MAX s in all; stops it if the destroy is refused. Kills the
+# processes left from a finished action: the worker kills an action's test (its
+# timeout, its client gone) but not the processes the test started in the
+# background, which would hold the GPU; their working directory, in the
+# action's, is gone with it.
 env1() { tr '\0' '\n' </proc/1/environ | sed -n "s/^\$1=//p"; }
 key=\${CONTAINER_API_KEY:-\$(env1 CONTAINER_API_KEY)} id=\${CONTAINER_ID:-\$(env1 CONTAINER_ID)}
 start=\$(date +%s) last=\$start
 while sleep 20; do
+  for p in /proc/[0-9]*; do
+    case \$(readlink \$p/cwd 2>/dev/null) in
+      /work/actions/*' (deleted)') kill -9 \${p#/proc/} 2>/dev/null && echo "\$(date) killed \${p#/proc/}, left from an action" ;;
+    esac
+  done
   now=\$(date +%s)
   # An established connection (state 01) to sshd (port 22 = 0016).
   cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | awk '\$2 ~ /:0016\$/ && \$4 == "01" { found = 1 } END { exit !found }' && last=\$now
@@ -201,7 +227,10 @@ tunnel_down() {
 
 connect() { # the tunnel; the worker binary, config and process on the box
   tunnel_up || return 1
-  scp -q "${ssh_opts[@]}" "$SCALER_DIR/nativelink" "$SCALER_DIR/worker.json5" "$LABEL:/work/" || return 1
+  # Into /work/new, renamed into place by start_worker: a reconnect finds the
+  # worker running, and its binary cannot be written over ("Text file busy").
+  remote 'mkdir -p /work/new' || return 1
+  scp -q "${ssh_opts[@]}" "$SCALER_DIR/nativelink" "$SCALER_DIR/worker.json5" "$LABEL:/work/new/" || return 1
   start_worker
 }
 
@@ -211,7 +240,7 @@ start_worker() { # the worker process, unless it runs: a worker whose tunnel cam
   # on its own (an `a && b &` list runs in a subshell that waits for it): either
   # would hold the session open as long as the worker lives.
   # shellcheck disable=SC2016 # expanded on the box
-  remote 'cd /work && { kill -0 "$(cat worker.pid 2>/dev/null)" 2>/dev/null ||
+  remote 'cd /work && { mv -f new/nativelink new/worker.json5 . 2>/dev/null; kill -0 "$(cat worker.pid 2>/dev/null)" 2>/dev/null ||
     { tail -n 2 worker.log 2>/dev/null; chmod +x nativelink; nohup ./nativelink worker.json5 </dev/null >worker.log 2>&1 & echo $! >worker.pid; }; }' |
     sed "s/^/gpu-scaler: $LABEL worker: /" >&2
 }
@@ -325,7 +354,7 @@ ensure_up() { # the box rented, reachable and running its worker
 }
 
 tick() { # rent on demand, keep while busy, reconnect, destroy when idle or broken
-  local out id='' status host port demand worker wid='' running=0 now since seen last
+  local out id='' status host port demand worker wid='' running=0 now since seen last traffic before active=0
   if ! out=$(box); then
     log "the vast.ai instance list failed"
     return 1
@@ -343,7 +372,15 @@ tick() { # rent on demand, keep while busy, reconnect, destroy when idle or brok
     ensure_up
     return
   fi
-  ((running > 0 || demand > 0)) && echo "$now" >"$STATE_DIR/last_busy"
+  if traffic=$(client_traffic); then
+    read -r before 2>/dev/null <"$STATE_DIR/client_traffic" || before=$traffic
+    [[ $traffic == "$before" ]] || active=1
+    echo "$traffic" >"$STATE_DIR/client_traffic"
+  fi
+  if ((active)) || [[ ! -e $STATE_DIR/client_seen ]]; then
+    echo "$now" >"$STATE_DIR/client_seen"
+  fi
+  ((running > 0 || demand > 0 || active)) && echo "$now" >"$STATE_DIR/last_busy"
   [[ -n $wid ]] && echo "$now" >"$STATE_DIR/worker_seen"
   read -r since _ 2>/dev/null <"$STATE_DIR/rented" || since=$now
   seen=$(cat "$STATE_DIR/worker_seen" 2>/dev/null || echo 0)
@@ -358,6 +395,13 @@ tick() { # rent on demand, keep while busy, reconnect, destroy when idle or brok
   elif ((now - last >= IDLE_MINUTES * 60)); then
     log "$LABEL idle for $IDLE_MINUTES min"
     teardown "$id" "$wid"
+  elif ((running > 0 && now - $(cat "$STATE_DIR/client_seen") >= ORPHAN_MINUTES * 60)); then
+    # Interrupted clients: NativeLink cancels nothing, and the worker would run
+    # the action to its end (or its timeout, two hours) with nobody waiting.
+    log "a GPU action runs with no client waiting for $ORPHAN_MINUTES min: killing it"
+    # Every process of an action runs from its directory; the bracket keeps the
+    # pattern from matching this command's own shell.
+    remote 'pkill -9 -f "/work/action[s]/"'
   elif ! tunnel_ok; then
     log "reconnecting $LABEL"
     ssh_config_for "$id" "$host" "$port"

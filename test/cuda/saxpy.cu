@@ -28,3 +28,11 @@ bool Saxpy(int n, float a, const float* x, float* y) {
   cudaFree(d_y);
   return ok;
 }
+
+std::string GpuName() {
+  cudaDeviceProp prop{};
+  if (cudaGetDeviceProperties(&prop, 0) != cudaSuccess) {
+    return {};
+  }
+  return prop.name;
+}

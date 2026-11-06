@@ -137,6 +137,13 @@ TOOL = "scp"
 {common}
 """
 
+FAKE_SS = """\
+TOOL = "ss"
+{common}
+sockets = state / "sockets.txt"
+print(sockets.read_text() if sockets.exists() else "", end="")
+"""
+
 FAKE_CURL = """\
 TOOL = "curl"
 {common}
@@ -194,6 +201,7 @@ def scaler(tmp_path):
         ("vastai", FAKE_VASTAI),
         ("ssh", FAKE_SSH),
         ("scp", FAKE_SCP),
+        ("ss", FAKE_SS),
         ("curl", FAKE_CURL),
     ]:
         path = fakes / tool
@@ -280,6 +288,19 @@ def rented(scaler, seconds_ago, price="0.180", instance=4000):
 
 def last_busy(scaler, seconds_ago):
     (scaler["state"] / "last_busy").write_text(f"{int(time.time()) - seconds_ago}\n")
+
+
+def sockets(scaler, **processes):
+    """The established connections to the CAS port (ss -tinpH), one per process
+    name, with the bytes it has moved."""
+    lines = []
+    for port, (name, moved) in enumerate(processes.items(), start=40000):
+        lines += [
+            f'0      0      127.0.0.1:{port} 127.0.0.1:50051 users:(("{name}",pid={port},fd=5))',
+            f"\t cubic wscale:7,7 rto:201 bytes_sent:{moved} bytes_acked:{moved} "
+            f"bytes_received:{moved} segs_out:12",
+        ]
+    (scaler["fake"] / "sockets.txt").write_text("\n".join(lines) + "\n")
 
 
 def instances(scaler):
@@ -389,10 +410,13 @@ def test_gpu_demand_rents_the_cheapest_offer(scaler):
     assert copy[-3:] == [
         f"{scaler['dir']}/nativelink",
         f"{scaler['dir']}/worker.json5",
-        f"{LABEL}:/work/",
+        f"{LABEL}:/work/new/",
     ]
     start = commands[-1][2]
     assert "kill -0" in start and "nohup ./nativelink worker.json5" in start
+    # The new binary is renamed over the old one, which a running worker holds.
+    assert "mkdir -p /work/new" in [c for _, _, c in commands]
+    assert "mv -f new/nativelink new/worker.json5 ." in start
     since, price, instance = (scaler["state"] / "rented").read_text().split()
     assert abs(int(since) - time.time()) < 30 and price == "0.180" and instance == "5000"
     assert (scaler["state"] / "last_busy").exists()
@@ -454,6 +478,83 @@ def test_a_busy_worker_is_kept(scaler, busy):
     assert rc == 0, stderr
     assert not vastai(scaler, "destroy") and not drains(scaler)
     assert abs(int((scaler["state"] / "last_busy").read_text()) - time.time()) < 30
+
+
+def test_client_traffic_keeps_the_box(scaler):
+    """An invocation still uploading its next test's inputs: no GPU action queued
+    yet, but bytes moving on a client's connection (the laptop's tunnel, sshd)."""
+    running_box(scaler)
+    gpu_worker(scaler, running=0)
+    open_tunnels(scaler)
+    rented(scaler, seconds_ago=1000)
+    last_busy(scaler, seconds_ago=700)
+    (scaler["state"] / "client_traffic").write_text("200\n")
+    sockets(scaler, sshd=300)
+    rc, _, stderr = run(scaler, "tick")
+    assert rc == 0, stderr
+    assert not vastai(scaler, "destroy") and not drains(scaler)
+    assert abs(int((scaler["state"] / "last_busy").read_text()) - time.time()) < 30
+    assert (scaler["state"] / "client_traffic").read_text() == "600\n"
+
+
+@pytest.mark.parametrize(
+    "processes",
+    [
+        {"sshd": 300},  # a client's connection, open and idle since the last tick
+        {"sshd": 300, "ssh": 900},  # traffic on the scaler's own tunnel to the box only
+    ],
+)
+def test_no_client_traffic_lets_the_box_go(scaler, processes):
+    running_box(scaler)
+    gpu_worker(scaler, running=0)
+    open_tunnels(scaler)
+    rented(scaler, seconds_ago=1000)
+    last_busy(scaler, seconds_ago=700)
+    (scaler["state"] / "client_traffic").write_text("600\n")
+    sockets(scaler, **processes)
+    rc, _, stderr = run(scaler, "tick")
+    assert rc == 0, stderr
+    assert "idle for 10 min" in stderr
+    assert [c[2] for c in vastai(scaler, "destroy")] == ["4000"]
+
+
+def kills(scaler):
+    return [command for _, _, command in ssh_commands(scaler) if "pkill" in command]
+
+
+@pytest.mark.parametrize(
+    "case,seen_ago,moved,killed",
+    [
+        # The client was interrupted 400 s ago: nothing on its connection since.
+        ("orphaned", 400, 300, True),
+        # A waiting client: the server's ping moved 17 bytes each way.
+        ("waiting", 400, 317, False),
+        # Within ORPHAN_MINUTES (5) of the client's last bytes.
+        ("recent", 100, 300, False),
+        # The first tick that sees the client: it counts as seen now.
+        ("unseen", None, 300, False),
+    ],
+)
+def test_an_action_no_client_waits_for_is_killed(scaler, case, seen_ago, moved, killed):
+    running_box(scaler)
+    gpu_worker(scaler, running=1)
+    open_tunnels(scaler)
+    rented(scaler, seconds_ago=1000)
+    last_busy(scaler, seconds_ago=0)
+    (scaler["state"] / "client_traffic").write_text("600\n")
+    if seen_ago is not None:
+        (scaler["state"] / "client_seen").write_text(f"{int(time.time()) - seen_ago}\n")
+    sockets(scaler, sshd=moved)
+    rc, _, stderr = run(scaler, "tick")
+    assert rc == 0, stderr
+    assert not vastai(scaler, "destroy") and not drains(scaler)
+    if killed:
+        assert "no client waiting for 5 min: killing it" in stderr
+        assert kills(scaler) == ['pkill -9 -f "/work/action[s]/"']
+    else:
+        assert not kills(scaler)
+    seen = int((scaler["state"] / "client_seen").read_text())
+    assert (abs(seen - time.time()) < 30) == (case in ("waiting", "unseen"))
 
 
 def test_a_worker_that_never_registers_is_destroyed(scaler):
@@ -618,6 +719,8 @@ def test_onstart_installs_the_watchdog(scaler):
     watchdog = script.split("<<'W'\n", 1)[1].split("\nW\n", 1)[0]
     assert "/proc/net/tcp" in watchdog and ":0016" in watchdog
     assert "api/v0/instances/$id/" in watchdog and "-X DELETE" in watchdog
+    # What a finished action left running: its working directory went with it.
+    assert "/work/actions/*' (deleted)') kill -9" in watchdog
     for text in [script, watchdog]:
         check = subprocess.run(["bash", "-n"], input=text, capture_output=True, text=True)
         assert check.returncode == 0, check.stderr

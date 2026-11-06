@@ -61,7 +61,10 @@ build:remote --remote_executor=grpc://127.0.0.1:50051
 build:remote --extra_execution_platforms=//tools/remote:platform
 # The outputs stay in the CAS; only what a command needs comes down.
 build:remote --remote_download_minimal
-build:remote --remote_cache_compression
+# No --remote_cache_compression: an upload that breaks off resumes at the byte
+# the server has, which NativeLink refuses for a zstd stream ("Received out of
+# order compressed data"), and the big inputs (toolchains, wheels) are
+# compressed already.
 # The first build uploads the toolchains over the uplink.
 build:remote --remote_timeout=3600
 # The same action keys from every client: no client environment, no stamp.
